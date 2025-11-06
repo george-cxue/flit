@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
-
-const { width, height } = Dimensions.get('window');
+import { useOnboarding } from '@/hooks/use-onboarding';
 
 const onboardingSteps = [
   {
@@ -34,6 +33,7 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const router = useRouter();
+  const { completeOnboarding } = useOnboarding();
 
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -41,17 +41,20 @@ export default function OnboardingScreen() {
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Navigate to main app
-      router.replace('/(tabs)');
+      // Mark onboarding as complete and navigate to main app
+      await completeOnboarding();
+      router.replace('/(tabs)/home');
     }
   };
 
-  const handleSkip = () => {
-    router.replace('/(tabs)');
+  const handleSkip = async () => {
+    // Mark onboarding as complete even when skipped
+    await completeOnboarding();
+    router.replace('/(tabs)/home');
   };
 
   const step = onboardingSteps[currentStep];

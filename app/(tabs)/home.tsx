@@ -4,15 +4,24 @@ import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { resetOnboarding } = useOnboarding();
+  const router = useRouter();
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const primaryColor = useThemeColor({}, 'primary' as any);
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
+
+  const handleResetOnboarding = async () => {
+    await resetOnboarding();
+    router.replace('/onboarding');
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -110,7 +119,7 @@ export default function HomeScreen() {
         >
           <View style={styles.lessonHeader}>
             <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
-              Today's Lesson
+              Today&apos;s Lesson
             </ThemedText>
             <View style={styles.lessonBadge}>
               <ThemedText style={[styles.lessonBadgeText, { color: primaryColor }]}>
@@ -156,6 +165,14 @@ export default function HomeScreen() {
             Your portfolio will update based on market performance
           </ThemedText>
         </View>
+
+        {/* Debug: Reset Onboarding */}
+        <TouchableOpacity
+          style={[styles.debugButton, { backgroundColor: cardBg, borderColor }]}
+          onPress={handleResetOnboarding}
+        >
+          <ThemedText style={styles.debugButtonText}>🔄 Reset Onboarding (Debug)</ThemedText>
+        </TouchableOpacity>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -413,6 +430,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     opacity: 0.6,
     textAlign: 'center',
+  },
+  debugButton: {
+    marginTop: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    opacity: 0.5,
+  },
+  debugButtonText: {
+    fontSize: 13,
+    opacity: 0.7,
   },
   bottomPadding: {
     height: 20,

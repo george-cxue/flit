@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-const { width } = Dimensions.get('window');
 
 export default function LessonScreen() {
   const colorScheme = useColorScheme() ?? 'light';

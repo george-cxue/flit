@@ -162,6 +162,14 @@ Then press:
 - `a` for Android emulator
 - Scan QR code for physical device
 
+**First Launch:** You'll be directed to the onboarding screen. Complete it or skip to access the app.
+
+**Subsequent Launches:** You'll go directly to the home screen.
+
+**Testing Onboarding Again:** Scroll to the bottom of the home screen and tap "🔄 Reset Onboarding (Debug)"
+
+See [ONBOARDING_FLOW.md](ONBOARDING_FLOW.md) for detailed information about the onboarding system.
+
 ## Next Steps
 
 **Recommended implementations:**
