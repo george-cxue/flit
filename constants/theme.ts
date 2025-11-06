@@ -5,25 +5,51 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Flit brand colors - royal blue palette
+const royalBlue = '#4169E1';
+const lightBlue = '#6B9BFF';
+const skyBlue = '#E6F0FF';
+const navyBlue = '#2C4B9C';
+
+const tintColorLight = royalBlue;
+const tintColorDark = lightBlue;
 
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    background: '#FFFFFF',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Flit-specific colors
+    primary: royalBlue,
+    primaryLight: lightBlue,
+    primaryPale: skyBlue,
+    primaryDark: navyBlue,
+    success: '#10B981',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    cardBackground: '#F8FAFC',
+    border: '#E2E8F0',
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#0F172A',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    // Flit-specific colors (dark mode)
+    primary: lightBlue,
+    primaryLight: '#8BB4FF',
+    primaryPale: '#1E3A5F',
+    primaryDark: royalBlue,
+    success: '#34D399',
+    warning: '#FBBF24',
+    danger: '#F87171',
+    cardBackground: '#1E293B',
+    border: '#334155',
   },
 };
 
