@@ -17,9 +17,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     const inTabs = segments[0] === "(tabs)";
+    const inFantasy = segments[0] === "fantasy";
 
-    // Redirect to home if not in tabs
-    if (!inTabs) {
+    // Redirect to home if not in tabs or fantasy
+    if (!inTabs && !inFantasy) {
       router.replace("/(tabs)/home");
     }
   }, [segments, router]);
@@ -33,6 +34,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="fantasy" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
