@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
+import { setLearningDollarsProgress } from '@/hooks/learning-progress';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -217,6 +218,11 @@ export default function LessonScreen() {
     const mutedTextStyle = { color: mutedTextColor };
     const statBoxBackgroundStyle = { backgroundColor: surfaceMutedColor };
     const trackBackgroundStyle = { backgroundColor: trackColor };
+    const summaryFeatureChipStyle = {
+        backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : '#E5E7EB',
+        borderColor,
+        borderWidth: 1,
+    };
 
     const initialCompletionState = useMemo(() => {
         return UNIT_LESSONS.reduce<Record<LessonId, boolean>>((acc, lesson) => {
@@ -249,6 +255,11 @@ export default function LessonScreen() {
     const [loanChallengeComplete, setLoanChallengeComplete] = useState(false);
     const [debtChallengeComplete, setDebtChallengeComplete] = useState(false);
     const [rewardClaimed, setRewardClaimed] = useState(false);
+    const [unitSummaryVisible, setUnitSummaryVisible] = useState(false);
+
+    useEffect(() => {
+        setLearningDollarsProgress(learningDollars);
+    }, [learningDollars]);
 
     const currentLesson = UNIT_LESSONS[lessonIndex];
     const currentQuiz = quizProgress[lessonIndex];
@@ -259,10 +270,21 @@ export default function LessonScreen() {
         () => UNIT_LESSONS.filter((lesson) => completedLessons[lesson.id]).length,
         [completedLessons]
     );
+    const unlockedThisUnit = useMemo(
+        () =>
+            Array.from(
+                new Set(unlockedFeatures.filter((feature) => feature !== 'Portfolio Overview'))
+            ),
+        [unlockedFeatures]
+    );
     const progressPercent = (completedCount / UNIT_LESSONS.length) * 100;
     const isCurrentLessonComplete = completedLessons[currentLesson.id];
     const isFinalLesson = lessonIndex === UNIT_LESSONS.length - 1;
-    const continueDisabled = !isCurrentLessonComplete || unlockModal.visible || (isFinalLesson && rewardClaimed);
+    const continueDisabled =
+        !isCurrentLessonComplete ||
+        unlockModal.visible ||
+        unitSummaryVisible ||
+        (isFinalLesson && rewardClaimed);
 
     const handleYearAdvance = () => setYearsSimulated((prev) => Math.min(prev + 1, 10));
     const handleYearReset = () => setYearsSimulated(0);
@@ -356,12 +378,14 @@ export default function LessonScreen() {
 
         if (!isFinalLesson) {
             setLessonIndex((prev) => prev + 1);
-        } else {
+        } else if (!rewardClaimed) {
             setRewardClaimed(true);
+            setUnitSummaryVisible(true);
         }
     };
 
     const closeUnlockModal = () => setUnlockModal({ visible: false, feature: '' });
+    const closeSummaryModal = () => setUnitSummaryVisible(false);
 
     const renderInterestSimulator = () => {
         const principal = 1000;
@@ -897,6 +921,51 @@ export default function LessonScreen() {
                         </View>
                     )}
 
+                    {unitSummaryVisible && (
+                        <View style={styles.modalOverlay}>
+                            <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={closeSummaryModal} />
+                            <View style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}>
+                                <ThemedText style={styles.modalTitle}>Unit complete</ThemedText>
+                                <ThemedText style={[styles.modalFeature, bodyTextStyle]}>
+                                    {formatCurrency(learningDollars)} learning dollars earned
+                                </ThemedText>
+                                <View style={styles.summarySection}>
+                                    <ThemedText style={styles.summaryHeading}>Concepts mastered</ThemedText>
+                                    {UNIT_LESSONS.map((lesson) => (
+                                        <View key={lesson.id} style={styles.summaryRow}>
+                                            <ThemedText style={styles.summaryConcept}>{lesson.title}</ThemedText>
+                                            <ThemedText style={[styles.cardBodyText, bodyTextStyle]}>
+                                                {lesson.objective}
+                                            </ThemedText>
+                                        </View>
+                                    ))}
+                                </View>
+                                <View style={styles.summarySection}>
+                                    <ThemedText style={styles.summaryHeading}>Features unlocked</ThemedText>
+                                    <View style={styles.summaryFeatureList}>
+                                        {(unlockedThisUnit.length > 0 ? unlockedThisUnit : ['Portfolio Overview']).map(
+                                            (feature) => (
+                                                <View key={feature} style={[styles.summaryFeatureChip, summaryFeatureChipStyle]}>
+                                                    <ThemedText
+                                                        style={[styles.summaryFeatureText, { color: bodyTextColor }]}
+                                                    >
+                                                        {feature}
+                                                    </ThemedText>
+                                                </View>
+                                            )
+                                        )}
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, { backgroundColor: primaryColor }]}
+                                    onPress={closeSummaryModal}
+                                >
+                                    <ThemedText style={styles.modalButtonText}>Return to lessons</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
                     {currentQuiz.awaitingAdvance && !currentQuiz.completed && (
                         <TouchableOpacity
                             style={[styles.nextQuestionButton, { backgroundColor: primaryColor }]}
@@ -1386,6 +1455,35 @@ const styles = StyleSheet.create({
     },
     modalButtonText: {
         color: '#FFFFFF',
+        fontWeight: '600',
+    },
+    summarySection: {
+        width: '100%',
+        marginTop: 16,
+    },
+    summaryHeading: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    summaryRow: {
+        marginBottom: 8,
+    },
+    summaryConcept: {
+        fontWeight: '600',
+    },
+    summaryFeatureList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    summaryFeatureChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    summaryFeatureText: {
+        fontSize: 12,
         fontWeight: '600',
     },
 });

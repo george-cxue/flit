@@ -1,9 +1,17 @@
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
+import {
+  getLearningProgress,
+  subscribeLearningProgress,
+} from '@/hooks/learning-progress';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+const formatCurrency = (value: number) =>
+  `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
 export default function PortfolioScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -14,62 +22,95 @@ export default function PortfolioScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const holdings = [
-    {
-      name: 'S&P 500 Index Fund',
-      ticker: 'VOO',
-      type: 'Index Fund',
-      amount: 6500,
-      percentage: 26.5,
-      change: 8.2,
-      color: colors.primary,
-    },
-    {
-      name: 'Tech Growth Stocks',
-      ticker: 'Portfolio',
-      type: 'Stocks',
-      amount: 4500,
-      percentage: 18.3,
-      change: 12.5,
-      color: colors.primaryLight,
-    },
-    {
-      name: 'Total Stock Market',
-      ticker: 'VTI',
-      type: 'Index Fund',
-      amount: 4073,
-      percentage: 16.6,
-      change: 5.1,
-      color: '#10B981',
-    },
-    {
-      name: 'High-Yield Savings',
-      ticker: 'HYSA',
-      type: 'Savings',
-      amount: 5000,
-      percentage: 20.4,
-      change: 4.5,
-      color: '#6366F1',
-    },
-    {
-      name: 'Emerging Markets',
-      ticker: 'VWO',
-      type: 'Index Fund',
-      amount: 2500,
-      percentage: 10.2,
-      change: -2.3,
-      color: '#F59E0B',
-    },
-    {
-      name: 'Bond Index Fund',
-      ticker: 'BND',
-      type: 'Bonds',
-      amount: 2000,
-      percentage: 8.1,
-      change: 1.8,
-      color: '#8B5CF6',
-    },
-  ];
+  const [learningProgress, setLearningProgress] = useState(() => getLearningProgress());
+
+  useEffect(() => {
+    const unsubscribe = subscribeLearningProgress(setLearningProgress);
+    return unsubscribe;
+  }, []);
+
+  const learningBoost = Math.max(0, learningProgress.learningDollars);
+  const basePortfolioValue = 24573;
+  const baseQuarterGain = 1247;
+  const baseTotalInvested = 23326;
+  const baseLifetimeEarnings = 15500;
+
+  const totalPortfolioValue = basePortfolioValue + learningBoost;
+  const quarterGainValue = baseQuarterGain + learningBoost;
+  const totalInvested = baseTotalInvested + Math.round(learningBoost * 0.4);
+  const lifetimeEarnings = baseLifetimeEarnings + Math.round(learningBoost * 0.8);
+  const changePercent = ((quarterGainValue / basePortfolioValue) * 100).toFixed(1);
+
+  const holdings = useMemo(() => {
+    const bondBoost = Math.round(learningBoost * 0.6);
+    const reserveBoost = Math.max(learningBoost - bondBoost, 0);
+
+    return [
+      {
+        name: 'S&P 500 Index Fund',
+        ticker: 'VOO',
+        type: 'Index Fund',
+        amount: 6500,
+        percentage: 26.5,
+        change: 8.2,
+        color: colors.primary,
+      },
+      {
+        name: 'Tech Growth Stocks',
+        ticker: 'Portfolio',
+        type: 'Stocks',
+        amount: 4500,
+        percentage: 18.3,
+        change: 12.5,
+        color: colors.primaryLight,
+      },
+      {
+        name: 'Total Stock Market',
+        ticker: 'VTI',
+        type: 'Index Fund',
+        amount: 4073,
+        percentage: 16.6,
+        change: 5.1,
+        color: '#10B981',
+      },
+      {
+        name: 'High-Yield Savings',
+        ticker: 'HYSA',
+        type: 'Savings',
+        amount: 5000 + reserveBoost,
+        percentage: 20.4,
+        change: 4.5,
+        color: '#6366F1',
+      },
+      {
+        name: 'Emerging Markets',
+        ticker: 'VWO',
+        type: 'Index Fund',
+        amount: 2500,
+        percentage: 10.2,
+        change: -2.3,
+        color: '#F59E0B',
+      },
+      {
+        name: 'Bond Index Fund',
+        ticker: 'BND',
+        type: 'Bonds',
+        amount: 2000,
+        percentage: 8.1,
+        change: 1.8,
+        color: '#8B5CF6',
+      },
+      {
+        name: 'Government Bonds (Unlocked)',
+        ticker: 'UST',
+        type: 'Bonds',
+        amount: 1500 + bondBoost,
+        percentage: 4.3,
+        change: 5.0,
+        color: '#22C55E',
+      },
+    ];
+  }, [colors.primary, colors.primaryLight, learningBoost]);
 
   return (
     <ThemedView style={styles.container}>
@@ -88,21 +129,25 @@ export default function PortfolioScreen() {
         {/* Total Balance Card */}
         <View style={[styles.balanceCard, { backgroundColor: primaryColor }]}>
           <ThemedText style={styles.balanceLabel}>Total Portfolio Value</ThemedText>
-          <ThemedText style={styles.balanceAmount}>$24,573</ThemedText>
+          <ThemedText style={styles.balanceAmount}>{formatCurrency(totalPortfolioValue)}</ThemedText>
           <View style={styles.balanceChange}>
-            <ThemedText style={styles.changeText}>+$1,247 (5.3%)</ThemedText>
-            <ThemedText style={styles.changeLabel}>This Quarter</ThemedText>
+            <ThemedText style={styles.changeText}>
+              +${quarterGainValue.toLocaleString()} ({changePercent}%)
+            </ThemedText>
+            <ThemedText style={styles.changeLabel}>
+              This quarter · includes {formatCurrency(learningBoost)} learning dollars
+            </ThemedText>
           </View>
 
           <View style={styles.balanceStats}>
             <View style={styles.statItem}>
               <ThemedText style={styles.statLabel}>Total Invested</ThemedText>
-              <ThemedText style={styles.statValue}>$23,326</ThemedText>
+              <ThemedText style={styles.statValue}>{formatCurrency(totalInvested)}</ThemedText>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <ThemedText style={styles.statLabel}>Lifetime Earnings</ThemedText>
-              <ThemedText style={styles.statValue}>$15,500</ThemedText>
+              <ThemedText style={styles.statValue}>{formatCurrency(lifetimeEarnings)}</ThemedText>
             </View>
           </View>
         </View>
