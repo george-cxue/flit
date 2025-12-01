@@ -20,6 +20,7 @@ type LessonConfig = {
     id: LessonId;
     title: string;
     objective: string;
+    primer: string[];
     reward: number;
     unlock: string;
     quiz: QuizQuestion[];
@@ -43,6 +44,13 @@ const UNIT_LESSONS: LessonConfig[] = [
         id: 'interest',
         title: 'Simple vs. Compound Interest',
         objective: 'Calculate future value of savings and loans.',
+        primer: [
+            'Simple interest grows linearly: I = P × r × t, so $1,000 at 6% for 3 years earns $180 total.',
+            'Compound interest uses A = P(1 + r / n)^(n × t); compounding quarterly vs annually materially changes outcomes.',
+            'Effective Annual Rate (EAR) captures the true return after compounding; compare EARs across products.',
+            'To earn interest, leverage insured high-yield savings/CDs for short-term goals and low-cost index funds/bonds for longer horizons.',
+            'Leaving gains invested (automatic reinvestment) is the lever that turns compounding into exponential growth.',
+        ],
         reward: 400,
         unlock: 'Interest Meter',
         quiz: [
@@ -77,6 +85,13 @@ const UNIT_LESSONS: LessonConfig[] = [
         id: 'borrowing',
         title: 'Borrowing Basics',
         objective: 'Learn loans, credit scores, and minimum payments.',
+        primer: [
+            'Loan payments blend principal reduction and interest; amortization schedules show how that mix shifts over time.',
+            'Credit scores weight payment history (35%), utilization (30%), length (15%), mix (10%), and new credit (10%).',
+            'APR captures interest plus mandatory fees; two loans with the same monthly payment can have wildly different APRs.',
+            'Minimum payments on credit cards usually equal ~1% of balance + interest, so balances barely move unless you pay extra.',
+            'Pre-qualifying and rate shopping within a short window minimizes credit score impact while unlocking better terms.',
+        ],
         reward: 350,
         unlock: 'Loan Comparison Tool',
         quiz: [
@@ -116,6 +131,13 @@ const UNIT_LESSONS: LessonConfig[] = [
         id: 'debt',
         title: 'Paying Off Debt',
         objective: 'Understand principal, interest, and amortization.',
+        primer: [
+            'Interest accrues daily on most revolving debt; making payments before the due date reduces the average daily balance.',
+            'Paying above the minimum accelerates principal reduction, which lowers future interest because it is calculated on a smaller base.',
+            'Debt avalanche targets the highest APR balance first; debt snowball targets the smallest balance for behavioral wins.',
+            'Amortization tables prove how additional $50-$100 monthly can shave years off a loan and save thousands in interest.',
+            'Tracking payoff progress (e.g., percent of principal eliminated) keeps motivation high and surfaces when to refinance.',
+        ],
         reward: 450,
         unlock: 'Debt Tracker',
         quiz: [
@@ -155,6 +177,13 @@ const UNIT_LESSONS: LessonConfig[] = [
         id: 'scenarios',
         title: 'Interest Rate Scenarios',
         objective: 'Compare outcomes of different rates over time.',
+        primer: [
+            'Bond math: price and yield move inversely; Duration estimates how sensitive a bond is to rate changes.',
+            'Investment-grade government bonds typically yield 3-5% with near-zero default risk but limited upside.',
+            'High-yield corporate or sector funds can exceed 10% returns but pair that with equity-like volatility.',
+            'Allocating across rate regimes (short-term T-bills + long-term bonds) smooths outcomes as rates shift.',
+            'Match assets to liabilities: pick safer bonds for near-term goals, riskier yield plays for long-term growth.',
+        ],
         reward: 500,
         unlock: 'Government Bonds · 5% APY',
         quiz: [
@@ -831,6 +860,20 @@ export default function LessonScreen() {
                     </ThemedText>
                 </View>
 
+                {currentLesson.primer.length > 0 && (
+                    <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                        <ThemedText type="defaultSemiBold">Lesson primer</ThemedText>
+                        <View style={styles.primerList}>
+                            {currentLesson.primer.map((point) => (
+                                <View key={point} style={styles.primerRow}>
+                                    <View style={[styles.loopDot, { backgroundColor: primaryColor }]} />
+                                    <ThemedText style={[styles.cardBodyText, bodyTextStyle]}>{point}</ThemedText>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
                 {renderInteractiveSection()}
 
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
@@ -1172,6 +1215,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 20,
     },
+    primerList: {
+        marginTop: 12,
+        gap: 10,
+    },
+    primerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
     pill: {
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -1485,6 +1537,11 @@ const styles = StyleSheet.create({
     summaryFeatureText: {
         fontSize: 12,
         fontWeight: '600',
+    },
+    loopDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
 });
 
