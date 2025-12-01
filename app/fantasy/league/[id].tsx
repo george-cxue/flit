@@ -19,11 +19,17 @@ export default function LeagueDetailScreen() {
 
     useEffect(() => {
         const fetchLeague = async () => {
-            if (typeof id === 'string') {
-                const data = await LeagueService.getLeagueById(id);
-                setLeague(data || null);
+            try {
+                if (typeof id === 'string') {
+                    const data = await LeagueService.getLeagueById(id);
+                    setLeague(data || null);
+                }
+            } catch (error) {
+                setLeague(null);
+                // Optionally, you could log the error or set an error state here
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchLeague();
     }, [id]);
