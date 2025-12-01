@@ -1,16 +1,16 @@
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { resetOnboarding } = useOnboarding();
+  const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
@@ -33,10 +33,10 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.greeting}>
-            Welcome back!
+            {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
           </ThemedText>
           <ThemedText style={styles.subtitle}>
-            Ready to level up your financial skills?
+            {profileName?.trim() ? 'Let’s keep growing your money skills.' : 'Ready to level up your financial skills?'}
           </ThemedText>
         </View>
 
@@ -173,12 +173,11 @@ export default function HomeScreen() {
           </ThemedText>
         </View>
 
-        {/* Debug: Reset Onboarding */}
         <TouchableOpacity
-          style={[styles.debugButton, { backgroundColor: cardBg, borderColor }]}
+          style={[styles.resetOnboardingButton, { backgroundColor: cardBg, borderColor }]}
           onPress={handleResetOnboarding}
         >
-          <ThemedText style={styles.debugButtonText}>🔄 Reset Onboarding (Debug)</ThemedText>
+          <ThemedText style={styles.resetOnboardingText}>🔄 Reset Onboarding</ThemedText>
         </TouchableOpacity>
 
         <View style={styles.bottomPadding} />
@@ -438,17 +437,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     textAlign: 'center',
   },
-  debugButton: {
+  resetOnboardingButton: {
     marginTop: 16,
     borderRadius: 12,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    opacity: 0.5,
   },
-  debugButtonText: {
-    fontSize: 13,
-    opacity: 0.7,
+  resetOnboardingText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   bottomPadding: {
     height: 20,
