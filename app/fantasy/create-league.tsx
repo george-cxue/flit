@@ -26,7 +26,7 @@ export default function CreateLeagueScreen() {
     // Advanced Settings (Defaults)
     const [portfolioSize, setPortfolioSize] = useState(10);
     const [activeSlots, setActiveSlots] = useState(7);
-    const [benchSlots, setBenchSlots] = useState(3);
+    const [benchSlots] = useState(3);
     const [scoringMethod, setScoringMethod] = useState<'Total Return %' | 'Absolute Gain $'>('Total Return %');
     const [enabledAssetClasses, setEnabledAssetClasses] = useState<AssetType[]>(['Stock']);
     const [minAssetPrice, setMinAssetPrice] = useState('1.00');
