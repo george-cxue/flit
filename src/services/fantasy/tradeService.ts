@@ -24,7 +24,7 @@ export const TradeService = {
     ): Promise<Trade> => {
         try {
             const response = await apiClient.post(`/fantasy-leagues/${leagueId}/trades`, {
-                creatorId: CURRENT_USER_ID,
+                proposerId: CURRENT_USER_ID,
                 recipientId,
                 offeredAssetIds: offeredAssets,
                 requestedAssetIds: requestedAssets
