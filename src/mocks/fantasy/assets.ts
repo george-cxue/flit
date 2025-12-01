@@ -1,0 +1,85 @@
+import { Asset } from '@/src/types/fantasy';
+
+export const MOCK_ASSETS: Asset[] = [
+    // Tier 1 - Foundational (Unlocked by default)
+    {
+        id: '1',
+        ticker: 'AAPL',
+        name: 'Apple Inc.',
+        type: 'Stock',
+        tier: 'Tier 1',
+        currentPrice: 185.64,
+        changePercent: 1.25,
+        marketCap: '2.8T',
+        exchange: 'NASDAQ',
+        description: 'Technology company that designs, manufactures, and markets mobile communication and media devices.',
+        requiredLessons: [],
+        isLocked: false,
+    },
+    {
+        id: '2',
+        ticker: 'SPY',
+        name: 'SPDR S&P 500 ETF',
+        type: 'ETF',
+        tier: 'Tier 1',
+        currentPrice: 498.32,
+        changePercent: 0.45,
+        description: 'ETF that tracks the S&P 500 index.',
+        requiredLessons: [],
+        isLocked: false,
+    },
+    {
+        id: '3',
+        ticker: 'MSFT',
+        name: 'Microsoft Corp',
+        type: 'Stock',
+        tier: 'Tier 1',
+        currentPrice: 402.12,
+        changePercent: -0.32,
+        marketCap: '3.0T',
+        exchange: 'NASDAQ',
+        description: 'Technology corporation producing software, consumer electronics, personal computers, and related services.',
+        requiredLessons: [],
+        isLocked: false,
+    },
+
+    // Tier 2 - Intermediate
+    {
+        id: '4',
+        ticker: 'GLD',
+        name: 'SPDR Gold Shares',
+        type: 'Commodity',
+        tier: 'Tier 2',
+        currentPrice: 195.40,
+        changePercent: 0.12,
+        description: 'ETF that tracks the price of gold bullion.',
+        requiredLessons: ['lesson_commodities'],
+        isLocked: true, // Default locked for demo
+    },
+    {
+        id: '5',
+        ticker: 'VNQ',
+        name: 'Vanguard Real Estate ETF',
+        type: 'REIT',
+        tier: 'Tier 2',
+        currentPrice: 84.50,
+        changePercent: -0.85,
+        description: 'ETF that invests in stocks issued by real estate investment trusts (REITs).',
+        requiredLessons: ['lesson_reits'],
+        isLocked: true,
+    },
+
+    // Tier 3 - Advanced
+    {
+        id: '8',
+        ticker: 'TQQQ',
+        name: 'ProShares UltraPro QQQ',
+        type: 'ETF',
+        tier: 'Tier 3',
+        currentPrice: 58.90,
+        changePercent: 1.35,
+        description: '3x Leveraged ETF tracking the Nasdaq-100.',
+        requiredLessons: ['lesson_leveraged_etfs'],
+        isLocked: true,
+    },
+];
