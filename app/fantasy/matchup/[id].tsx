@@ -20,11 +20,17 @@ export default function MatchupScreen() {
 
     useEffect(() => {
         const fetchMatchup = async () => {
-            if (typeof id === 'string') {
-                const data = await MatchupService.getCurrentMatchup(id);
-                setMatchup(data);
+            try {
+                if (typeof id === 'string') {
+                    const data = await MatchupService.getCurrentMatchup(id);
+                    setMatchup(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch matchup:', error);
+                // Optionally, set an error state here to display a message to the user
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchMatchup();
     }, [id]);
