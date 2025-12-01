@@ -79,7 +79,7 @@ export default function HomeScreen() {
             <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
               Portfolio Balance
             </ThemedText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}>
               <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
                 View All →
               </ThemedText>
@@ -116,6 +116,7 @@ export default function HomeScreen() {
         {/* Today's Lesson */}
         <TouchableOpacity
           style={[styles.lessonCard, { backgroundColor: cardBg, borderColor, borderLeftColor: primaryColor }]}
+          onPress={() => router.push('/(tabs)/lesson')}
         >
           <View style={styles.lessonHeader}>
             <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
@@ -144,12 +145,18 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            onPress={() => router.push('/(tabs)/lesson')}
+          >
             <ThemedText style={styles.actionIcon}>📚</ThemedText>
             <ThemedText style={styles.actionLabel}>Browse Lessons</ThemedText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            onPress={() => router.push('/(tabs)/league')}
+          >
             <ThemedText style={styles.actionIcon}>🏆</ThemedText>
             <ThemedText style={styles.actionLabel}>View Leagues</ThemedText>
           </TouchableOpacity>
