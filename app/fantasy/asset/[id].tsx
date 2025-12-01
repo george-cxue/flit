@@ -19,7 +19,7 @@ export default function AssetScreen() {
     useEffect(() => {
         const fetchAsset = async () => {
             if (typeof id === 'string') {
-                const data = await MarketService.getAssetDetails(id);
+                const data = await MarketService.getAssetById(id);
                 setAsset(data || null);
             }
             setLoading(false);
