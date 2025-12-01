@@ -77,7 +77,7 @@ export default function CreateLeagueScreen() {
             router.back();
         } catch (error) {
             console.error('Failed to create league:', error);
-            Alert.alert('Error', 'Failed to create league');
+            Alert.alert('Error', error instanceof Error && error.message ? error.message : 'Failed to create league');
         } finally {
             setLoading(false);
         }
