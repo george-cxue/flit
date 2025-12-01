@@ -18,7 +18,7 @@ export default function CreateLeagueScreen() {
     const [leagueName, setLeagueName] = useState('');
     const [leagueSize, setLeagueSize] = useState(12);
     const [seasonLength, setSeasonLength] = useState(10);
-    const [draftDate, setDraftDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
+    const [draftDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
 
     // Advanced Settings Toggle
     const [showAdvanced, setShowAdvanced] = useState(false);
