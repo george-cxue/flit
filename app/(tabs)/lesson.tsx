@@ -1477,6 +1477,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 20,
     },
     modalBackdrop: {
         ...StyleSheet.absoluteFillObject,
