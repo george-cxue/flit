@@ -1,22 +1,39 @@
-import { MOCK_PORTFOLIOS } from '@/src/mocks/fantasy/portfolios';
+import { apiClient, handleApiError } from '../api';
 import { Portfolio } from '@/src/types/fantasy';
 
-const DELAY_MS = 500;
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// TODO: Replace with actual user context/auth when implemented
+const CURRENT_USER_ID = 'user_1';
 
 export const PortfolioService = {
     getPortfolios: async (): Promise<Portfolio[]> => {
-        await delay(DELAY_MS);
-        return MOCK_PORTFOLIOS;
+        // Note: This would require getting portfolios across all leagues for a user
+        // The backend doesn't have a dedicated endpoint for this yet
+        // For now, this is a placeholder
+        throw new Error('getPortfolios not implemented - use getPortfolioByLeagueId instead');
     },
 
     getPortfolioByLeagueId: async (leagueId: string): Promise<Portfolio | undefined> => {
-        await delay(DELAY_MS);
-        return MOCK_PORTFOLIOS.find(p => p.leagueId === leagueId && p.userId === 'user_1');
+        try {
+            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/portfolio`, {
+                params: { userId: CURRENT_USER_ID }
+            });
+            return response.data;
+        } catch (error) {
+            if ((error as any).response?.status === 404) {
+                return undefined;
+            }
+            throw handleApiError(error);
+        }
     },
 
     updateLineup: async (portfolioId: string, activeSlotIds: string[], benchSlotIds: string[]): Promise<void> => {
-        await delay(DELAY_MS);
-        console.log(`Updated lineup for ${portfolioId}: Active=${activeSlotIds}, Bench=${benchSlotIds}`);
+        try {
+            await apiClient.put(`/fantasy-portfolios/${portfolioId}/lineup`, {
+                activeSlotIds,
+                benchSlotIds
+            });
+        } catch (error) {
+            throw handleApiError(error);
+        }
     },
 };

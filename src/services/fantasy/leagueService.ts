@@ -1,33 +1,43 @@
-import { MOCK_LEAGUES } from '@/src/mocks/fantasy/leagues';
+import { apiClient, handleApiError } from '../api';
 import { League, LeagueSettings } from '@/src/types/fantasy';
 
-const DELAY_MS = 500;
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// TODO: Replace with actual user context/auth when implemented
+const CURRENT_USER_ID = 'user_1';
 
 export const LeagueService = {
     getLeagues: async (): Promise<League[]> => {
-        await delay(DELAY_MS);
-        return MOCK_LEAGUES;
+        try {
+            const response = await apiClient.get('/fantasy-leagues', {
+                params: { userId: CURRENT_USER_ID }
+            });
+            return response.data.leagues || [];
+        } catch (error) {
+            throw handleApiError(error);
+        }
     },
 
     getLeagueById: async (id: string): Promise<League | undefined> => {
-        await delay(DELAY_MS);
-        return MOCK_LEAGUES.find(l => l.id === id);
+        try {
+            const response = await apiClient.get(`/fantasy-leagues/${id}`);
+            return response.data;
+        } catch (error) {
+            if ((error as any).response?.status === 404) {
+                return undefined;
+            }
+            throw handleApiError(error);
+        }
     },
 
     createLeague: async (name: string, settings: LeagueSettings): Promise<League> => {
-        await delay(DELAY_MS);
-        const newLeague: League = {
-            id: `league_${Date.now()}`,
-            name,
-            adminUserId: 'user_1', // Current user
-            members: [], // Start empty or with creator
-            status: 'pre-draft',
-            currentWeek: 0,
-            settings,
-        };
-        // In a real app, we'd add this to the store/backend
-        return newLeague;
+        try {
+            const response = await apiClient.post('/fantasy-leagues', {
+                name,
+                adminUserId: CURRENT_USER_ID,
+                settings
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
     },
 };

@@ -71,30 +71,6 @@ export const MOCK_ASSETS: Asset[] = [
 
     // Tier 3 - Advanced
     {
-        id: '6',
-        ticker: 'BTC',
-        name: 'Bitcoin',
-        type: 'Crypto',
-        tier: 'Tier 3',
-        currentPrice: 64230.50,
-        changePercent: 3.45,
-        description: 'Decentralized digital currency.',
-        requiredLessons: ['lesson_crypto_fundamentals', 'lesson_crypto_risk'],
-        isLocked: true,
-    },
-    {
-        id: '7',
-        ticker: 'ETH',
-        name: 'Ethereum',
-        type: 'Crypto',
-        tier: 'Tier 3',
-        currentPrice: 3450.20,
-        changePercent: 2.10,
-        description: 'Decentralized, open-source blockchain with smart contract functionality.',
-        requiredLessons: ['lesson_crypto_fundamentals', 'lesson_crypto_risk'],
-        isLocked: true,
-    },
-    {
         id: '8',
         ticker: 'TQQQ',
         name: 'ProShares UltraPro QQQ',

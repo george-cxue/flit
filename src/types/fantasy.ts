@@ -1,5 +1,5 @@
 export type AssetTier = 'Tier 1' | 'Tier 2' | 'Tier 3';
-export type AssetType = 'Stock' | 'ETF' | 'Crypto' | 'Commodity' | 'REIT';
+export type AssetType = 'Stock' | 'ETF' | 'Commodity' | 'REIT';
 
 export interface Asset {
   id: string;

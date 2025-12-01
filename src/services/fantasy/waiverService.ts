@@ -1,34 +1,35 @@
-import { MOCK_ASSETS } from '@/src/mocks/fantasy/assets';
+import { apiClient, handleApiError } from '../api';
 import { Asset, WaiverClaim } from '@/src/types/fantasy';
 
-const DELAY_MS = 500;
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// TODO: Replace with actual user context/auth when implemented
+const CURRENT_USER_ID = 'user_1';
 
 export const WaiverService = {
+    /**
+     * Get available assets on waivers (free agents)
+     * Uses the market assets endpoint which excludes owned assets
+     */
     getAvailableAssets: async (leagueId: string, query: string = ''): Promise<Asset[]> => {
-        await delay(DELAY_MS);
-        // Mock: All assets are available except those in portfolios (not filtered here for simplicity)
-        let assets = MOCK_ASSETS;
-        if (query) {
-            const lowerQuery = query.toLowerCase();
-            assets = assets.filter(a =>
-                a.ticker.toLowerCase().includes(lowerQuery) ||
-                a.name.toLowerCase().includes(lowerQuery)
-            );
+        try {
+            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/market/assets`, {
+                params: { search: query }
+            });
+            return response.data.assets || [];
+        } catch (error) {
+            throw handleApiError(error);
         }
-        return assets;
     },
 
     submitClaim: async (leagueId: string, assetId: string, dropAssetId?: string): Promise<WaiverClaim> => {
-        await delay(DELAY_MS);
-        return {
-            id: `claim_${Date.now()}`,
-            leagueId,
-            userId: 'user_1',
-            assetId,
-            dropAssetId,
-            status: 'pending',
-            priority: 1,
-        };
+        try {
+            const response = await apiClient.post(`/fantasy-leagues/${leagueId}/waivers`, {
+                userId: CURRENT_USER_ID,
+                assetId,
+                dropAssetId
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
     },
 };

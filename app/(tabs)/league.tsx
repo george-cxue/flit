@@ -4,8 +4,9 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { LeagueService } from '@/src/services/fantasy/leagueService';
 import { League } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function FantasyHubScreen() {
   const router = useRouter();
@@ -29,9 +30,12 @@ export default function FantasyHubScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchLeagues();
-  }, []);
+  // Refetch leagues every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchLeagues();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -95,11 +99,11 @@ export default function FantasyHubScreen() {
                 <View style={styles.leagueCardHeader}>
                   <ThemedText style={styles.leagueName}>{league.name}</ThemedText>
                   <View style={[styles.statusBadge, { backgroundColor: league.status === 'active' ? '#4CAF50' : '#FFC107' }]}>
-                    <ThemedText style={styles.statusText}>{league.status.toUpperCase()}</ThemedText>
+                    <ThemedText style={styles.statusText}>{league.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
                   </View>
                 </View>
                 <ThemedText style={styles.leagueDetails}>
-                  {league.members.length} Members • Week {league.currentWeek}
+                  {league.members?.length || 0} Members • Week {league.currentWeek || 0}
                 </ThemedText>
               </TouchableOpacity>
             ))

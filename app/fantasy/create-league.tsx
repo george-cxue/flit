@@ -181,7 +181,7 @@ export default function CreateLeagueScreen() {
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Asset Classes</ThemedText>
                         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-                            {(['Stock', 'ETF', 'Crypto', 'Commodity', 'REIT'] as AssetType[]).map((type) => (
+                            {(['Stock', 'ETF', 'Commodity', 'REIT'] as AssetType[]).map((type) => (
                                 <View key={type} style={[styles.switchRow, { borderBottomColor: borderColor }]}>
                                     <ThemedText>{type}</ThemedText>
                                     <Switch

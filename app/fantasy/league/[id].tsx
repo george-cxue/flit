@@ -54,7 +54,7 @@ export default function LeagueDetailScreen() {
                 <View style={styles.header}>
                     <ThemedText type="title">{league.name}</ThemedText>
                     <View style={[styles.statusBadge, { backgroundColor: league.status === 'active' ? '#4CAF50' : '#FFC107' }]}>
-                        <ThemedText style={styles.statusText}>{league.status.toUpperCase()}</ThemedText>
+                        <ThemedText style={styles.statusText}>{league.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
                     </View>
                 </View>
 

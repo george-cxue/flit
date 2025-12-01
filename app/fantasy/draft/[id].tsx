@@ -61,6 +61,19 @@ export default function DraftScreen() {
         fetchAssets();
     }, [searchQuery]);
 
+    const handleStartDraft = async () => {
+        if (!draftState || typeof id !== 'string') return;
+
+        try {
+            await DraftService.startDraft(id);
+            await fetchDraftState();
+            Alert.alert('Draft Started!', 'The draft is now live. Good luck!');
+        } catch (error) {
+            console.error('Failed to start draft:', error);
+            Alert.alert('Error', 'Failed to start draft');
+        }
+    };
+
     const handlePick = async (asset: Asset) => {
         if (asset.isLocked) {
             Alert.alert(
@@ -74,9 +87,10 @@ export default function DraftScreen() {
 
         setPicking(true);
         try {
-            const newState = await DraftService.makePick(draftState.leagueId, asset.id);
-            setDraftState(newState);
-            fetchAssets(); // Refresh list
+            await DraftService.makePick(draftState.leagueId, asset.id);
+            // Refetch the draft state to get updated picks and current turn
+            await fetchDraftState();
+            await fetchAssets(); // Refresh list to remove picked asset
         } catch (error) {
             console.error('Pick failed:', error);
             Alert.alert('Error', 'Failed to make pick');
@@ -94,6 +108,52 @@ export default function DraftScreen() {
     }
 
     const isMyTurn = draftState.currentUserId === 'user_1';
+    const isDraftPending = draftState.status === 'pending';
+    const isDraftCompleted = draftState.status === 'completed';
+
+    // Show start draft screen if pending
+    if (isDraftPending) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={[styles.centered, { flex: 1 }]}>
+                    <ThemedText type="title" style={{ marginBottom: 16, textAlign: 'center' }}>
+                        Draft Not Started
+                    </ThemedText>
+                    <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.7, paddingHorizontal: 32 }}>
+                        The league admin needs to start the draft before picks can be made.
+                    </ThemedText>
+                    <TouchableOpacity
+                        style={[styles.startButton, { backgroundColor: primaryColor }]}
+                        onPress={handleStartDraft}
+                    >
+                        <ThemedText style={styles.startButtonText}>Start Draft</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            </ThemedView>
+        );
+    }
+
+    // Show completion message if draft is done
+    if (isDraftCompleted) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={[styles.centered, { flex: 1 }]}>
+                    <ThemedText type="title" style={{ marginBottom: 16, textAlign: 'center' }}>
+                        🎉 Draft Complete!
+                    </ThemedText>
+                    <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.7, paddingHorizontal: 32 }}>
+                        All picks have been made. Portfolios have been created.
+                    </ThemedText>
+                    <TouchableOpacity
+                        style={[styles.startButton, { backgroundColor: primaryColor }]}
+                        onPress={() => router.back()}
+                    >
+                        <ThemedText style={styles.startButtonText}>Back to League</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            </ThemedView>
+        );
+    }
 
     return (
         <ThemedView style={styles.container}>
@@ -334,5 +394,15 @@ const styles = StyleSheet.create({
     recentPickUser: {
         fontSize: 10,
         opacity: 0.7,
+    },
+    startButton: {
+        paddingHorizontal: 32,
+        paddingVertical: 16,
+        borderRadius: 12,
+    },
+    startButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
