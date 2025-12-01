@@ -49,7 +49,7 @@ export default function PlayersScreen() {
             Alert.alert('Success', 'Waiver claim submitted!');
         } catch (error) {
             console.error('Claim failed:', error);
-            Alert.alert('Error', 'Failed to submit claim');
+            Alert.alert('Error', (error instanceof Error && error.message) ? error.message : 'Failed to submit claim');
         } finally {
             setClaiming(null);
         }
