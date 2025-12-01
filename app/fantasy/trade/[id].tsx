@@ -19,11 +19,17 @@ export default function TradeScreen() {
 
     useEffect(() => {
         const fetchTrades = async () => {
-            if (typeof id === 'string') {
-                const data = await TradeService.getTrades(id);
-                setTrades(data);
+            try {
+                if (typeof id === 'string') {
+                    const data = await TradeService.getTrades(id);
+                    setTrades(data);
+                }
+            } catch (error) {
+                // Optionally, you could set an error state here to display an error message
+                console.error('Failed to fetch trades:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchTrades();
     }, [id]);
