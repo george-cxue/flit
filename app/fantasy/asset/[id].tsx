@@ -18,11 +18,18 @@ export default function AssetScreen() {
 
     useEffect(() => {
         const fetchAsset = async () => {
-            if (typeof id === 'string') {
-                const data = await MarketService.getAssetById(id);
-                setAsset(data || null);
+            try {
+                if (typeof id === 'string') {
+                    const data = await MarketService.getAssetById(id);
+                    setAsset(data || null);
+                }
+            } catch (error) {
+                setAsset(null);
+                // Optionally log the error
+                // console.error('Failed to fetch asset:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchAsset();
     }, [id]);
