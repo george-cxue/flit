@@ -16,6 +16,30 @@ type QuizQuestion = {
     correctIndex: number;
 };
 
+const ROADMAP_UNITS = [
+    {
+        id: 'unit1',
+        title: 'Unit 1',
+        theme: 'Saving & Budgeting',
+        status: 'completed',
+        blurb: 'Automate savings, track cash flow, and build a starter emergency fund.',
+    },
+    {
+        id: 'unit2',
+        title: 'Unit 2',
+        theme: 'Interest, Debt & Credit',
+        status: 'current',
+        blurb: 'Master the mechanics of interest, loans, and debt payoff strategies.',
+    },
+    {
+        id: 'unit3',
+        title: 'Unit 3',
+        theme: 'Investing & Diversification',
+        status: 'locked',
+        blurb: 'Coming soon: construct diversified portfolios and manage risk.',
+    },
+] as const;
+
 type LessonConfig = {
     id: LessonId;
     title: string;
@@ -285,6 +309,7 @@ export default function LessonScreen() {
     const [debtChallengeComplete, setDebtChallengeComplete] = useState(false);
     const [rewardClaimed, setRewardClaimed] = useState(false);
     const [unitSummaryVisible, setUnitSummaryVisible] = useState(false);
+    const [showUnitDetail, setShowUnitDetail] = useState(false);
 
     useEffect(() => {
         setLearningDollarsProgress(learningDollars);
@@ -820,8 +845,108 @@ export default function LessonScreen() {
 
     const questionNumber = Math.min(currentQuiz.questionIndex + 1, currentLesson.quiz.length);
 
+    if (!showUnitDetail) {
+        return (
+            <ThemedView style={styles.container}>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.roadmapHeader}>
+                        <ThemedText type="title">Lessons Roadmap</ThemedText>
+                        <ThemedText style={[styles.roadmapSubtitle, mutedTextStyle]}>
+                            Complete units in order to unlock new mechanics for your portfolio.
+                        </ThemedText>
+                    </View>
+
+                    {ROADMAP_UNITS.map((unit) => {
+                        const isCompleted = unit.status === 'completed';
+                        const isCurrent = unit.status === 'current';
+                        const isLocked = unit.status === 'locked';
+
+                        return (
+                            <View
+                                key={unit.id}
+                                style={[
+                                    styles.unitCard,
+                                    {
+                                        backgroundColor: cardBg,
+                                        borderColor,
+                                        opacity: isLocked ? 0.6 : 1,
+                                    },
+                                ]}
+                            >
+                                <View style={styles.unitCardHeader}>
+                                    <View>
+                                        <ThemedText style={styles.unitLabel}>{unit.title}</ThemedText>
+                                        <ThemedText type="defaultSemiBold" style={styles.unitTheme}>
+                                            {unit.theme}
+                                        </ThemedText>
+                                    </View>
+                                    <View
+                                        style={[
+                                            styles.unitStatusPill,
+                                            {
+                                                backgroundColor: isCompleted
+                                                    ? successColor + '20'
+                                                    : isCurrent
+                                                        ? colors.primaryPale
+                                                        : borderColor,
+                                            },
+                                        ]}
+                                    >
+                                        <ThemedText
+                                            style={{
+                                                color: isCompleted ? successColor : isCurrent ? primaryColor : mutedTextColor,
+                                                fontWeight: '600',
+                                            }}
+                                        >
+                                            {isCompleted ? '✓ Completed' : isCurrent ? 'In Progress' : 'Locked'}
+                                        </ThemedText>
+                                    </View>
+                                </View>
+
+                                <ThemedText style={[styles.cardBodyText, bodyTextStyle]}>{unit.blurb}</ThemedText>
+
+                                {isCurrent && (
+                                    <TouchableOpacity
+                                        style={[styles.unitActionButton, { backgroundColor: primaryColor }]}
+                                        onPress={() => setShowUnitDetail(true)}
+                                    >
+                                        <ThemedText style={styles.unitActionText}>Continue Unit</ThemedText>
+                                    </TouchableOpacity>
+                                )}
+
+                                {isCompleted && (
+                                    <ThemedText style={[styles.completedMeta, { color: successColor }]}>
+                                        5/5 lessons complete · Badge earned
+                                    </ThemedText>
+                                )}
+
+                                {isLocked && (
+                                    <ThemedText style={[styles.lockedMeta, mutedTextStyle]}>
+                                        🔒 Unlocks after finishing Unit 2
+                                    </ThemedText>
+                                )}
+                            </View>
+                        );
+                    })}
+                </ScrollView>
+            </ThemedView>
+        );
+    }
+
     return (
         <ThemedView style={styles.container}>
+            <View style={styles.backRow}>
+                <TouchableOpacity style={styles.backButton} onPress={() => setShowUnitDetail(false)}>
+                    <ThemedText style={styles.backButtonText}>← All Units</ThemedText>
+                </TouchableOpacity>
+                <View style={[styles.backUnitPill, { backgroundColor: colors.primaryPale }]}>
+                    <ThemedText style={[styles.backUnitText, { color: primaryColor }]}>Unit 2</ThemedText>
+                </View>
+            </View>
             <View style={styles.progressContainer}>
                 <View style={[styles.progressBarBg, trackBackgroundStyle]}>
                     <View
@@ -1198,6 +1323,50 @@ const styles = StyleSheet.create({
         padding: 20,
         marginBottom: 16,
     },
+    unitCard: {
+        borderWidth: 1,
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 16,
+    },
+    unitCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    unitLabel: {
+        fontSize: 13,
+        opacity: 0.7,
+        marginBottom: 2,
+    },
+    unitTheme: {
+        fontSize: 20,
+    },
+    unitStatusPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    unitActionButton: {
+        marginTop: 16,
+        borderRadius: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    unitActionText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
+    },
+    completedMeta: {
+        marginTop: 12,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    lockedMeta: {
+        marginTop: 12,
+        fontSize: 13,
+    },
     cardGroup: {
         marginBottom: 16,
         gap: 12,
@@ -1536,6 +1705,36 @@ const styles = StyleSheet.create({
         borderRadius: 999,
     },
     summaryFeatureText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    roadmapHeader: {
+        marginBottom: 20,
+    },
+    roadmapSubtitle: {
+        marginTop: 8,
+        fontSize: 14,
+    },
+    backRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
+    backButton: {
+        paddingVertical: 6,
+    },
+    backButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    backUnitPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 999,
+    },
+    backUnitText: {
         fontSize: 12,
         fontWeight: '600',
     },
