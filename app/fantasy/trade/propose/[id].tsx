@@ -33,7 +33,8 @@ export default function ProposeTradeScreen() {
                 ]);
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to propose trade');
+            const message = (error instanceof Error && error.message) ? error.message : 'Failed to propose trade';
+            Alert.alert('Error', message);
         } finally {
             setLoading(false);
         }
