@@ -11,7 +11,7 @@ import { usePortfolio } from '@/contexts/portfolio-context';
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { resetOnboarding } = useOnboarding();
+  const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
   const { portfolios, loading } = usePortfolio();
 
@@ -63,10 +63,10 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.greeting}>
-            Welcome back!
+            {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
           </ThemedText>
           <ThemedText style={styles.subtitle}>
-            Ready to level up your financial skills?
+            {profileName?.trim() ? "Let's keep growing your money skills." : 'Ready to level up your financial skills?'}
           </ThemedText>
         </View>
 
