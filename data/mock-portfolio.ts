@@ -1,5 +1,71 @@
 import { League, Portfolio, Stock, MarketIndex, PortfolioSnapshot } from '@/types/portfolio';
 
+// Generate intraday (hourly) data for today
+const generateIntradayData = (
+  currentValue: number,
+  volatility: number = 0.01
+): PortfolioSnapshot[] => {
+  const data: PortfolioSnapshot[] = [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Pre-market: 4:00 AM - 9:30 AM ET (5.5 hours)
+  const preMarketStart = new Date(today);
+  preMarketStart.setHours(4, 0, 0, 0);
+
+  // Market hours: 9:30 AM - 4:00 PM ET (6.5 hours)
+  const marketOpen = new Date(today);
+  marketOpen.setHours(9, 30, 0, 0);
+
+  const marketClose = new Date(today);
+  marketClose.setHours(16, 0, 0, 0);
+
+  // After hours: 4:00 PM - 8:00 PM ET (4 hours)
+  const afterHoursEnd = new Date(today);
+  afterHoursEnd.setHours(20, 0, 0, 0);
+
+  // Start from yesterday's close value (slightly lower)
+  let value = currentValue * 0.998;
+
+  // Generate hourly data points
+  const generateHourlyPoints = (start: Date, end: Date, isMarketHours: boolean) => {
+    const current = new Date(start);
+    const hourlyVolatility = isMarketHours ? volatility : volatility * 0.5; // Lower volatility outside market hours
+
+    while (current <= end && current <= now) {
+      const change = (Math.random() - 0.5) * hourlyVolatility * value;
+      value = Math.max(value + change, currentValue * 0.95); // Floor at 95% of current
+      data.push({
+        timestamp: current.getTime(),
+        value: Math.round(value * 100) / 100,
+      });
+
+      // Add 30-minute intervals during market hours for more granularity
+      if (isMarketHours && current < marketClose) {
+        current.setMinutes(current.getMinutes() + 30);
+      } else {
+        current.setHours(current.getHours() + 1);
+      }
+    }
+  };
+
+  // Pre-market (hourly)
+  generateHourlyPoints(preMarketStart, marketOpen, false);
+
+  // Market hours (30-minute intervals)
+  generateHourlyPoints(marketOpen, marketClose, true);
+
+  // After hours (hourly)
+  generateHourlyPoints(marketClose, afterHoursEnd, false);
+
+  // Ensure we end close to current value
+  if (data.length > 0) {
+    data[data.length - 1].value = currentValue;
+  }
+
+  return data;
+};
+
 // Generate historical data points
 const generateHistoricalData = (
   days: number,
@@ -63,9 +129,12 @@ export const MOCK_STOCKS: Stock[] = [
   { symbol: 'NFLX', name: 'Netflix Inc.', currentPrice: 448.92, changePercent: 2.45, sector: 'Entertainment' },
 ];
 
-// S&P 500 baseline data (5 years of data)
+// S&P 500 baseline data (5 years of data + intraday)
 export const MOCK_SP500: MarketIndex = {
-  history: generateHistoricalData(1825, 10000, 0.015, 0.0003), // 5 years ≈ 1825 days
+  history: [
+    ...generateHistoricalData(1825, 10000, 0.015, 0.0003), // 5 years ≈ 1825 days
+    ...generateIntradayData(10500, 0.008), // Today's intraday data
+  ],
 };
 
 // Mock Portfolios for each league
@@ -109,7 +178,10 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 8.84,
       },
     ],
-    history: generateHistoricalData(1825, 10500, 0.025, 0.0008), // 5 years of data
+    history: [
+      ...generateHistoricalData(1825, 10500, 0.025, 0.0008), // 5 years of data
+      ...generateIntradayData(11234.56, 0.015), // Today's intraday data
+    ],
   },
   'league-2': {
     leagueId: 'league-2',
@@ -141,7 +213,10 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 5.18,
       },
     ],
-    history: generateHistoricalData(1825, 8000, 0.03, 0.0006), // 5 years of data
+    history: [
+      ...generateHistoricalData(1825, 8000, 0.03, 0.0006), // 5 years of data
+      ...generateIntradayData(8567.23, 0.018), // Today's intraday data
+    ],
   },
   'league-3': {
     leagueId: 'league-3',
@@ -191,6 +266,9 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 3.22,
       },
     ],
-    history: generateHistoricalData(1825, 14500, 0.022, 0.0007), // 5 years of data
+    history: [
+      ...generateHistoricalData(1825, 14500, 0.022, 0.0007), // 5 years of data
+      ...generateIntradayData(15678.90, 0.012), // Today's intraday data
+    ],
   },
 };

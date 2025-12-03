@@ -77,7 +77,8 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
     const filteredSP500 = filterDataByTimeFrame(sp500History, timeFrame);
 
     // Sample data for performance if needed (especially for longer timeframes)
-    const maxPoints = timeFrame === '1D' ? 50 : timeFrame === '1W' || timeFrame === '1M' ? 100 : 150;
+    // Don't oversample 1D as it already has optimal granularity
+    const maxPoints = timeFrame === '1D' ? filteredPortfolio.length : timeFrame === '1W' || timeFrame === '1M' ? 100 : 150;
     const sampledPortfolio = sampleData(filteredPortfolio, maxPoints);
     const sampledSP500 = sampleData(filteredSP500, maxPoints);
 
@@ -89,8 +90,21 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
       const date = new Date(timestamp);
 
       if (timeFrame === '1D') {
-        // Show time for 1 day view
-        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        // Show time for 1 day view with AM/PM
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+
+        // Special labels for market milestones
+        if (hours === 4 && minutes === 0) return '4 AM\nPre-Market';
+        if (hours === 9 && minutes === 30) return '9:30 AM\nOpen';
+        if (hours === 16 && minutes === 0) return '4 PM\nClose';
+        if (hours === 20 && minutes === 0) return '8 PM\nAfter Hrs';
+
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: minutes === 0 ? undefined : '2-digit',
+          hour12: true
+        });
       } else if (timeFrame === '1W' || timeFrame === '1M') {
         // Show month and day for short periods
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
