@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MOCK_LEAGUES, MOCK_PORTFOLIOS } from '@/data/mock-portfolio';
 import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
 
