@@ -14,13 +14,28 @@ interface PerformanceChartProps {
 
 const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame): PortfolioSnapshot[] => {
   const now = Date.now();
+
+  if (timeFrame === 'ALL') {
+    return data; // Return all data
+  }
+
+  if (timeFrame === 'YTD') {
+    // Year to date - from January 1st of current year
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1).getTime();
+    return data.filter((point) => point.timestamp >= yearStart);
+  }
+
   const cutoff = {
     '1D': now - 24 * 60 * 60 * 1000,
     '1W': now - 7 * 24 * 60 * 60 * 1000,
     '1M': now - 30 * 24 * 60 * 60 * 1000,
+    '3M': now - 90 * 24 * 60 * 60 * 1000,
+    '1Y': now - 365 * 24 * 60 * 60 * 1000,
+    '5Y': now - 5 * 365 * 24 * 60 * 60 * 1000,
   }[timeFrame];
 
-  return data.filter((point) => point.timestamp >= cutoff);
+  return data.filter((point) => point.timestamp >= cutoff!);
 };
 
 const normalizeData = (data: PortfolioSnapshot[]): PortfolioSnapshot[] => {
@@ -30,6 +45,25 @@ const normalizeData = (data: PortfolioSnapshot[]): PortfolioSnapshot[] => {
     timestamp: point.timestamp,
     value: ((point.value - baseValue) / baseValue) * 100, // Convert to percentage change
   }));
+};
+
+// Sample data to reduce chart points for better performance on long timeframes
+const sampleData = (data: PortfolioSnapshot[], maxPoints: number = 100): PortfolioSnapshot[] => {
+  if (data.length <= maxPoints) return data;
+
+  const interval = Math.ceil(data.length / maxPoints);
+  const sampled: PortfolioSnapshot[] = [];
+
+  for (let i = 0; i < data.length; i += interval) {
+    sampled.push(data[i]);
+  }
+
+  // Always include the last point
+  if (sampled[sampled.length - 1] !== data[data.length - 1]) {
+    sampled.push(data[data.length - 1]);
+  }
+
+  return sampled;
 };
 
 export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: PerformanceChartProps) {
@@ -42,18 +76,39 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
     const filteredPortfolio = filterDataByTimeFrame(portfolioHistory, timeFrame);
     const filteredSP500 = filterDataByTimeFrame(sp500History, timeFrame);
 
-    const normalizedPortfolio = normalizeData(filteredPortfolio);
-    const normalizedSP500 = normalizeData(filteredSP500);
+    // Sample data for performance if needed (especially for longer timeframes)
+    const maxPoints = timeFrame === '1D' ? 50 : timeFrame === '1W' || timeFrame === '1M' ? 100 : 150;
+    const sampledPortfolio = sampleData(filteredPortfolio, maxPoints);
+    const sampledSP500 = sampleData(filteredSP500, maxPoints);
+
+    const normalizedPortfolio = normalizeData(sampledPortfolio);
+    const normalizedSP500 = normalizeData(sampledSP500);
+
+    // Determine date format based on timeframe
+    const getDateFormat = (timestamp: number) => {
+      const date = new Date(timestamp);
+
+      if (timeFrame === '1D') {
+        // Show time for 1 day view
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      } else if (timeFrame === '1W' || timeFrame === '1M') {
+        // Show month and day for short periods
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else if (timeFrame === '3M' || timeFrame === 'YTD') {
+        // Show month and day
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else {
+        // Show month and year for long periods (1Y, 5Y, ALL)
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+    };
 
     // Combine both datasets
     return normalizedPortfolio.map((point, index) => ({
       timestamp: point.timestamp,
       portfolio: point.value,
       sp500: normalizedSP500[index]?.value || 0,
-      date: new Date(point.timestamp).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      date: getDateFormat(point.timestamp),
     }));
   }, [portfolioHistory, sp500History, timeFrame]);
 

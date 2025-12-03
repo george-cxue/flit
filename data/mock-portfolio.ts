@@ -63,9 +63,9 @@ export const MOCK_STOCKS: Stock[] = [
   { symbol: 'NFLX', name: 'Netflix Inc.', currentPrice: 448.92, changePercent: 2.45, sector: 'Entertainment' },
 ];
 
-// S&P 500 baseline data
+// S&P 500 baseline data (5 years of data)
 export const MOCK_SP500: MarketIndex = {
-  history: generateHistoricalData(30, 10000, 0.015, 0.0003),
+  history: generateHistoricalData(1825, 10000, 0.015, 0.0003), // 5 years ≈ 1825 days
 };
 
 // Mock Portfolios for each league
@@ -109,7 +109,7 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 8.84,
       },
     ],
-    history: generateHistoricalData(30, 10500, 0.025, 0.0008),
+    history: generateHistoricalData(1825, 10500, 0.025, 0.0008), // 5 years of data
   },
   'league-2': {
     leagueId: 'league-2',
@@ -141,7 +141,7 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 5.18,
       },
     ],
-    history: generateHistoricalData(30, 8000, 0.03, 0.0006),
+    history: generateHistoricalData(1825, 8000, 0.03, 0.0006), // 5 years of data
   },
   'league-3': {
     leagueId: 'league-3',
@@ -191,6 +191,6 @@ export const MOCK_PORTFOLIOS: Record<string, Portfolio> = {
         changePercent: 3.22,
       },
     ],
-    history: generateHistoricalData(30, 14500, 0.022, 0.0007),
+    history: generateHistoricalData(1825, 14500, 0.022, 0.0007), // 5 years of data
   },
 };

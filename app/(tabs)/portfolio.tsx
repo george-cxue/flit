@@ -151,9 +151,22 @@ export default function PortfolioScreen() {
           </View>
         </View>
 
+        {/* Performance Chart */}
+        <View style={[styles.chartCard, { backgroundColor: cardBackground }]}>
+          <PerformanceChart
+            portfolioHistory={currentPortfolio.history}
+            sp500History={MOCK_SP500.history}
+            timeFrame={timeFrame}
+          />
+        </View>
+
         {/* Time Frame Selector */}
-        <View style={styles.timeFrameContainer}>
-          {(['1D', '1W', '1M'] as TimeFrame[]).map((tf) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.timeFrameContainer}
+        >
+          {(['1D', '1W', '1M', '3M', 'YTD', '1Y', '5Y', 'ALL'] as TimeFrame[]).map((tf) => (
             <TouchableOpacity
               key={tf}
               style={[
@@ -173,16 +186,7 @@ export default function PortfolioScreen() {
               </ThemedText>
             </TouchableOpacity>
           ))}
-        </View>
-
-        {/* Performance Chart */}
-        <View style={[styles.chartCard, { backgroundColor: cardBackground }]}>
-          <PerformanceChart
-            portfolioHistory={currentPortfolio.history}
-            sp500History={MOCK_SP500.history}
-            timeFrame={timeFrame}
-          />
-        </View>
+        </ScrollView>
 
         {/* Asset Allocation */}
         <View style={[styles.section, { backgroundColor: cardBackground }]}>
@@ -291,15 +295,17 @@ const styles = StyleSheet.create({
   },
   timeFrameContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: 8,
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
   timeFrameButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
+    minWidth: 60,
+    alignItems: 'center',
   },
   timeFrameText: {
     fontSize: 14,

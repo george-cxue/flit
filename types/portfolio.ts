@@ -44,7 +44,7 @@ export interface Stock {
   sector: string;
 }
 
-export type TimeFrame = '1D' | '1W' | '1M';
+export type TimeFrame = '1D' | '1W' | '1M' | '3M' | 'YTD' | '1Y' | '5Y' | 'ALL';
 
 export interface MarketIndex {
   history: PortfolioSnapshot[];
