@@ -19,17 +19,15 @@ export default function FantasyHubScreen() {
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const { getPortfolioByLeague, setSelectedLeagueId, ensurePortfolioExists } = usePortfolio();
+  const { getPortfolioByLeague, setSelectedLeagueId, refreshPortfolios } = usePortfolio();
 
   const fetchLeagues = async () => {
     try {
       const data = await LeagueService.getLeagues();
       setLeagues(data);
 
-      // Ensure each league has an associated portfolio
-      data.forEach((league) => {
-        ensurePortfolioExists(league.id, league.name);
-      });
+      // Refresh portfolios from backend
+      await refreshPortfolios();
     } catch (error) {
       console.error('Failed to fetch leagues:', error);
     } finally {
