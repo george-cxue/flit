@@ -12,11 +12,10 @@ export const PortfolioService = {
         throw new Error('getPortfolios not implemented - use getPortfolioByLeagueId instead');
     },
 
-    getPortfolioByLeagueId: async (leagueId: string): Promise<Portfolio | undefined> => {
+    getPortfolioByLeagueId: async (leagueId: string, userId?: string): Promise<Portfolio | undefined> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/portfolio`, {
-                params: { userId: CURRENT_USER_ID }
-            });
+            const targetUserId = userId || CURRENT_USER_ID;
+            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/portfolio/${targetUserId}`);
             return response.data;
         } catch (error) {
             if ((error as any).response?.status === 404) {

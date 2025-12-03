@@ -1,12 +1,16 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { MOCK_LEAGUES, MOCK_PORTFOLIOS } from '@/data/mock-portfolio';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
+import { LeagueService } from '@/src/services/fantasy/leagueService';
+import { apiClient } from '@/src/services/api';
+import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
 
 interface PortfolioContextType {
   // Current state
   selectedLeagueId: string;
   timeFrame: TimeFrame;
   portfolios: Record<string, Portfolio>;
+  loading: boolean;
 
   // Actions
   setSelectedLeagueId: (id: string) => void;
@@ -14,9 +18,10 @@ interface PortfolioContextType {
   allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => void;
   buyStock: (leagueId: string, stock: Stock, shares: number) => void;
   ensurePortfolioExists: (leagueId: string, leagueName: string) => void;
+  refreshPortfolios: () => Promise<void>;
 
   // Getters
-  getCurrentPortfolio: () => Portfolio;
+  getCurrentPortfolio: () => Portfolio | null;
   getPortfolioByLeague: (leagueId: string) => Portfolio | undefined;
   hasPortfolio: (leagueId: string) => boolean;
 }
@@ -27,30 +32,150 @@ interface PortfolioProviderProps {
   children: ReactNode;
 }
 
+const CURRENT_USER_ID = 'user_1';
+
 export function PortfolioProvider({ children }: PortfolioProviderProps) {
-  const [selectedLeagueId, setSelectedLeagueId] = useState(MOCK_LEAGUES[0].id);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('1M');
-  const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>(MOCK_PORTFOLIOS);
+  const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>({});
+  const [loading, setLoading] = useState(true);
+
+  // Fetch portfolios from backend
+  const fetchPortfolios = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all leagues for the user
+      const leagues = await LeagueService.getLeagues();
+
+      if (leagues.length === 0) {
+        setPortfolios({});
+        setLoading(false);
+        return;
+      }
+
+      // Set first league as selected if none selected
+      if (!selectedLeagueId && leagues.length > 0) {
+        setSelectedLeagueId(leagues[0].id);
+      }
+
+      // Fetch portfolio for each league
+      const portfolioPromises = leagues.map(async (league) => {
+        try {
+          const response = await apiClient.get(`/fantasy-leagues/${league.id}/portfolio/${CURRENT_USER_ID}`);
+          const backendPortfolio = response.data;
+
+          // Transform backend portfolio to frontend Portfolio type
+          const totalValue = backendPortfolio.totalValue || backendPortfolio.cashBalance;
+          const startingBalance = league.settings.startingBalance || 10000;
+          const leagueStartDate = new Date(league.settings.startDate || Date.now());
+
+          // Generate unique performance history for this portfolio
+          const volatilityFactor = calculateVolatilityFactor(league.id, startingBalance);
+          const history = generatePortfolioHistory(
+            totalValue,
+            startingBalance,
+            leagueStartDate,
+            volatilityFactor
+          );
+
+          const portfolio: Portfolio = {
+            leagueId: league.id,
+            totalValue,
+            liquidFunds: backendPortfolio.cashBalance,
+            lessonRewards: 0, // Not tracked in backend yet
+            allocation: {
+              savings: 0,
+              bonds: 0,
+              indexFunds: 0,
+            },
+            holdings: backendPortfolio.slots?.map((slot: any) => ({
+              symbol: slot.asset?.ticker || '',
+              name: slot.asset?.name || '',
+              shares: slot.shares,
+              averagePrice: slot.averageCost,
+              currentPrice: slot.asset?.currentPrice || slot.currentPrice,
+              totalValue: slot.shares * (slot.asset?.currentPrice || slot.currentPrice),
+              changePercent: slot.gainLossPercent || 0,
+            })) || [],
+            history,
+          };
+
+          return { leagueId: league.id, portfolio };
+        } catch (error) {
+          console.error(`Failed to fetch portfolio for league ${league.id}:`, error);
+
+          // Return default portfolio if fetch fails
+          const startingBalance = league.settings.startingBalance || 10000;
+          const leagueStartDate = new Date(league.settings.startDate || Date.now());
+          const volatilityFactor = calculateVolatilityFactor(league.id, startingBalance);
+
+          return {
+            leagueId: league.id,
+            portfolio: {
+              leagueId: league.id,
+              totalValue: startingBalance,
+              liquidFunds: startingBalance,
+              lessonRewards: 0,
+              allocation: { savings: 0, bonds: 0, indexFunds: 0 },
+              holdings: [],
+              history: generatePortfolioHistory(
+                startingBalance,
+                startingBalance,
+                leagueStartDate,
+                volatilityFactor
+              ),
+            },
+          };
+        }
+      });
+
+      const portfolioResults = await Promise.all(portfolioPromises);
+      const newPortfolios: Record<string, Portfolio> = {};
+
+      portfolioResults.forEach(({ leagueId, portfolio }) => {
+        newPortfolios[leagueId] = portfolio;
+      });
+
+      setPortfolios(newPortfolios);
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
 
   const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
-    setPortfolios((prev) => ({
-      ...prev,
-      [leagueId]: {
-        ...prev[leagueId],
-        liquidFunds: prev[leagueId].liquidFunds - amount,
-        allocation: {
-          ...prev[leagueId].allocation,
-          [asset]: prev[leagueId].allocation[asset] + amount,
+    setPortfolios((prev) => {
+      const portfolio = prev[leagueId];
+      if (!portfolio) return prev;
+
+      return {
+        ...prev,
+        [leagueId]: {
+          ...portfolio,
+          liquidFunds: portfolio.liquidFunds - amount,
+          allocation: {
+            ...portfolio.allocation,
+            [asset]: portfolio.allocation[asset] + amount,
+          },
+          totalValue: portfolio.totalValue + amount,
         },
-        totalValue: prev[leagueId].totalValue + amount,
-      },
-    }));
+      };
+    });
   };
 
   const buyStock = (leagueId: string, stock: Stock, shares: number) => {
     const totalCost = stock.currentPrice * shares;
     setPortfolios((prev) => {
       const portfolio = prev[leagueId];
+      if (!portfolio) return prev;
+
       const existingHolding = portfolio.holdings.find((h) => h.symbol === stock.symbol);
 
       let updatedHoldings;
@@ -97,8 +222,8 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     });
   };
 
-  const getCurrentPortfolio = (): Portfolio => {
-    return portfolios[selectedLeagueId];
+  const getCurrentPortfolio = (): Portfolio | null => {
+    return portfolios[selectedLeagueId] || null;
   };
 
   const getPortfolioByLeague = (leagueId: string): Portfolio | undefined => {
@@ -110,38 +235,25 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
   };
 
   const ensurePortfolioExists = (leagueId: string, leagueName: string) => {
-    if (!portfolios[leagueId]) {
-      // Create a new portfolio for this league
-      const newPortfolio: Portfolio = {
-        leagueId,
-        totalValue: 10000, // Starting value
-        liquidFunds: 5000,
-        lessonRewards: 500,
-        allocation: {
-          savings: 0,
-          bonds: 0,
-          indexFunds: 0,
-        },
-        holdings: [],
-        history: [], // Will be populated with historical data
-      };
+    // Portfolios are now fetched from backend, so this is a no-op
+    // Kept for backward compatibility
+  };
 
-      setPortfolios((prev) => ({
-        ...prev,
-        [leagueId]: newPortfolio,
-      }));
-    }
+  const refreshPortfolios = async () => {
+    await fetchPortfolios();
   };
 
   const value: PortfolioContextType = {
     selectedLeagueId,
     timeFrame,
     portfolios,
+    loading,
     setSelectedLeagueId,
     setTimeFrame,
     allocateFunds,
     buyStock,
     ensurePortfolioExists,
+    refreshPortfolios,
     getCurrentPortfolio,
     getPortfolioByLeague,
     hasPortfolio,

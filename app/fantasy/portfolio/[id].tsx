@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function PortfolioScreen() {
-    const { id } = useLocalSearchParams(); // League ID
+    const { id, userId, readonly } = useLocalSearchParams(); // League ID, optional userId, readonly flag
     const router = useRouter();
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [loading, setLoading] = useState(true);
@@ -20,18 +20,29 @@ export default function PortfolioScreen() {
     const successColor = '#4CAF50';
     const dangerColor = '#FF4444';
 
+    const isReadOnly = readonly === 'true';
+
     useEffect(() => {
         const fetchPortfolio = async () => {
             if (typeof id === 'string') {
-                const data = await PortfolioService.getPortfolioByLeagueId(id);
+                const targetUserId = typeof userId === 'string' ? userId : undefined;
+                const data = await PortfolioService.getPortfolioByLeagueId(id, targetUserId);
                 setPortfolio(data || null);
             }
             setLoading(false);
         };
         fetchPortfolio();
-    }, [id]);
+    }, [id, userId]);
 
     const handleSlotPress = (slot: PortfolioSlot) => {
+        // In read-only mode, only allow viewing asset details
+        if (isReadOnly) {
+            if (slot.asset) {
+                router.push(`/fantasy/asset/${slot.asset.id}`);
+            }
+            return;
+        }
+
         if (selectedSlot) {
             // If a slot is already selected, this click is to SWAP
             if (selectedSlot === slot.id) {
@@ -108,7 +119,14 @@ export default function PortfolioScreen() {
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 {/* Header Stats */}
                 <View style={[styles.headerCard, { backgroundColor: primaryColor }]}>
-                    <ThemedText style={styles.portfolioName}>{portfolio.name}</ThemedText>
+                    <View style={styles.portfolioHeader}>
+                        <ThemedText style={styles.portfolioName}>{portfolio.name}</ThemedText>
+                        {isReadOnly && (
+                            <View style={styles.readOnlyBadge}>
+                                <ThemedText style={styles.readOnlyText}>READ ONLY</ThemedText>
+                            </View>
+                        )}
+                    </View>
                     <View style={styles.statsRow}>
                         <View>
                             <ThemedText style={styles.statLabel}>Total Value</ThemedText>
@@ -135,7 +153,7 @@ export default function PortfolioScreen() {
 
             </ScrollView>
 
-            {selectedSlot && (
+            {!isReadOnly && selectedSlot && (
                 <View style={[styles.actionBar, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
                     <ThemedText>Select another slot to swap</ThemedText>
                     <TouchableOpacity onPress={() => setSelectedSlot(null)}>
@@ -167,11 +185,28 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginBottom: 24,
     },
+    portfolioHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
     portfolioName: {
         color: '#FFFFFF',
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 16,
+        flex: 1,
+    },
+    readOnlyBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+    },
+    readOnlyText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     statsRow: {
         flexDirection: 'row',

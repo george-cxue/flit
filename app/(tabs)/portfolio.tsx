@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -7,11 +7,17 @@ import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { StockSearch } from '@/components/portfolio/stock-search';
 import { HoldingsList } from '@/components/portfolio/holdings-list';
-import { MOCK_LEAGUES, MOCK_SP500 } from '@/data/mock-portfolio';
+import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
 import { usePortfolio } from '@/contexts/portfolio-context';
+import { useLocalSearchParams } from 'expo-router';
+import { LeagueService } from '@/src/services/fantasy/leagueService';
+import { League } from '@/src/types/fantasy';
 
 export default function PortfolioScreen() {
+  const { leagueId: paramLeagueId } = useLocalSearchParams();
+  const [leagues, setLeagues] = React.useState<League[]>([]);
+
   const {
     selectedLeagueId,
     setSelectedLeagueId,
@@ -20,14 +26,53 @@ export default function PortfolioScreen() {
     allocateFunds,
     buyStock,
     getCurrentPortfolio,
+    portfolios,
+    loading,
   } = usePortfolio();
+
+  // Fetch leagues
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      try {
+        const data = await LeagueService.getLeagues();
+        setLeagues(data);
+      } catch (error) {
+        console.error('Failed to fetch leagues:', error);
+      }
+    };
+    fetchLeagues();
+  }, []);
+
+  // Pre-select league if passed as parameter
+  useEffect(() => {
+    if (paramLeagueId && typeof paramLeagueId === 'string') {
+      setSelectedLeagueId(paramLeagueId);
+    }
+  }, [paramLeagueId]);
 
   const primaryColor = useThemeColor({}, 'tint');
   const cardBackground = useThemeColor({}, 'cardBackground');
   const borderColor = useThemeColor({}, 'border');
 
   const currentPortfolio = getCurrentPortfolio();
-  const currentLeague = MOCK_LEAGUES.find((league) => league.id === selectedLeagueId);
+
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ThemedText>Loading portfolios...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  if (!currentPortfolio) {
+    return (
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <ThemedText style={{ textAlign: 'center', marginBottom: 16 }}>
+          No portfolios found. Join or create a league to get started!
+        </ThemedText>
+      </ThemedView>
+    );
+  }
 
   const handleAllocate = (asset: keyof AssetAllocation, amount: number) => {
     allocateFunds(selectedLeagueId, asset, amount);
@@ -44,7 +89,7 @@ export default function PortfolioScreen() {
         <View style={[styles.leagueSelector, { backgroundColor: cardBackground }]}>
           <ThemedText style={styles.sectionLabel}>League</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueTabs}>
-            {MOCK_LEAGUES.map((league) => (
+            {leagues.map((league) => (
               <TouchableOpacity
                 key={league.id}
                 style={[
@@ -71,7 +116,7 @@ export default function PortfolioScreen() {
                     selectedLeagueId === league.id && styles.leagueMemberCountActive,
                   ]}
                 >
-                  {league.memberCount} members
+                  {league.members?.length || 0} members
                 </ThemedText>
               </TouchableOpacity>
             ))}

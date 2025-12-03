@@ -6,21 +6,51 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter } from 'expo-router';
+import { usePortfolio } from '@/contexts/portfolio-context';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { resetOnboarding } = useOnboarding();
+  const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
+  const { portfolios, loading } = usePortfolio();
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const primaryColor = useThemeColor({}, 'primary' as any);
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
+  // Get first portfolio
+  const firstPortfolio = Object.values(portfolios)[0];
+
+  // Calculate portfolio statistics
+  const totalValue = firstPortfolio?.totalValue || 0;
+  const liquidFunds = firstPortfolio?.liquidFunds || 0;
+  const holdingsValue = firstPortfolio?.holdings.reduce((sum, h) => sum + h.totalValue, 0) || 0;
+
+  // Calculate percentages for breakdown
+  const stocksPercent = totalValue > 0 ? Math.round((holdingsValue / totalValue) * 100) : 0;
+  const savingsPercent = totalValue > 0 ? Math.round((liquidFunds / totalValue) * 100) : 0;
+
   const handleResetOnboarding = async () => {
     await resetOnboarding();
     router.replace('/onboarding');
+  };
+
+  const handleBrowseLessons = () => {
+    router.push('/(tabs)/lesson');
+  };
+
+  const handleTodaysLesson = () => {
+    router.push('/(tabs)/lesson');
+  };
+
+  const handleViewLeagues = () => {
+    router.push('/(tabs)/league');
+  };
+
+  const handleViewAllPortfolios = () => {
+    router.push('/(tabs)/portfolio');
   };
 
   return (
@@ -33,10 +63,10 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.greeting}>
-            Welcome back!
+            {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
           </ThemedText>
           <ThemedText style={styles.subtitle}>
-            Ready to level up your financial skills?
+            {profileName?.trim() ? "Let's keep growing your money skills." : 'Ready to level up your financial skills?'}
           </ThemedText>
         </View>
 
@@ -79,36 +109,32 @@ export default function HomeScreen() {
             <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
               Portfolio Balance
             </ThemedText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleViewAllPortfolios}>
               <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
                 View All →
               </ThemedText>
             </TouchableOpacity>
           </View>
 
-          <ThemedText style={styles.portfolioBalance}>$24,573</ThemedText>
+          <ThemedText style={styles.portfolioBalance}>
+            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </ThemedText>
           <View style={styles.portfolioChange}>
-            <ThemedText style={[styles.changeText, { color: successColor }]}>
-              +$1,247 (5.3%)
+            <ThemedText style={styles.changeLabel}>
+              {firstPortfolio ? `${firstPortfolio.holdings.length} holdings` : 'No portfolios yet'}
             </ThemedText>
-            <ThemedText style={styles.changeLabel}>this quarter</ThemedText>
           </View>
 
           <View style={styles.portfolioBreakdown}>
             <View style={styles.breakdownItem}>
               <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-              <ThemedText style={styles.breakdownLabel}>Stocks</ThemedText>
-              <ThemedText style={styles.breakdownValue}>45%</ThemedText>
+              <ThemedText style={styles.breakdownLabel}>Holdings</ThemedText>
+              <ThemedText style={styles.breakdownValue}>{stocksPercent}%</ThemedText>
             </View>
             <View style={styles.breakdownItem}>
               <View style={[styles.dot, { backgroundColor: colors.success }]} />
-              <ThemedText style={styles.breakdownLabel}>Index Funds</ThemedText>
-              <ThemedText style={styles.breakdownValue}>35%</ThemedText>
-            </View>
-            <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.primaryLight }]} />
-              <ThemedText style={styles.breakdownLabel}>Savings</ThemedText>
-              <ThemedText style={styles.breakdownValue}>20%</ThemedText>
+              <ThemedText style={styles.breakdownLabel}>Liquid Funds</ThemedText>
+              <ThemedText style={styles.breakdownValue}>{savingsPercent}%</ThemedText>
             </View>
           </View>
         </View>
@@ -116,6 +142,7 @@ export default function HomeScreen() {
         {/* Today's Lesson */}
         <TouchableOpacity
           style={[styles.lessonCard, { backgroundColor: cardBg, borderColor, borderLeftColor: primaryColor }]}
+          onPress={handleTodaysLesson}
         >
           <View style={styles.lessonHeader}>
             <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
@@ -144,26 +171,21 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            onPress={handleBrowseLessons}
+          >
             <ThemedText style={styles.actionIcon}>📚</ThemedText>
             <ThemedText style={styles.actionLabel}>Browse Lessons</ThemedText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            onPress={handleViewLeagues}
+          >
             <ThemedText style={styles.actionIcon}>🏆</ThemedText>
             <ThemedText style={styles.actionLabel}>View Leagues</ThemedText>
           </TouchableOpacity>
-        </View>
-
-        {/* Next Time Tick */}
-        <View style={[styles.timeTickCard, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText style={styles.timeTickLabel}>Next Quarter Simulation</ThemedText>
-          <ThemedText type="defaultSemiBold" style={styles.timeTickValue}>
-            2 days, 14 hours
-          </ThemedText>
-          <ThemedText style={styles.timeTickDescription}>
-            Your portfolio will update based on market performance
-          </ThemedText>
         </View>
 
         {/* Debug: Reset Onboarding */}
@@ -410,26 +432,6 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  timeTickCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  timeTickLabel: {
-    fontSize: 13,
-    opacity: 0.6,
-    marginBottom: 4,
-  },
-  timeTickValue: {
-    fontSize: 20,
-    marginBottom: 8,
-  },
-  timeTickDescription: {
-    fontSize: 13,
-    opacity: 0.6,
-    textAlign: 'center',
   },
   debugButton: {
     marginTop: 16,

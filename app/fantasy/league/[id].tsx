@@ -134,11 +134,6 @@ export default function LeagueDetailScreen() {
                     </View>
                 </View>
 
-                {/* Debug info - remove after testing */}
-                <ThemedText style={{ fontSize: 10, opacity: 0.5 }}>
-                    Admin: {league.adminUserId} | Is Admin: {isAdmin ? 'Yes' : 'No'}
-                </ThemedText>
-
                 {/* Competition Status */}
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
                     <ThemedText type="subtitle" style={styles.cardTitle}>Competition Period</ThemedText>
@@ -158,17 +153,6 @@ export default function LeagueDetailScreen() {
                                 Players can start trading once the competition begins.
                             </ThemedText>
 
-                            {/* Test button - always visible for debugging */}
-                            <TouchableOpacity
-                                style={[styles.primaryButton, { backgroundColor: '#FF0000', marginTop: 12 }]}
-                                onPress={() => {
-                                    console.log('TEST BUTTON PRESSED');
-                                    Alert.alert('Test', 'Button works!');
-                                }}
-                            >
-                                <ThemedText style={styles.primaryButtonText}>TEST BUTTON</ThemedText>
-                            </TouchableOpacity>
-
                             {isAdmin && (
                                 <TouchableOpacity
                                     style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
@@ -181,7 +165,13 @@ export default function LeagueDetailScreen() {
                     ) : (
                         <TouchableOpacity
                             style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
-                            onPress={() => router.push(`/fantasy/trade/${id}`)}
+                            onPress={() => {
+                                // Navigate to portfolio tab with this league selected
+                                router.push({
+                                    pathname: '/(tabs)/portfolio',
+                                    params: { leagueId: league.id }
+                                });
+                            }}
                         >
                             <ThemedText style={styles.primaryButtonText}>
                                 {competitionEnded ? 'View Final Results' : 'Manage Portfolio'}
@@ -213,42 +203,60 @@ export default function LeagueDetailScreen() {
                 {competitionStarted && (
                     <View style={styles.section}>
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Portfolio Rankings</ThemedText>
-                        {league.members.map((member, index) => (
-                            <TouchableOpacity
-                                key={member.id}
-                                style={[styles.rankingRow, { borderBottomColor: borderColor, backgroundColor: cardBg }]}
-                                onPress={() => router.push(`/fantasy/portfolio/${id}?userId=${member.id}`)}
-                            >
-                                <View style={styles.rankInfo}>
-                                    <View style={[
-                                        styles.rankBadge,
-                                        { backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#E0E0E0' }
-                                    ]}>
-                                        <ThemedText style={[styles.rankText, { color: index < 3 ? '#000' : '#666' }]}>
-                                            #{index + 1}
-                                        </ThemedText>
-                                    </View>
-                                    <View style={styles.memberInfo}>
-                                        <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
-                                        <View>
-                                            <ThemedText style={styles.memberName}>{member.name}</ThemedText>
-                                            <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                        {league.members.map((member, index) => {
+                            const isCurrentUser = member.id === 'user_1'; // TODO: Get actual current user ID
+
+                            return (
+                                <TouchableOpacity
+                                    key={member.id}
+                                    style={[styles.rankingRow, { borderBottomColor: borderColor, backgroundColor: cardBg }]}
+                                    onPress={() => {
+                                        if (isCurrentUser) {
+                                            // Navigate to portfolio tab for editing
+                                            router.push({
+                                                pathname: '/(tabs)/portfolio',
+                                                params: { leagueId: league.id }
+                                            });
+                                        } else {
+                                            // Navigate to read-only portfolio view
+                                            router.push(`/fantasy/portfolio/${league.id}?userId=${member.id}&readonly=true`);
+                                        }
+                                    }}
+                                >
+                                    <View style={styles.rankInfo}>
+                                        <View style={[
+                                            styles.rankBadge,
+                                            { backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#E0E0E0' }
+                                        ]}>
+                                            <ThemedText style={[styles.rankText, { color: index < 3 ? '#000' : '#666' }]}>
+                                                #{index + 1}
+                                            </ThemedText>
+                                        </View>
+                                        <View style={styles.memberInfo}>
+                                            <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                            <View>
+                                                <ThemedText style={styles.memberName}>
+                                                    {member.name}
+                                                    {isCurrentUser && ' (You)'}
+                                                </ThemedText>
+                                                <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                                <View style={styles.performanceInfo}>
-                                    <ThemedText style={styles.portfolioValue}>
-                                        ${(league.settings.startingBalance * (1 + Math.random() * 0.2)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                    </ThemedText>
-                                    <ThemedText style={[
-                                        styles.returnPercent,
-                                        { color: Math.random() > 0.4 ? '#4CAF50' : '#F44336' }
-                                    ]}>
-                                        {Math.random() > 0.4 ? '+' : ''}{(Math.random() * 40 - 10).toFixed(2)}%
-                                    </ThemedText>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
+                                    <View style={styles.performanceInfo}>
+                                        <ThemedText style={styles.portfolioValue}>
+                                            ${(league.settings.startingBalance * (1 + Math.random() * 0.2)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </ThemedText>
+                                        <ThemedText style={[
+                                            styles.returnPercent,
+                                            { color: Math.random() > 0.4 ? '#4CAF50' : '#F44336' }
+                                        ]}>
+                                            {Math.random() > 0.4 ? '+' : ''}{(Math.random() * 40 - 10).toFixed(2)}%
+                                        </ThemedText>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 )}
 
