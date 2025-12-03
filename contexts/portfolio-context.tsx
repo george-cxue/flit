@@ -164,7 +164,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
             ...portfolio.allocation,
             [asset]: portfolio.allocation[asset] + amount,
           },
-          totalValue: portfolio.totalValue + amount,
+          // totalValue stays the same - just converting cash to assets
         },
       };
     });
@@ -214,9 +214,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         ...prev,
         [leagueId]: {
           ...portfolio,
-          lessonRewards: portfolio.lessonRewards - totalCost,
+          liquidFunds: portfolio.liquidFunds - totalCost,
           holdings: updatedHoldings,
-          totalValue: portfolio.totalValue + totalCost,
+          // totalValue stays the same - just converting cash to stocks
         },
       };
     });

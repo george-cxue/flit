@@ -7,11 +7,11 @@ import { Stock } from '@/types/portfolio';
 import { MOCK_STOCKS } from '@/data/mock-portfolio';
 
 interface StockSearchProps {
-  lessonRewards: number;
+  liquidFunds: number;
   onBuyStock: (stock: Stock, shares: number) => void;
 }
 
-export function StockSearch({ lessonRewards, onBuyStock }: StockSearchProps) {
+export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [shares, setShares] = useState('1');
@@ -41,7 +41,7 @@ export function StockSearch({ lessonRewards, onBuyStock }: StockSearchProps) {
   const handleBuyStock = () => {
     if (selectedStock && shares) {
       const numShares = parseInt(shares);
-      if (numShares > 0 && totalCost <= lessonRewards) {
+      if (numShares > 0 && totalCost <= liquidFunds) {
         onBuyStock(selectedStock, numShares);
         setShares('1');
         setShowModal(false);
@@ -56,7 +56,7 @@ export function StockSearch({ lessonRewards, onBuyStock }: StockSearchProps) {
       <View style={styles.header}>
         <ThemedText style={styles.title}>Buy Stocks</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Lesson Rewards: ${lessonRewards.toFixed(2)}
+          Available Funds: ${liquidFunds.toFixed(2)}
         </ThemedText>
       </View>
 
@@ -164,25 +164,25 @@ export function StockSearch({ lessonRewards, onBuyStock }: StockSearchProps) {
                     <ThemedText style={styles.costValue}>${totalCost.toFixed(2)}</ThemedText>
                   </View>
                   <View style={styles.costRow}>
-                    <ThemedText style={styles.costLabel}>Available Rewards</ThemedText>
-                    <ThemedText style={styles.costValue}>${lessonRewards.toFixed(2)}</ThemedText>
+                    <ThemedText style={styles.costLabel}>Available Funds</ThemedText>
+                    <ThemedText style={styles.costValue}>${liquidFunds.toFixed(2)}</ThemedText>
                   </View>
                   <View style={styles.costRow}>
                     <ThemedText style={styles.costLabel}>Remaining</ThemedText>
                     <ThemedText
                       style={[
                         styles.costValue,
-                        { color: lessonRewards - totalCost >= 0 ? '#10b981' : '#ef4444' },
+                        { color: liquidFunds - totalCost >= 0 ? '#10b981' : '#ef4444' },
                       ]}
                     >
-                      ${(lessonRewards - totalCost).toFixed(2)}
+                      ${(liquidFunds - totalCost).toFixed(2)}
                     </ThemedText>
                   </View>
                 </View>
 
-                {totalCost > lessonRewards && (
+                {totalCost > liquidFunds && (
                   <ThemedText style={styles.errorText}>
-                    Insufficient lesson rewards to complete this purchase
+                    Insufficient funds to complete this purchase
                   </ThemedText>
                 )}
 
@@ -191,11 +191,11 @@ export function StockSearch({ lessonRewards, onBuyStock }: StockSearchProps) {
                     styles.buyButton,
                     {
                       backgroundColor:
-                        totalCost > lessonRewards || totalCost === 0 ? '#888' : primaryColor,
+                        totalCost > liquidFunds || totalCost === 0 ? '#888' : primaryColor,
                     },
                   ]}
                   onPress={handleBuyStock}
-                  disabled={totalCost > lessonRewards || totalCost === 0}
+                  disabled={totalCost > liquidFunds || totalCost === 0}
                 >
                   <ThemedText style={styles.buyButtonText}>Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}</ThemedText>
                 </TouchableOpacity>
