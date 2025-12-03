@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { usePortfolio } from '@/contexts/portfolio-context';
 
 export default function FantasyHubScreen() {
   const router = useRouter();
@@ -18,10 +19,17 @@ export default function FantasyHubScreen() {
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
+  const { getPortfolioByLeague, setSelectedLeagueId, ensurePortfolioExists } = usePortfolio();
+
   const fetchLeagues = async () => {
     try {
       const data = await LeagueService.getLeagues();
       setLeagues(data);
+
+      // Ensure each league has an associated portfolio
+      data.forEach((league) => {
+        ensurePortfolioExists(league.id, league.name);
+      });
     } catch (error) {
       console.error('Failed to fetch leagues:', error);
     } finally {
@@ -110,13 +118,67 @@ export default function FantasyHubScreen() {
           )}
         </View>
 
-        {/* Market Highlights (Placeholder) */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Market Highlights</ThemedText>
-          <View style={[styles.marketCard, { backgroundColor: cardBg, borderColor }]}>
-            <ThemedText>Market data coming soon...</ThemedText>
+        {/* League Portfolios - Each league has an associated portfolio */}
+        {leagues.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle">League Portfolios</ThemedText>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}>
+                <ThemedText style={[styles.createLink, { color: primaryColor }]}>View All</ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            {leagues.map((league) => {
+              const portfolio = getPortfolioByLeague(league.id);
+              if (!portfolio) return null;
+
+              return (
+                <TouchableOpacity
+                  key={league.id}
+                  style={[styles.portfolioCard, { backgroundColor: cardBg, borderColor }]}
+                  onPress={() => {
+                    setSelectedLeagueId(league.id);
+                    router.push('/(tabs)/portfolio');
+                  }}
+                >
+                  <View style={styles.portfolioHeader}>
+                    <View>
+                      <ThemedText style={styles.portfolioLeagueName}>{league.name}</ThemedText>
+                      <ThemedText style={styles.portfolioMemberCount}>
+                        {league.members?.length || 0} members • Week {league.currentWeek || 0}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.portfolioValueContainer}>
+                      <ThemedText style={styles.portfolioValueLabel}>Portfolio Value</ThemedText>
+                      <ThemedText style={styles.portfolioValue}>
+                        ${portfolio.totalValue.toFixed(2)}
+                      </ThemedText>
+                    </View>
+                  </View>
+
+                  <View style={styles.portfolioStats}>
+                    <View style={styles.portfolioStat}>
+                      <ThemedText style={styles.statLabel}>Holdings</ThemedText>
+                      <ThemedText style={styles.statValue}>{portfolio.holdings.length}</ThemedText>
+                    </View>
+                    <View style={styles.portfolioStat}>
+                      <ThemedText style={styles.statLabel}>Liquid Funds</ThemedText>
+                      <ThemedText style={[styles.statValue, { color: primaryColor }]}>
+                        ${portfolio.liquidFunds.toFixed(0)}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.portfolioStat}>
+                      <ThemedText style={styles.statLabel}>Rewards</ThemedText>
+                      <ThemedText style={[styles.statValue, { color: '#10B981' }]}>
+                        ${portfolio.lessonRewards.toFixed(0)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </View>
+        )}
 
       </ScrollView>
     </ThemedView>
@@ -222,5 +284,57 @@ const styles = StyleSheet.create({
     minHeight: 100,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  portfolioCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  portfolioHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  portfolioLeagueName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  portfolioMemberCount: {
+    fontSize: 13,
+    opacity: 0.6,
+  },
+  portfolioValueContainer: {
+    alignItems: 'flex-end',
+  },
+  portfolioValueLabel: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginBottom: 4,
+  },
+  portfolioValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  portfolioStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  portfolioStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 11,
+    opacity: 0.6,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
