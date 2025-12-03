@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -7,85 +7,34 @@ import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { StockSearch } from '@/components/portfolio/stock-search';
 import { HoldingsList } from '@/components/portfolio/holdings-list';
-import { MOCK_LEAGUES, MOCK_PORTFOLIOS, MOCK_SP500 } from '@/data/mock-portfolio';
-import { TimeFrame, AssetAllocation, Stock } from '@/types/portfolio';
+import { MOCK_LEAGUES, MOCK_SP500 } from '@/data/mock-portfolio';
+import { AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
+import { usePortfolio } from '@/contexts/portfolio-context';
 
 export default function PortfolioScreen() {
-  const [selectedLeagueId, setSelectedLeagueId] = useState(MOCK_LEAGUES[0].id);
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>('1M');
-  const [portfolios, setPortfolios] = useState(MOCK_PORTFOLIOS);
+  const {
+    selectedLeagueId,
+    setSelectedLeagueId,
+    timeFrame,
+    setTimeFrame,
+    allocateFunds,
+    buyStock,
+    getCurrentPortfolio,
+  } = usePortfolio();
 
   const primaryColor = useThemeColor({}, 'tint');
   const cardBackground = useThemeColor({}, 'cardBackground');
   const borderColor = useThemeColor({}, 'border');
 
-  const currentPortfolio = portfolios[selectedLeagueId];
+  const currentPortfolio = getCurrentPortfolio();
   const currentLeague = MOCK_LEAGUES.find((league) => league.id === selectedLeagueId);
 
   const handleAllocate = (asset: keyof AssetAllocation, amount: number) => {
-    setPortfolios((prev) => ({
-      ...prev,
-      [selectedLeagueId]: {
-        ...prev[selectedLeagueId],
-        liquidFunds: prev[selectedLeagueId].liquidFunds - amount,
-        allocation: {
-          ...prev[selectedLeagueId].allocation,
-          [asset]: prev[selectedLeagueId].allocation[asset] + amount,
-        },
-        totalValue: prev[selectedLeagueId].totalValue + amount,
-      },
-    }));
+    allocateFunds(selectedLeagueId, asset, amount);
   };
 
   const handleBuyStock = (stock: Stock, shares: number) => {
-    const totalCost = stock.currentPrice * shares;
-    setPortfolios((prev) => {
-      const existingHolding = prev[selectedLeagueId].holdings.find(
-        (h) => h.symbol === stock.symbol
-      );
-
-      let updatedHoldings;
-      if (existingHolding) {
-        const totalShares = existingHolding.shares + shares;
-        const newAveragePrice =
-          (existingHolding.averagePrice * existingHolding.shares + totalCost) / totalShares;
-
-        updatedHoldings = prev[selectedLeagueId].holdings.map((h) =>
-          h.symbol === stock.symbol
-            ? {
-                ...h,
-                shares: totalShares,
-                averagePrice: newAveragePrice,
-                totalValue: stock.currentPrice * totalShares,
-                changePercent: ((stock.currentPrice - newAveragePrice) / newAveragePrice) * 100,
-              }
-            : h
-        );
-      } else {
-        updatedHoldings = [
-          ...prev[selectedLeagueId].holdings,
-          {
-            symbol: stock.symbol,
-            name: stock.name,
-            shares,
-            averagePrice: stock.currentPrice,
-            currentPrice: stock.currentPrice,
-            totalValue: totalCost,
-            changePercent: 0,
-          },
-        ];
-      }
-
-      return {
-        ...prev,
-        [selectedLeagueId]: {
-          ...prev[selectedLeagueId],
-          lessonRewards: prev[selectedLeagueId].lessonRewards - totalCost,
-          holdings: updatedHoldings,
-          totalValue: prev[selectedLeagueId].totalValue + totalCost,
-        },
-      };
-    });
+    buyStock(selectedLeagueId, stock, shares);
   };
 
   return (
