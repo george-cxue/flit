@@ -17,25 +17,19 @@ export default function CreateLeagueScreen() {
     // Required Settings
     const [leagueName, setLeagueName] = useState('');
     const [leagueSize, setLeagueSize] = useState(12);
-    const [seasonLength, setSeasonLength] = useState(10);
-    const [draftDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
+    const [startingBalance, setStartingBalance] = useState(10000);
+    const [competitionPeriod, setCompetitionPeriod] = useState<'1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year'>('1_month');
+    const [startDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
 
     // Advanced Settings Toggle
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     // Advanced Settings (Defaults)
-    const [portfolioSize, setPortfolioSize] = useState(10);
-    const [activeSlots] = useState(7);
-    const [benchSlots] = useState(3);
     const [scoringMethod, setScoringMethod] = useState<'Total Return %' | 'Absolute Gain $'>('Total Return %');
     const [enabledAssetClasses, setEnabledAssetClasses] = useState<AssetType[]>(['Stock']);
     const [minAssetPrice, setMinAssetPrice] = useState('1.00');
-    const [draftType, setDraftType] = useState<'Snake' | 'Auction'>('Snake');
-    const [draftTimePerPick, setDraftTimePerPick] = useState(60);
-    const [matchupType, setMatchupType] = useState<'Head-to-head' | 'Rotisserie'>('Head-to-head');
-    const [playoffsEnabled, setPlayoffsEnabled] = useState(true);
-    const [tradeDeadlineWeek, setTradeDeadlineWeek] = useState(7);
-    const [waiverPriority, setWaiverPriority] = useState<'Rolling' | 'Reverse Standings'>('Reverse Standings');
+    const [allowShortSelling, setAllowShortSelling] = useState(false);
+    const [tradingEnabled, setTradingEnabled] = useState(true);
 
     const [loading, setLoading] = useState(false);
 
@@ -57,20 +51,14 @@ export default function CreateLeagueScreen() {
         try {
             const settings: LeagueSettings = {
                 leagueSize,
-                seasonLength,
-                draftDate,
-                portfolioSize,
-                activeSlots,
-                benchSlots,
+                startingBalance,
+                competitionPeriod,
+                startDate,
                 scoringMethod,
                 enabledAssetClasses,
                 minAssetPrice: parseFloat(minAssetPrice) || 0,
-                draftType,
-                draftTimePerPick,
-                matchupType,
-                playoffsEnabled,
-                tradeDeadlineWeek,
-                waiverPriority,
+                allowShortSelling,
+                tradingEnabled,
             };
 
             await LeagueService.createLeague(leagueName, settings);
@@ -137,33 +125,49 @@ export default function CreateLeagueScreen() {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>Season Length (Weeks)</ThemedText>
+                        <ThemedText style={styles.label}>Starting Balance</ThemedText>
+                        <View style={styles.row}>
+                            <ThemedText>${startingBalance.toLocaleString()}</ThemedText>
+                            <View style={styles.stepper}>
+                                <TouchableOpacity onPress={() => setStartingBalance(Math.max(1000, startingBalance - 1000))}><ThemedText style={styles.stepperBtn}>-</ThemedText></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setStartingBalance(Math.min(1000000, startingBalance + 1000))}><ThemedText style={styles.stepperBtn}>+</ThemedText></TouchableOpacity>
+                            </View>
+                        </View>
+                        <ThemedText style={styles.helperText}>Amount each player starts with</ThemedText>
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <ThemedText style={styles.label}>Competition Period</ThemedText>
                         <View style={styles.optionsRow}>
-                            {[8, 10, 12].map(weeks => (
-                                <View key={weeks} style={{ flex: 1 }}>
-                                    {renderOptionButton(weeks, seasonLength === weeks, () => setSeasonLength(weeks))}
+                            {[
+                                { value: '1_week', label: '1 Week' },
+                                { value: '2_weeks', label: '2 Weeks' },
+                                { value: '1_month', label: '1 Month' },
+                            ].map(period => (
+                                <View key={period.value} style={{ flex: 1 }}>
+                                    {renderOptionButton(period.label, competitionPeriod === period.value, () => setCompetitionPeriod(period.value as any))}
+                                </View>
+                            ))}
+                        </View>
+                        <View style={[styles.optionsRow, { marginTop: 8 }]}>
+                            {[
+                                { value: '3_months', label: '3 Months' },
+                                { value: '6_months', label: '6 Months' },
+                                { value: '1_year', label: '1 Year' },
+                            ].map(period => (
+                                <View key={period.value} style={{ flex: 1 }}>
+                                    {renderOptionButton(period.label, competitionPeriod === period.value, () => setCompetitionPeriod(period.value as any))}
                                 </View>
                             ))}
                         </View>
                     </View>
 
                     <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>Draft Date</ThemedText>
+                        <ThemedText style={styles.label}>Start Date</ThemedText>
                         <View style={[styles.input, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
-                            <ThemedText>{new Date(draftDate).toLocaleString()}</ThemedText>
+                            <ThemedText>{new Date(startDate).toLocaleString()}</ThemedText>
                         </View>
-                        <ThemedText style={styles.helperText}>Default set to tomorrow. (Mock)</ThemedText>
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>Portfolio Size</ThemedText>
-                        <View style={styles.row}>
-                            <ThemedText>Total Slots: {portfolioSize}</ThemedText>
-                            <View style={styles.stepper}>
-                                <TouchableOpacity onPress={() => setPortfolioSize(Math.max(5, portfolioSize - 1))}><ThemedText style={styles.stepperBtn}>-</ThemedText></TouchableOpacity>
-                                <TouchableOpacity onPress={() => setPortfolioSize(Math.min(20, portfolioSize + 1))}><ThemedText style={styles.stepperBtn}>+</ThemedText></TouchableOpacity>
-                            </View>
-                        </View>
+                        <ThemedText style={styles.helperText}>Competition begins tomorrow (Mock)</ThemedText>
                     </View>
 
                     <View style={styles.formGroup}>
@@ -215,61 +219,31 @@ export default function CreateLeagueScreen() {
                                 onChangeText={setMinAssetPrice}
                                 keyboardType="numeric"
                             />
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Draft Type</ThemedText>
-                            <View style={styles.optionsRow}>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Snake', draftType === 'Snake', () => setDraftType('Snake'))}</View>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Auction', draftType === 'Auction', () => setDraftType('Auction'))}</View>
-                            </View>
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Time per Pick (Seconds)</ThemedText>
-                            <View style={styles.optionsRow}>
-                                {[30, 60, 90, 120].map(time => (
-                                    <View key={time} style={{ flex: 1 }}>
-                                        {renderOptionButton(time, draftTimePerPick === time, () => setDraftTimePerPick(time))}
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Matchup Type</ThemedText>
-                            <View style={styles.optionsRow}>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Head-to-head', matchupType === 'Head-to-head', () => setMatchupType('Head-to-head'))}</View>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Rotisserie', matchupType === 'Rotisserie', () => setMatchupType('Rotisserie'))}</View>
-                            </View>
+                            <ThemedText style={styles.helperText}>Minimum stock price to be available</ThemedText>
                         </View>
 
                         <View style={[styles.switchRow, { paddingHorizontal: 0 }]}>
-                            <ThemedText style={styles.label}>Playoffs Enabled</ThemedText>
+                            <View>
+                                <ThemedText style={styles.label}>Trading Enabled</ThemedText>
+                                <ThemedText style={[styles.helperText, { marginTop: 2 }]}>Allow buying/selling after start</ThemedText>
+                            </View>
                             <Switch
-                                value={playoffsEnabled}
-                                onValueChange={setPlayoffsEnabled}
+                                value={tradingEnabled}
+                                onValueChange={setTradingEnabled}
                                 trackColor={{ false: '#767577', true: primaryColor }}
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Trade Deadline (Week)</ThemedText>
-                            <View style={styles.row}>
-                                <ThemedText>Week {tradeDeadlineWeek}</ThemedText>
-                                <View style={styles.stepper}>
-                                    <TouchableOpacity onPress={() => setTradeDeadlineWeek(Math.max(1, tradeDeadlineWeek - 1))}><ThemedText style={styles.stepperBtn}>-</ThemedText></TouchableOpacity>
-                                    <TouchableOpacity onPress={() => setTradeDeadlineWeek(Math.min(seasonLength, tradeDeadlineWeek + 1))}><ThemedText style={styles.stepperBtn}>+</ThemedText></TouchableOpacity>
-                                </View>
+                        <View style={[styles.switchRow, { paddingHorizontal: 0 }]}>
+                            <View>
+                                <ThemedText style={styles.label}>Allow Short Selling</ThemedText>
+                                <ThemedText style={[styles.helperText, { marginTop: 2 }]}>Enable short positions (Advanced)</ThemedText>
                             </View>
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Waiver Priority</ThemedText>
-                            <View style={styles.optionsRow}>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Rolling', waiverPriority === 'Rolling', () => setWaiverPriority('Rolling'))}</View>
-                                <View style={{ flex: 1 }}>{renderOptionButton('Rev. Standings', waiverPriority === 'Reverse Standings', () => setWaiverPriority('Reverse Standings'))}</View>
-                            </View>
+                            <Switch
+                                value={allowShortSelling}
+                                onValueChange={setAllowShortSelling}
+                                trackColor={{ false: '#767577', true: primaryColor }}
+                            />
                         </View>
                     </View>
                 )}

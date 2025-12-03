@@ -26,20 +26,14 @@ export interface User {
 
 export interface LeagueSettings {
   leagueSize: number;
-  seasonLength: number;
-  draftDate: string; // ISO date string
-  portfolioSize: number;
-  activeSlots: number;
-  benchSlots: number;
+  startingBalance: number;
+  competitionPeriod: '1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year';
+  startDate: string; // ISO date string
   scoringMethod: 'Total Return %' | 'Absolute Gain $';
   enabledAssetClasses: AssetType[];
   minAssetPrice: number;
-  draftType: 'Snake' | 'Auction';
-  draftTimePerPick: number;
-  matchupType: 'Head-to-head' | 'Rotisserie';
-  playoffsEnabled: boolean;
-  tradeDeadlineWeek: number;
-  waiverPriority: 'Rolling' | 'Reverse Standings';
+  allowShortSelling: boolean;
+  tradingEnabled: boolean;
 }
 
 export interface League {
@@ -48,19 +42,23 @@ export interface League {
   adminUserId: string;
   members: User[];
   settings: LeagueSettings;
-  status: 'pre-draft' | 'drafting' | 'active' | 'completed';
+  status: 'pending' | 'active' | 'completed';
   currentWeek: number;
+  joinCode?: string;
 }
 
 export interface PortfolioSlot {
   id: string;
   assetId: string;
   asset?: Asset; // Hydrated asset
-  status: 'ACTIVE' | 'BENCH';
-  acquiredAt: string;
-  purchasePrice: number;
-  currentValue: number;
+  shares: number;
+  averageCost: number; // Average cost per share
+  currentPrice: number;
+  totalValue: number;
+  gainLoss: number;
   gainLossPercent: number;
+  status?: 'ACTIVE' | 'BENCH'; // Optional, for draft leagues
+  acquiredAt: string;
 }
 
 export interface Portfolio {
@@ -68,9 +66,12 @@ export interface Portfolio {
   leagueId: string;
   userId: string;
   name: string;
+  cashBalance: number;
   slots: PortfolioSlot[];
+  totalHoldingsValue: number;
   totalValue: number;
-  weeklyReturn: number;
+  weeklyGainLoss: number;
+  weeklyGainLossPercent: number;
 }
 
 export interface DraftPick {

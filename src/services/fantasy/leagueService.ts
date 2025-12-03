@@ -40,4 +40,26 @@ export const LeagueService = {
             throw handleApiError(error);
         }
     },
+
+    startCompetition: async (leagueId: string): Promise<void> => {
+        try {
+            await apiClient.post(`/fantasy-leagues/${leagueId}/start`, {
+                userId: CURRENT_USER_ID
+            });
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    joinByCode: async (joinCode: string): Promise<{ league: League; membership: any }> => {
+        try {
+            const response = await apiClient.post('/fantasy-leagues/join-by-code', {
+                joinCode: joinCode.toUpperCase(),
+                userId: CURRENT_USER_ID
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 };

@@ -54,6 +54,10 @@ export default function FantasyHubScreen() {
     router.push('/fantasy/create-league');
   };
 
+  const handleJoinLeague = () => {
+    router.push('/fantasy/join-league');
+  };
+
   const handleLeaguePress = (leagueId: string) => {
     router.push(`/fantasy/league/${leagueId}`);
   };
@@ -82,20 +86,34 @@ export default function FantasyHubScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <ThemedText type="subtitle">Your Leagues</ThemedText>
-            <TouchableOpacity onPress={handleCreateLeague}>
-              <ThemedText style={[styles.createLink, { color: primaryColor }]}>+ Create New</ThemedText>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={handleJoinLeague}>
+                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Join League</ThemedText>
+              </TouchableOpacity>
+              <ThemedText style={styles.dividerDot}>•</ThemedText>
+              <TouchableOpacity onPress={handleCreateLeague}>
+                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Create New</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {leagues.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: cardBg, borderColor }]}>
               <ThemedText style={styles.emptyStateText}>You haven't joined any leagues yet.</ThemedText>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-                onPress={handleCreateLeague}
-              >
-                <ThemedText style={styles.primaryButtonText}>Create a League</ThemedText>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: primaryColor }]}
+                  onPress={handleCreateLeague}
+                >
+                  <ThemedText style={styles.primaryButtonText}>Create League</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: primaryColor }]}
+                  onPress={handleJoinLeague}
+                >
+                  <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Join League</ThemedText>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             leagues.map((league) => (
@@ -223,6 +241,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: 12,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dividerDot: {
+    fontSize: 14,
+    opacity: 0.5,
+  },
   createLink: {
     fontSize: 16,
     fontWeight: '600',
@@ -238,6 +265,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     opacity: 0.7,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   primaryButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -245,6 +276,15 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
     fontWeight: '600',
   },
   leagueCard: {

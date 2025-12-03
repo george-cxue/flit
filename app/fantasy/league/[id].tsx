@@ -5,7 +5,7 @@ import { LeagueService } from '@/src/services/fantasy/leagueService';
 import { League } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share } from 'react-native';
 
 export default function LeagueDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -23,20 +23,18 @@ export default function LeagueDetailScreen() {
                 if (typeof id === 'string') {
                     const data = await LeagueService.getLeagueById(id);
                     setLeague(data || null);
+                    // TODO: Fetch portfolios from API
+                    // const portfoliosData = await LeagueService.getLeaguePortfolios(id);
+                    // setPortfolios(portfoliosData);
                 }
             } catch (error) {
                 setLeague(null);
-                // Optionally, you could log the error or set an error state here
             } finally {
                 setLoading(false);
             }
         };
         fetchLeague();
     }, [id]);
-
-    const handleEnterDraft = () => {
-        router.push(`/fantasy/draft/${id}`);
-    };
 
     if (loading) {
         return (
@@ -54,100 +52,237 @@ export default function LeagueDetailScreen() {
         );
     }
 
+    // Check if competition has started
+    const now = new Date();
+    const startDate = new Date(league.settings.startDate);
+    const competitionStarted = now >= startDate;
+
+    // Calculate end date based on competition period
+    const getEndDate = () => {
+        const end = new Date(startDate);
+        switch (league.settings.competitionPeriod) {
+            case '1_week': end.setDate(end.getDate() + 7); break;
+            case '2_weeks': end.setDate(end.getDate() + 14); break;
+            case '1_month': end.setMonth(end.getMonth() + 1); break;
+            case '3_months': end.setMonth(end.getMonth() + 3); break;
+            case '6_months': end.setMonth(end.getMonth() + 6); break;
+            case '1_year': end.setFullYear(end.getFullYear() + 1); break;
+        }
+        return end;
+    };
+
+    const endDate = getEndDate();
+    const competitionEnded = now >= endDate;
+
+    const formatPeriod = (period: string) => {
+        return period.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    const handleShareCode = async () => {
+        if (!league.joinCode) return;
+
+        try {
+            await Share.share({
+                message: `Join my league "${league.name}"! Use code: ${league.joinCode}`,
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
+    };
+
+    const handleStartCompetition = async () => {
+        console.log('Start competition button pressed');
+
+        try {
+            console.log('Starting competition for league:', league.id);
+            await LeagueService.startCompetition(league.id);
+            console.log('Competition started successfully');
+
+            // Reload the page to show updated status
+            const updatedLeague = await LeagueService.getLeagueById(league.id);
+            console.log('Updated league:', updatedLeague);
+            if (updatedLeague) {
+                setLeague(updatedLeague);
+            }
+            Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
+        } catch (error) {
+            console.error('Start competition error:', error);
+            Alert.alert('Error', 'Failed to start competition. Please try again.');
+        }
+    };
+
+    const isAdmin = league.adminUserId === 'user_1'; // TODO: Get actual current user ID
+
+    console.log('League admin check:', {
+        adminUserId: league.adminUserId,
+        isAdmin,
+        competitionStarted
+    });
+
     return (
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
                     <ThemedText type="title">{league.name}</ThemedText>
-                    <View style={[styles.statusBadge, { backgroundColor: league.status === 'active' ? '#4CAF50' : '#FFC107' }]}>
-                        <ThemedText style={styles.statusText}>{league.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
+                    <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: competitionEnded ? '#9E9E9E' : competitionStarted ? '#4CAF50' : '#FFC107' }
+                    ]}>
+                        <ThemedText style={styles.statusText}>
+                            {competitionEnded ? 'COMPLETED' : competitionStarted ? 'ACTIVE' : 'PENDING'}
+                        </ThemedText>
                     </View>
                 </View>
 
-                {/* Draft Status */}
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-                    <ThemedText type="subtitle" style={styles.cardTitle}>Draft</ThemedText>
-                    <ThemedText style={styles.draftDate}>
-                        {new Date(league.settings.draftDate).toLocaleString()}
-                    </ThemedText>
+                {/* Debug info - remove after testing */}
+                <ThemedText style={{ fontSize: 10, opacity: 0.5 }}>
+                    Admin: {league.adminUserId} | Is Admin: {isAdmin ? 'Yes' : 'No'}
+                </ThemedText>
 
-                    {league.status === 'pre-draft' || league.status === 'drafting' ? (
-                        <TouchableOpacity
-                            style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-                            onPress={handleEnterDraft}
-                        >
-                            <ThemedText style={styles.primaryButtonText}>
-                                {league.status === 'drafting' ? 'Enter Draft Room' : 'Enter Draft Lobby'}
+                {/* Competition Status */}
+                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                    <ThemedText type="subtitle" style={styles.cardTitle}>Competition Period</ThemedText>
+                    <ThemedText style={styles.periodText}>{formatPeriod(league.settings.competitionPeriod)}</ThemedText>
+                    <View style={styles.dateRange}>
+                        <ThemedText style={styles.dateText}>
+                            {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                        </ThemedText>
+                    </View>
+
+                    {!competitionStarted ? (
+                        <View style={styles.notStartedContainer}>
+                            <ThemedText style={styles.notStartedText}>
+                                Competition starts on {startDate.toLocaleString()}
                             </ThemedText>
-                        </TouchableOpacity>
-                    ) : (
-                        <View>
-                            <ThemedText style={[styles.completedText, { marginBottom: 12 }]}>Draft Completed</ThemedText>
+                            <ThemedText style={[styles.notStartedText, { marginTop: 8 }]}>
+                                Players can start trading once the competition begins.
+                            </ThemedText>
+
+                            {/* Test button - always visible for debugging */}
                             <TouchableOpacity
-                                style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-                                onPress={() => router.push(`/fantasy/portfolio/${id}`)}
+                                style={[styles.primaryButton, { backgroundColor: '#FF0000', marginTop: 12 }]}
+                                onPress={() => {
+                                    console.log('TEST BUTTON PRESSED');
+                                    Alert.alert('Test', 'Button works!');
+                                }}
                             >
-                                <ThemedText style={styles.primaryButtonText}>My Portfolio</ThemedText>
+                                <ThemedText style={styles.primaryButtonText}>TEST BUTTON</ThemedText>
                             </TouchableOpacity>
 
-                            {league.status === 'active' && (
-                                <View style={{ gap: 12, marginTop: 12 }}>
-                                    <TouchableOpacity
-                                        style={[styles.secondaryButton, { borderColor: primaryColor }]}
-                                        onPress={() => router.push(`/fantasy/matchup/${id}`)}
-                                    >
-                                        <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>View Matchup</ThemedText>
-                                    </TouchableOpacity>
-
-                                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                                        <TouchableOpacity
-                                            style={[styles.secondaryButton, { borderColor: primaryColor, flex: 1 }]}
-                                            onPress={() => router.push(`/fantasy/players/${id}`)}
-                                        >
-                                            <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Players</ThemedText>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.secondaryButton, { borderColor: primaryColor, flex: 1 }]}
-                                            onPress={() => router.push(`/fantasy/trade/${id}`)}
-                                        >
-                                            <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Trade</ThemedText>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
+                            {isAdmin && (
+                                <TouchableOpacity
+                                    style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
+                                    onPress={handleStartCompetition}
+                                >
+                                    <ThemedText style={styles.primaryButtonText}>Start Competition Now</ThemedText>
+                                </TouchableOpacity>
                             )}
                         </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
+                            onPress={() => router.push(`/fantasy/trade/${id}`)}
+                        >
+                            <ThemedText style={styles.primaryButtonText}>
+                                {competitionEnded ? 'View Final Results' : 'Manage Portfolio'}
+                            </ThemedText>
+                        </TouchableOpacity>
                     )}
                 </View>
 
-                {/* Members */}
-                <View style={styles.section}>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Members</ThemedText>
-                    {league.members.map((member) => (
-                        <View key={member.id} style={[styles.memberRow, { borderBottomColor: borderColor }]}>
-                            <View style={styles.memberInfo}>
-                                <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
-                                <View>
-                                    <ThemedText style={styles.memberName}>{member.name}</ThemedText>
-                                    <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
-                                </View>
-                            </View>
-                            {member.id === league.adminUserId && (
-                                <View style={[styles.adminBadge, { borderColor: primaryColor }]}>
-                                    <ThemedText style={[styles.adminText, { color: primaryColor }]}>Admin</ThemedText>
-                                </View>
-                            )}
+                {/* Join Code */}
+                {league.joinCode && !competitionEnded && (
+                    <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                        <ThemedText type="subtitle" style={styles.cardTitle}>League Join Code</ThemedText>
+                        <View style={styles.joinCodeContainer}>
+                            <ThemedText style={styles.joinCodeText}>{league.joinCode}</ThemedText>
+                            <TouchableOpacity
+                                style={[styles.shareButton, { backgroundColor: primaryColor }]}
+                                onPress={handleShareCode}
+                            >
+                                <ThemedText style={styles.shareButtonText}>Share</ThemedText>
+                            </TouchableOpacity>
                         </View>
-                    ))}
-                </View>
+                        <ThemedText style={styles.helperText}>
+                            Share this code with friends to invite them to your league
+                        </ThemedText>
+                    </View>
+                )}
+
+                {/* Portfolio Rankings */}
+                {competitionStarted && (
+                    <View style={styles.section}>
+                        <ThemedText type="subtitle" style={styles.sectionTitle}>Portfolio Rankings</ThemedText>
+                        {league.members.map((member, index) => (
+                            <TouchableOpacity
+                                key={member.id}
+                                style={[styles.rankingRow, { borderBottomColor: borderColor, backgroundColor: cardBg }]}
+                                onPress={() => router.push(`/fantasy/portfolio/${id}?userId=${member.id}`)}
+                            >
+                                <View style={styles.rankInfo}>
+                                    <View style={[
+                                        styles.rankBadge,
+                                        { backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#E0E0E0' }
+                                    ]}>
+                                        <ThemedText style={[styles.rankText, { color: index < 3 ? '#000' : '#666' }]}>
+                                            #{index + 1}
+                                        </ThemedText>
+                                    </View>
+                                    <View style={styles.memberInfo}>
+                                        <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                        <View>
+                                            <ThemedText style={styles.memberName}>{member.name}</ThemedText>
+                                            <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                        </View>
+                                    </View>
+                                </View>
+                                <View style={styles.performanceInfo}>
+                                    <ThemedText style={styles.portfolioValue}>
+                                        ${(league.settings.startingBalance * (1 + Math.random() * 0.2)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </ThemedText>
+                                    <ThemedText style={[
+                                        styles.returnPercent,
+                                        { color: Math.random() > 0.4 ? '#4CAF50' : '#F44336' }
+                                    ]}>
+                                        {Math.random() > 0.4 ? '+' : ''}{(Math.random() * 40 - 10).toFixed(2)}%
+                                    </ThemedText>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
+                {/* Members */}
+                {!competitionStarted && (
+                    <View style={styles.section}>
+                        <ThemedText type="subtitle" style={styles.sectionTitle}>Members</ThemedText>
+                        {league.members.map((member) => (
+                            <View key={member.id} style={[styles.memberRow, { borderBottomColor: borderColor }]}>
+                                <View style={styles.memberInfo}>
+                                    <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                    <View>
+                                        <ThemedText style={styles.memberName}>{member.name}</ThemedText>
+                                        <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                    </View>
+                                </View>
+                                {member.id === league.adminUserId && (
+                                    <View style={[styles.adminBadge, { borderColor: primaryColor }]}>
+                                        <ThemedText style={[styles.adminText, { color: primaryColor }]}>Admin</ThemedText>
+                                    </View>
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 {/* Settings Summary */}
                 <View style={styles.section}>
                     <ThemedText type="subtitle" style={styles.sectionTitle}>League Settings</ThemedText>
                     <View style={[styles.settingsCard, { backgroundColor: cardBg, borderColor }]}>
-                        <SettingRow label="Season Length" value={`${league.settings.seasonLength} Weeks`} />
-                        <SettingRow label="Portfolio Size" value={`${league.settings.portfolioSize} Slots`} />
+                        <SettingRow label="League Size" value={`${league.settings.leagueSize} Players`} />
+                        <SettingRow label="Starting Balance" value={`$${league.settings.startingBalance.toLocaleString()}`} />
                         <SettingRow label="Scoring" value={league.settings.scoringMethod} />
-                        <SettingRow label="Draft Type" value={league.settings.draftType} />
+                        <SettingRow label="Trading" value={league.settings.tradingEnabled ? 'Enabled' : 'Disabled'} />
                     </View>
                 </View>
 
@@ -203,10 +338,28 @@ const styles = StyleSheet.create({
     cardTitle: {
         marginBottom: 8,
     },
-    draftDate: {
-        fontSize: 16,
-        marginBottom: 16,
+    periodText: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    dateRange: {
+        marginBottom: 12,
+    },
+    dateText: {
+        fontSize: 14,
+        opacity: 0.7,
+    },
+    notStartedContainer: {
+        marginTop: 12,
+        padding: 16,
+        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+        borderRadius: 8,
+    },
+    notStartedText: {
+        fontSize: 14,
         opacity: 0.8,
+        textAlign: 'center',
     },
     primaryButton: {
         paddingVertical: 12,
@@ -218,25 +371,38 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 16,
     },
-    secondaryButton: {
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        borderWidth: 1,
-    },
-    secondaryButtonText: {
-        fontWeight: '600',
-        fontSize: 16,
-    },
-    completedText: {
-        opacity: 0.6,
-        fontStyle: 'italic',
-    },
     section: {
         marginBottom: 24,
     },
     sectionTitle: {
         marginBottom: 12,
+    },
+    rankingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        marginBottom: 8,
+        borderRadius: 12,
+        borderBottomWidth: 1,
+    },
+    rankInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    rankBadge: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rankText: {
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     memberRow: {
         flexDirection: 'row',
@@ -259,6 +425,17 @@ const styles = StyleSheet.create({
     memberUsername: {
         fontSize: 12,
         opacity: 0.6,
+    },
+    performanceInfo: {
+        alignItems: 'flex-end',
+    },
+    portfolioValue: {
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    returnPercent: {
+        fontSize: 14,
+        fontWeight: '600',
     },
     adminBadge: {
         borderWidth: 1,
@@ -285,5 +462,32 @@ const styles = StyleSheet.create({
     },
     settingValue: {
         fontWeight: '600',
+    },
+    joinCodeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    joinCodeText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        letterSpacing: 2,
+    },
+    shareButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+    },
+    shareButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    helperText: {
+        fontSize: 12,
+        opacity: 0.6,
+        marginTop: 4,
     },
 });
