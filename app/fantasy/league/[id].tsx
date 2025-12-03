@@ -5,7 +5,7 @@ import { LeagueService } from '@/src/services/fantasy/leagueService';
 import { League } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
 
 export default function LeagueDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -104,48 +104,81 @@ export default function LeagueDetailScreen() {
             if (updatedLeague) {
                 setLeague(updatedLeague);
             }
-            Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
+            
+            if (Platform.OS === 'web') {
+                window.alert('Competition started! Status should now be ACTIVE.');
+            } else {
+                Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
+            }
         } catch (error) {
             console.error('Start competition error:', error);
-            Alert.alert('Error', 'Failed to start competition. Please try again.');
+            if (Platform.OS === 'web') {
+                window.alert('Failed to start competition. Please try again.');
+            } else {
+                Alert.alert('Error', 'Failed to start competition. Please try again.');
+            }
         }
     };
 
     const handleLeaveLeague = () => {
-        Alert.alert(
-            'Leave League',
-            'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Leave',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const result = await LeagueService.leaveLeague(league.id);
-
-                            // Navigate to league tab first (before showing alert)
-                            router.push('/(tabs)/league');
-
-                            // Show success message after navigation
-                            setTimeout(() => {
-                                if (result.leagueDeleted) {
-                                    Alert.alert('Success', 'You left the league. The league was deleted as no members remain.');
-                                } else {
-                                    Alert.alert('Success', 'You have successfully left the league.');
-                                }
-                            }, 500);
-                        } catch (error) {
-                            console.error('Error leaving league:', error);
-                            Alert.alert('Error', 'Failed to leave league. Please try again.');
-                        }
+        // Web-compatible confirmation
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(
+                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.'
+            );
+            if (confirmed) {
+                performLeaveLeague();
+            }
+        } else {
+            // Native alert for iOS/Android
+            Alert.alert(
+                'Leave League',
+                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
                     },
-                },
-            ]
-        );
+                    {
+                        text: 'Leave',
+                        style: 'destructive',
+                        onPress: performLeaveLeague,
+                    },
+                ]
+            );
+        }
+    };
+
+    const performLeaveLeague = async () => {
+        try {
+            console.log('Leaving league:', league.id);
+            const result = await LeagueService.leaveLeague(league.id);
+            console.log('Leave league result:', result);
+
+            // Navigate to league tab first (before showing alert)
+            router.push('/(tabs)/league');
+
+            // Show success message after navigation
+            setTimeout(() => {
+                const successMessage = result.leagueDeleted 
+                    ? 'You left the league. The league was deleted as no members remain.'
+                    : 'You have successfully left the league.';
+                
+                if (Platform.OS === 'web') {
+                    window.alert(successMessage);
+                } else {
+                    Alert.alert('Success', successMessage);
+                }
+            }, 500);
+        } catch (error) {
+            console.error('Error leaving league:', error);
+            const errorMessage = 'Failed to leave league. Please try again.';
+            if (Platform.OS === 'web') {
+                window.alert(errorMessage);
+            } else {
+                Alert.alert('Error', errorMessage);
+            }
+        }
     };
 
     const isAdmin = league.adminUserId === 'user_1'; // TODO: Get actual current user ID
