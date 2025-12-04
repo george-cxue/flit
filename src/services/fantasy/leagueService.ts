@@ -62,4 +62,15 @@ export const LeagueService = {
             throw handleApiError(error);
         }
     },
+
+    leaveLeague: async (leagueId: string): Promise<{ message: string; leagueDeleted: boolean }> => {
+        try {
+            const response = await apiClient.delete(`/fantasy-leagues/${leagueId}/leave`, {
+                data: { userId: CURRENT_USER_ID }
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 };

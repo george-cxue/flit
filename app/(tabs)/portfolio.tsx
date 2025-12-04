@@ -136,12 +136,6 @@ export default function PortfolioScreen() {
                 ${currentPortfolio.liquidFunds.toFixed(2)}
               </ThemedText>
             </View>
-            <View style={styles.balanceItem}>
-              <ThemedText style={styles.balanceLabel}>Lesson Rewards</ThemedText>
-              <ThemedText style={[styles.balanceValue, { color: primaryColor }]}>
-                ${currentPortfolio.lessonRewards.toFixed(2)}
-              </ThemedText>
-            </View>
           </View>
         </View>
 
@@ -194,7 +188,7 @@ export default function PortfolioScreen() {
         {/* Stock Search */}
         <View style={[styles.section, { backgroundColor: cardBackground }]}>
           <StockSearch
-            lessonRewards={currentPortfolio.lessonRewards}
+            liquidFunds={currentPortfolio.liquidFunds}
             onBuyStock={handleBuyStock}
           />
         </View>

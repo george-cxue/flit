@@ -104,7 +104,6 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
           strokeWidth: 2,
         },
       ],
-      legend: ['Portfolio', 'S&P 500'],
     };
   }, [portfolioHistory, sp500History, timeFrame, primaryColor]);
 

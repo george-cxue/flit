@@ -5,27 +5,72 @@ import { LeagueService } from '@/src/services/fantasy/leagueService';
 import { League } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
+import { apiClient } from '@/src/services/api';
+
+interface MemberWithPortfolio {
+    id: string;
+    username: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    name?: string;
+    portfolioValue: number;
+    returnPercent: number;
+}
 
 export default function LeagueDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const [league, setLeague] = useState<League | null>(null);
     const [loading, setLoading] = useState(true);
+    const [membersWithPortfolios, setMembersWithPortfolios] = useState<MemberWithPortfolio[]>([]);
 
     const primaryColor = useThemeColor({}, 'primary' as any);
     const cardBg = useThemeColor({}, 'cardBackground' as any);
     const borderColor = useThemeColor({}, 'border' as any);
 
     useEffect(() => {
-        const fetchLeague = async () => {
+        const fetchLeagueAndPortfolios = async () => {
             try {
                 if (typeof id === 'string') {
                     const data = await LeagueService.getLeagueById(id);
                     setLeague(data || null);
-                    // TODO: Fetch portfolios from API
-                    // const portfoliosData = await LeagueService.getLeaguePortfolios(id);
-                    // setPortfolios(portfoliosData);
+                    
+                    if (data) {
+                        // Fetch portfolio data for all members
+                        const portfolioPromises = data.members.map(async (member: any) => {
+                            try {
+                                const response = await apiClient.get(`/fantasy-leagues/${id}/portfolio/${member.id}`);
+                                const portfolio = response.data;
+                                
+                                // Calculate total value the same way as portfolio context
+                                const totalValue = portfolio.totalValue || portfolio.cashBalance;
+                                const startingBalance = data.settings.startingBalance || 10000;
+                                const returnPercent = ((totalValue - startingBalance) / startingBalance) * 100;
+                                
+                                return {
+                                    ...member,
+                                    portfolioValue: totalValue,
+                                    returnPercent: returnPercent,
+                                };
+                            } catch (error) {
+                                console.error(`Failed to fetch portfolio for member ${member.id}:`, error);
+                                // Return member with starting balance as fallback
+                                const startingBalance = data.settings.startingBalance || 10000;
+                                return {
+                                    ...member,
+                                    portfolioValue: startingBalance,
+                                    returnPercent: 0,
+                                };
+                            }
+                        });
+                        
+                        const membersWithData = await Promise.all(portfolioPromises);
+                        // Sort by portfolio value (highest to lowest)
+                        const sortedMembers = membersWithData.sort((a, b) => b.portfolioValue - a.portfolioValue);
+                        setMembersWithPortfolios(sortedMembers);
+                    }
                 }
             } catch (error) {
                 setLeague(null);
@@ -33,7 +78,7 @@ export default function LeagueDetailScreen() {
                 setLoading(false);
             }
         };
-        fetchLeague();
+        fetchLeagueAndPortfolios();
     }, [id]);
 
     if (loading) {
@@ -104,10 +149,80 @@ export default function LeagueDetailScreen() {
             if (updatedLeague) {
                 setLeague(updatedLeague);
             }
-            Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
+            
+            if (Platform.OS === 'web') {
+                window.alert('Competition started! Status should now be ACTIVE.');
+            } else {
+                Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
+            }
         } catch (error) {
             console.error('Start competition error:', error);
-            Alert.alert('Error', 'Failed to start competition. Please try again.');
+            if (Platform.OS === 'web') {
+                window.alert('Failed to start competition. Please try again.');
+            } else {
+                Alert.alert('Error', 'Failed to start competition. Please try again.');
+            }
+        }
+    };
+
+    const handleLeaveLeague = () => {
+        // Web-compatible confirmation
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(
+                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.'
+            );
+            if (confirmed) {
+                performLeaveLeague();
+            }
+        } else {
+            // Native alert for iOS/Android
+            Alert.alert(
+                'Leave League',
+                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Leave',
+                        style: 'destructive',
+                        onPress: performLeaveLeague,
+                    },
+                ]
+            );
+        }
+    };
+
+    const performLeaveLeague = async () => {
+        try {
+            console.log('Leaving league:', league.id);
+            const result = await LeagueService.leaveLeague(league.id);
+            console.log('Leave league result:', result);
+
+            // Navigate back to league tab
+            router.replace('/(tabs)/league');
+
+            // Show success message after a short delay
+            setTimeout(() => {
+                const successMessage = result.leagueDeleted 
+                    ? 'You left the league. The league was deleted as no members remain.'
+                    : 'You have successfully left the league.';
+                
+                if (Platform.OS === 'web') {
+                    window.alert(successMessage);
+                } else {
+                    Alert.alert('Success', successMessage);
+                }
+            }, 300);
+        } catch (error) {
+            console.error('Error leaving league:', error);
+            const errorMessage = 'Failed to leave league. Please try again.';
+            if (Platform.OS === 'web') {
+                window.alert(errorMessage);
+            } else {
+                Alert.alert('Error', errorMessage);
+            }
         }
     };
 
@@ -203,8 +318,11 @@ export default function LeagueDetailScreen() {
                 {competitionStarted && (
                     <View style={styles.section}>
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Portfolio Rankings</ThemedText>
-                        {league.members.map((member, index) => {
+                        {membersWithPortfolios.map((member, index) => {
                             const isCurrentUser = member.id === 'user_1'; // TODO: Get actual current user ID
+                            const displayName = member.firstName && member.lastName 
+                                ? `${member.firstName} ${member.lastName}` 
+                                : member.name || member.username;
 
                             return (
                                 <TouchableOpacity
@@ -233,25 +351,25 @@ export default function LeagueDetailScreen() {
                                             </ThemedText>
                                         </View>
                                         <View style={styles.memberInfo}>
-                                            <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                            <ThemedText style={styles.memberAvatar}>{member.avatar || '👤'}</ThemedText>
                                             <View>
                                                 <ThemedText style={styles.memberName}>
-                                                    {member.name}
+                                                    {displayName}
                                                     {isCurrentUser && ' (You)'}
                                                 </ThemedText>
-                                                <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                                <ThemedText style={styles.memberUsername}>@{member.username}</ThemedText>
                                             </View>
                                         </View>
                                     </View>
                                     <View style={styles.performanceInfo}>
                                         <ThemedText style={styles.portfolioValue}>
-                                            ${(league.settings.startingBalance * (1 + Math.random() * 0.2)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                            ${member.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </ThemedText>
                                         <ThemedText style={[
                                             styles.returnPercent,
-                                            { color: Math.random() > 0.4 ? '#4CAF50' : '#F44336' }
+                                            { color: member.returnPercent >= 0 ? '#4CAF50' : '#F44336' }
                                         ]}>
-                                            {Math.random() > 0.4 ? '+' : ''}{(Math.random() * 40 - 10).toFixed(2)}%
+                                            {member.returnPercent >= 0 ? '+' : ''}{member.returnPercent.toFixed(2)}%
                                         </ThemedText>
                                     </View>
                                 </TouchableOpacity>
@@ -292,6 +410,18 @@ export default function LeagueDetailScreen() {
                         <SettingRow label="Scoring" value={league.settings.scoringMethod} />
                         <SettingRow label="Trading" value={league.settings.tradingEnabled ? 'Enabled' : 'Disabled'} />
                     </View>
+                </View>
+
+                {/* Leave League */}
+                <View style={styles.section}>
+                    <TouchableOpacity
+                        style={[styles.dangerButton, { borderColor: '#F44336' }]}
+                        onPress={handleLeaveLeague}
+                    >
+                        <ThemedText style={[styles.dangerButtonText, { color: '#F44336' }]}>
+                            Leave League
+                        </ThemedText>
+                    </TouchableOpacity>
                 </View>
 
             </ScrollView>
@@ -497,5 +627,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         opacity: 0.6,
         marginTop: 4,
+    },
+    dangerButton: {
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+    },
+    dangerButtonText: {
+        fontWeight: '600',
+        fontSize: 16,
     },
 });
