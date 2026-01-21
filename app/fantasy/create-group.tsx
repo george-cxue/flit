@@ -1,13 +1,13 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
-import { AssetType, LeagueSettings } from '@/src/types/fantasy';
+import { GroupService } from '@/src/services/fantasy/groupService';
+import { AssetType, GroupSettings } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function CreateLeagueScreen() {
+export default function CreateGroupScreen() {
     const router = useRouter();
     const primaryColor = useThemeColor({}, 'primary' as any);
     const cardBg = useThemeColor({}, 'cardBackground' as any);
@@ -15,8 +15,8 @@ export default function CreateLeagueScreen() {
     const textColor = useThemeColor({}, 'text' as any);
 
     // Required Settings
-    const [leagueName, setLeagueName] = useState('');
-    const [leagueSize, setLeagueSize] = useState(12);
+    const [groupName, setGroupName] = useState('');
+    const [groupSize, setGroupSize] = useState(12);
     const [startingBalance, setStartingBalance] = useState(10000);
     const [competitionPeriod, setCompetitionPeriod] = useState<'1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year'>('1_month');
     const [startDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
@@ -42,15 +42,15 @@ export default function CreateLeagueScreen() {
     };
 
     const handleCreate = async () => {
-        if (!leagueName.trim()) {
-            Alert.alert('Error', 'Please enter a league name');
+        if (!groupName.trim()) {
+            Alert.alert('Error', 'Please enter a group name');
             return;
         }
 
         setLoading(true);
         try {
-            const settings: LeagueSettings = {
-                leagueSize,
+            const settings: GroupSettings = {
+                groupSize,
                 startingBalance,
                 competitionPeriod,
                 startDate,
@@ -61,11 +61,11 @@ export default function CreateLeagueScreen() {
                 tradingEnabled,
             };
 
-            await LeagueService.createLeague(leagueName, settings);
+            await GroupService.createGroup(groupName, settings);
             router.back();
         } catch (error) {
-            console.error('Failed to create league:', error);
-            Alert.alert('Error', error instanceof Error && error.message ? error.message : 'Failed to create league');
+            console.error('Failed to create group:', error);
+            Alert.alert('Error', error instanceof Error && error.message ? error.message : 'Failed to create group');
         } finally {
             setLoading(false);
         }
@@ -95,7 +95,7 @@ export default function CreateLeagueScreen() {
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
-                    <ThemedText type="title">Create League</ThemedText>
+                    <ThemedText type="title">Create Group</ThemedText>
                 </View>
 
                 {/* REQUIRED SETTINGS */}
@@ -103,22 +103,22 @@ export default function CreateLeagueScreen() {
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Required Settings</ThemedText>
 
                     <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>League Name</ThemedText>
+                        <ThemedText style={styles.label}>Group Name</ThemedText>
                         <TextInput
                             style={[styles.input, { backgroundColor: cardBg, borderColor, color: textColor }]}
                             placeholder="e.g. Wall Street Warriors"
                             placeholderTextColor="#888"
-                            value={leagueName}
-                            onChangeText={setLeagueName}
+                            value={groupName}
+                            onChangeText={setGroupName}
                         />
                     </View>
 
                     <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>League Size</ThemedText>
+                        <ThemedText style={styles.label}>Group Size</ThemedText>
                         <View style={styles.optionsRow}>
                             {[4, 6, 8, 10, 12].map(size => (
                                 <View key={size} style={{ flex: 1 }}>
-                                    {renderOptionButton(size, leagueSize === size, () => setLeagueSize(size))}
+                                    {renderOptionButton(size, groupSize === size, () => setGroupSize(size))}
                                 </View>
                             ))}
                         </View>
@@ -254,7 +254,7 @@ export default function CreateLeagueScreen() {
                     disabled={loading}
                 >
                     <ThemedText style={styles.createButtonText}>
-                        {loading ? 'Creating...' : 'Create League'}
+                        {loading ? 'Creating...' : 'Create Group'}
                     </ThemedText>
                 </TouchableOpacity>
 

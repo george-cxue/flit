@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
-import { League } from '@/src/types/fantasy';
+import { GroupService } from '@/src/services/fantasy/groupService';
+import { Group } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -11,7 +11,7 @@ import { usePortfolio } from '@/contexts/portfolio-context';
 
 export default function FantasyHubScreen() {
   const router = useRouter();
-  const [leagues, setLeagues] = useState<League[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -21,43 +21,43 @@ export default function FantasyHubScreen() {
 
   const { getPortfolioByLeague, setSelectedLeagueId, refreshPortfolios } = usePortfolio();
 
-  const fetchLeagues = async () => {
+  const fetchGroups = async () => {
     try {
-      const data = await LeagueService.getLeagues();
-      setLeagues(data);
+      const data = await GroupService.getGroups();
+      setGroups(data);
 
       // Refresh portfolios from backend
       await refreshPortfolios();
     } catch (error) {
-      console.error('Failed to fetch leagues:', error);
+      console.error('Failed to fetch groups:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Refetch leagues every time the screen comes into focus
+  // Refetch groups every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchLeagues();
+      fetchGroups();
     }, [])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchLeagues();
+    fetchGroups();
   };
 
-  const handleCreateLeague = () => {
-    router.push('/fantasy/create-league');
+  const handleCreateGroup = () => {
+    router.push('/fantasy/create-group');
   };
 
-  const handleJoinLeague = () => {
-    router.push('/fantasy/join-league');
+  const handleJoinGroup = () => {
+    router.push('/fantasy/join-group');
   };
 
-  const handleLeaguePress = (leagueId: string) => {
-    router.push(`/fantasy/league/${leagueId}`);
+  const handleGroupPress = (groupId: string) => {
+    router.push(`/fantasy/group/${groupId}`);
   };
 
   if (loading) {
@@ -76,92 +76,92 @@ export default function FantasyHubScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.title}>Fantasy Finance</ThemedText>
+          <ThemedText type="title" style={styles.title}>Social</ThemedText>
           <ThemedText style={styles.subtitle}>Compete with friends, risk-free.</ThemedText>
         </View>
 
-        {/* Active Leagues */}
+        {/* Active Groups */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Your Leagues</ThemedText>
+            <ThemedText type="subtitle">Your Groups</ThemedText>
             <View style={styles.headerActions}>
-              <TouchableOpacity onPress={handleJoinLeague}>
-                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Join League</ThemedText>
+              <TouchableOpacity onPress={handleJoinGroup}>
+                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Join Group</ThemedText>
               </TouchableOpacity>
               <ThemedText style={styles.dividerDot}>•</ThemedText>
-              <TouchableOpacity onPress={handleCreateLeague}>
+              <TouchableOpacity onPress={handleCreateGroup}>
                 <ThemedText style={[styles.createLink, { color: primaryColor }]}>Create New</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
 
-          {leagues.length === 0 ? (
+          {groups.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: cardBg, borderColor }]}>
-              <ThemedText style={styles.emptyStateText}>You haven't joined any leagues yet.</ThemedText>
+              <ThemedText style={styles.emptyStateText}>You haven't joined any groups yet.</ThemedText>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-                  onPress={handleCreateLeague}
+                  onPress={handleCreateGroup}
                 >
-                  <ThemedText style={styles.primaryButtonText}>Create League</ThemedText>
+                  <ThemedText style={styles.primaryButtonText}>Create Group</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.secondaryButton, { borderColor: primaryColor }]}
-                  onPress={handleJoinLeague}
+                  onPress={handleJoinGroup}
                 >
-                  <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Join League</ThemedText>
+                  <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Join Group</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
-            leagues.map((league) => (
+            groups.map((group) => (
               <TouchableOpacity
-                key={league.id}
-                style={[styles.leagueCard, { backgroundColor: cardBg, borderColor }]}
-                onPress={() => handleLeaguePress(league.id)}
+                key={group.id}
+                style={[styles.groupCard, { backgroundColor: cardBg, borderColor }]}
+                onPress={() => handleGroupPress(group.id)}
               >
-                <View style={styles.leagueCardHeader}>
-                  <ThemedText style={styles.leagueName}>{league.name}</ThemedText>
-                  <View style={[styles.statusBadge, { backgroundColor: league.status === 'active' ? '#4CAF50' : '#FFC107' }]}>
-                    <ThemedText style={styles.statusText}>{league.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
+                <View style={styles.groupCardHeader}>
+                  <ThemedText style={styles.groupName}>{group.name}</ThemedText>
+                  <View style={[styles.statusBadge, { backgroundColor: group.status === 'active' ? '#4CAF50' : '#FFC107' }]}>
+                    <ThemedText style={styles.statusText}>{group.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
                   </View>
                 </View>
-                <ThemedText style={styles.leagueDetails}>
-                  {league.members?.length || 0} Members • Week {league.currentWeek || 0}
+                <ThemedText style={styles.groupDetails}>
+                  {group.members?.length || 0} Members • Week {group.currentWeek || 0}
                 </ThemedText>
               </TouchableOpacity>
             ))
           )}
         </View>
 
-        {/* League Portfolios - Each league has an associated portfolio */}
-        {leagues.length > 0 && (
+        {/* Group Portfolios - Each group has an associated portfolio */}
+        {groups.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <ThemedText type="subtitle">League Portfolios</ThemedText>
+              <ThemedText type="subtitle">Group Portfolios</ThemedText>
               <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}>
                 <ThemedText style={[styles.createLink, { color: primaryColor }]}>View All</ThemedText>
               </TouchableOpacity>
             </View>
 
-            {leagues.map((league) => {
-              const portfolio = getPortfolioByLeague(league.id);
+            {groups.map((group) => {
+              const portfolio = getPortfolioByLeague(group.id);
               if (!portfolio) return null;
 
               return (
                 <TouchableOpacity
-                  key={league.id}
+                  key={group.id}
                   style={[styles.portfolioCard, { backgroundColor: cardBg, borderColor }]}
                   onPress={() => {
-                    setSelectedLeagueId(league.id);
+                    setSelectedLeagueId(group.id);
                     router.push('/(tabs)/portfolio');
                   }}
                 >
                   <View style={styles.portfolioHeader}>
                     <View>
-                      <ThemedText style={styles.portfolioLeagueName}>{league.name}</ThemedText>
+                      <ThemedText style={styles.portfolioGroupName}>{group.name}</ThemedText>
                       <ThemedText style={styles.portfolioMemberCount}>
-                        {league.members?.length || 0} members • Week {league.currentWeek || 0}
+                        {group.members?.length || 0} members • Week {group.currentWeek || 0}
                       </ThemedText>
                     </View>
                     <View style={styles.portfolioValueContainer}>
@@ -285,19 +285,19 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontWeight: '600',
   },
-  leagueCard: {
+  groupCard: {
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
   },
-  leagueCardHeader: {
+  groupCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  leagueName: {
+  groupName: {
     fontSize: 18,
     fontWeight: '600',
   },
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  leagueDetails: {
+  groupDetails: {
     fontSize: 14,
     opacity: 0.6,
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  portfolioLeagueName: {
+  portfolioGroupName: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,

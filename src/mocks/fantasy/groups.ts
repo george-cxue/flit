@@ -1,4 +1,4 @@
-import { League, User } from '@/src/types/fantasy';
+import { Group, User } from '@/src/types/fantasy';
 
 export const MOCK_USER: User = {
     id: 'user_1',
@@ -15,16 +15,16 @@ export const MOCK_MEMBERS: User[] = [
     { id: 'user_4', username: '@emmar', name: 'Emma Rodriguez', avatar: '👩‍🎓', completedLessons: [] },
 ];
 
-export const MOCK_LEAGUES: League[] = [
+export const MOCK_LEAGUES: Group[] = [
     {
-        id: 'league_1',
-        name: 'Diamond League',
+        id: 'group_1',
+        name: 'Diamond Group',
         adminUserId: 'user_2',
         members: MOCK_MEMBERS,
         status: 'active',
         currentWeek: 3,
         settings: {
-            leagueSize: 4,
+            groupSize: 4,
             seasonLength: 10,
             portfolioSize: 10,
             activeSlots: 7,
@@ -42,14 +42,14 @@ export const MOCK_LEAGUES: League[] = [
         },
     },
     {
-        id: 'league_2',
+        id: 'group_2',
         name: 'REIT Masters',
         adminUserId: 'user_1',
         members: MOCK_MEMBERS,
         status: 'pre-draft',
         currentWeek: 0,
         settings: {
-            leagueSize: 4,
+            groupSize: 4,
             seasonLength: 8,
             portfolioSize: 5,
             activeSlots: 5,

@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function TradeScreen() {
-    const { id } = useLocalSearchParams(); // League ID
+    const { id } = useLocalSearchParams(); // Group ID
     const router = useRouter();
     const [trades, setTrades] = useState<Trade[]>([]);
     const [loading, setLoading] = useState(true);

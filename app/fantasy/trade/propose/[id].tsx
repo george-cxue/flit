@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProposeTradeScreen() {
-    const { id } = useLocalSearchParams(); // League ID
+    const { id } = useLocalSearchParams(); // Group ID
     const router = useRouter();
     const [recipientId, setRecipientId] = useState('');
     const [loading, setLoading] = useState(false);

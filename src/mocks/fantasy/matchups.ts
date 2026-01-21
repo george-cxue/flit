@@ -3,7 +3,7 @@ import { Matchup } from '@/src/types/fantasy';
 export const MOCK_MATCHUPS: Matchup[] = [
     {
         id: 'matchup_1',
-        leagueId: 'league_1',
+        groupId: 'group_1',
         week: 3,
         userAId: 'user_1',
         userBId: 'user_2',

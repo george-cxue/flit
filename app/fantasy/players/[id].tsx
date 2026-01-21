@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function PlayersScreen() {
-    const { id } = useLocalSearchParams(); // League ID
+    const { id } = useLocalSearchParams(); // Group ID
     const router = useRouter();
     const [assets, setAssets] = useState<Asset[]>([]);
     const [searchQuery, setSearchQuery] = useState('');

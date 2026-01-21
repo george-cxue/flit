@@ -9,9 +9,9 @@ export const WaiverService = {
      * Get available assets on waivers (free agents)
      * Uses the market assets endpoint which excludes owned assets
      */
-    getAvailableAssets: async (leagueId: string, query: string = ''): Promise<Asset[]> => {
+    getAvailableAssets: async (groupId: string, query: string = ''): Promise<Asset[]> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/market/assets`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/market/assets`, {
                 params: { search: query }
             });
             return response.data.assets || [];
@@ -20,9 +20,9 @@ export const WaiverService = {
         }
     },
 
-    submitClaim: async (leagueId: string, assetId: string, dropAssetId?: string): Promise<WaiverClaim> => {
+    submitClaim: async (groupId: string, assetId: string, dropAssetId?: string): Promise<WaiverClaim> => {
         try {
-            const response = await apiClient.post(`/fantasy-leagues/${leagueId}/waivers`, {
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/waivers`, {
                 userId: CURRENT_USER_ID,
                 assetId,
                 dropAssetId

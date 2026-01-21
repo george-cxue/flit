@@ -11,12 +11,12 @@ import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useLocalSearchParams } from 'expo-router';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
-import { League } from '@/src/types/fantasy';
+import { GroupService } from '@/src/services/fantasy/groupService';
+import { Group } from '@/src/types/fantasy';
 
 export default function PortfolioScreen() {
   const { leagueId: paramLeagueId } = useLocalSearchParams();
-  const [leagues, setLeagues] = React.useState<League[]>([]);
+  const [groups, setGroups] = React.useState<Group[]>([]);
 
   const {
     selectedLeagueId,
@@ -30,20 +30,20 @@ export default function PortfolioScreen() {
     loading,
   } = usePortfolio();
 
-  // Fetch leagues
+  // Fetch groups
   useEffect(() => {
-    const fetchLeagues = async () => {
+    const fetchGroups = async () => {
       try {
-        const data = await LeagueService.getLeagues();
-        setLeagues(data);
+        const data = await GroupService.getGroups();
+        setGroups(data);
       } catch (error) {
-        console.error('Failed to fetch leagues:', error);
+        console.error('Failed to fetch groups:', error);
       }
     };
-    fetchLeagues();
+    fetchGroups();
   }, []);
 
-  // Pre-select league if passed as parameter
+  // Pre-select group if passed as parameter
   useEffect(() => {
     if (paramLeagueId && typeof paramLeagueId === 'string') {
       setSelectedLeagueId(paramLeagueId);
@@ -68,7 +68,7 @@ export default function PortfolioScreen() {
     return (
       <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
         <ThemedText style={{ textAlign: 'center', marginBottom: 16 }}>
-          No portfolios found. Join or create a league to get started!
+          No portfolios found. Join or create a group to get started!
         </ThemedText>
       </ThemedView>
     );
@@ -85,38 +85,38 @@ export default function PortfolioScreen() {
   return (
     <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
-        {/* League Selector */}
+        {/* Group Selector */}
         <View style={[styles.leagueSelector, { backgroundColor: cardBackground }]}>
-          <ThemedText style={styles.sectionLabel}>League</ThemedText>
+          <ThemedText style={styles.sectionLabel}>Group</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueTabs}>
-            {leagues.map((league) => (
+            {groups.map((group) => (
               <TouchableOpacity
-                key={league.id}
+                key={group.id}
                 style={[
                   styles.leagueTab,
-                  selectedLeagueId === league.id && {
+                  selectedLeagueId === group.id && {
                     backgroundColor: primaryColor,
                     borderColor: primaryColor,
                   },
-                  selectedLeagueId !== league.id && { borderColor },
+                  selectedLeagueId !== group.id && { borderColor },
                 ]}
-                onPress={() => setSelectedLeagueId(league.id)}
+                onPress={() => setSelectedLeagueId(group.id)}
               >
                 <ThemedText
                   style={[
                     styles.leagueTabText,
-                    selectedLeagueId === league.id && styles.leagueTabTextActive,
+                    selectedLeagueId === group.id && styles.leagueTabTextActive,
                   ]}
                 >
-                  {league.name}
+                  {group.name}
                 </ThemedText>
                 <ThemedText
                   style={[
                     styles.leagueMemberCount,
-                    selectedLeagueId === league.id && styles.leagueMemberCountActive,
+                    selectedLeagueId === group.id && styles.leagueMemberCountActive,
                   ]}
                 >
-                  {league.members?.length || 0} members
+                  {group.members?.length || 0} members
                 </ThemedText>
               </TouchableOpacity>
             ))}

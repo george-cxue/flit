@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function PortfolioScreen() {
-    const { id, userId, readonly } = useLocalSearchParams(); // League ID, optional userId, readonly flag
+    const { id, userId, readonly } = useLocalSearchParams(); // Group ID, optional userId, readonly flag
     const router = useRouter();
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ export default function PortfolioScreen() {
         const fetchPortfolio = async () => {
             if (typeof id === 'string') {
                 const targetUserId = typeof userId === 'string' ? userId : undefined;
-                const data = await PortfolioService.getPortfolioByLeagueId(id, targetUserId);
+                const data = await PortfolioService.getPortfolioByGroupId(id, targetUserId);
                 setPortfolio(data || null);
             }
             setLoading(false);
@@ -83,7 +83,7 @@ export default function PortfolioScreen() {
     if (!portfolio) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ThemedText>Portfolio not found. Join a league first.</ThemedText>
+                <ThemedText>Portfolio not found. Join a group first.</ThemedText>
             </ThemedView>
         );
     }
