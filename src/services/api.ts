@@ -1,5 +1,13 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+
+// Token getter function - will be set by AuthProvider
+let getAuthToken: (() => Promise<string | null>) | null = null;
+
+export const setAuthTokenGetter = (getter: () => Promise<string | null>) => {
+  getAuthToken = getter;
+};
 
 // Determine the API base URL based on the environment
 const getApiUrl = (): string => {
@@ -39,11 +47,16 @@ export const apiClient = axios.create({
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
   async (config) => {
-    // TODO: Add JWT token from AsyncStorage when auth is implemented
-    // const token = await AsyncStorage.getItem('@flit_auth_token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    if (getAuthToken) {
+      try {
+        const token = await getAuthToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('Error getting auth token:', error);
+      }
+    }
     return config;
   },
   (error) => {
