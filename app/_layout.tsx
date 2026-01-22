@@ -10,11 +10,32 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PortfolioProvider } from "@/contexts/portfolio-context";
+import { apiClient } from "@/src/services/api";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
   const router = useRouter();
+
+  // Update stock prices on app load
+  useEffect(() => {
+    const updateStockPrices = async () => {
+      try {
+        console.log('📊 Triggering stock price update...');
+        const response = await apiClient.post('/assets/update-prices');
+        if (response.data.updated) {
+          console.log('✅ Stock prices updated:', response.data.message);
+        } else {
+          console.log('⏭️  Stock prices skipped:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Failed to update stock prices:', error);
+        // Don't block app loading if price update fails
+      }
+    };
+
+    updateStockPrices();
+  }, []); // Run once on mount
 
   useEffect(() => {
     // Only redirect if segments is populated (navigation is ready)
