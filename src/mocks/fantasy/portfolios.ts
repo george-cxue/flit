@@ -18,7 +18,7 @@ const createSlot = (id: string, assetId: string, status: 'ACTIVE' | 'BENCH', pri
 export const MOCK_PORTFOLIOS: Portfolio[] = [
     {
         id: 'portfolio_1',
-        leagueId: 'league_1',
+        groupId: 'group_1',
         userId: 'user_1', // Current User
         name: 'To The Moon',
         totalValue: 12500,
@@ -32,7 +32,7 @@ export const MOCK_PORTFOLIOS: Portfolio[] = [
     },
     {
         id: 'portfolio_2',
-        leagueId: 'league_1',
+        groupId: 'group_1',
         userId: 'user_2',
         name: 'Safe Haven',
         totalValue: 11800,

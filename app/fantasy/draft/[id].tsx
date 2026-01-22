@@ -87,7 +87,7 @@ export default function DraftScreen() {
 
         setPicking(true);
         try {
-            await DraftService.makePick(draftState.leagueId, asset.id);
+            await DraftService.makePick(draftState.groupId, asset.id);
             // Refetch the draft state to get updated picks and current turn
             await fetchDraftState();
             await fetchAssets(); // Refresh list to remove picked asset
@@ -120,7 +120,7 @@ export default function DraftScreen() {
                         Draft Not Started
                     </ThemedText>
                     <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.7, paddingHorizontal: 32 }}>
-                        The league admin needs to start the draft before picks can be made.
+                        The group admin needs to start the draft before picks can be made.
                     </ThemedText>
                     <TouchableOpacity
                         style={[styles.startButton, { backgroundColor: primaryColor }]}
@@ -148,7 +148,7 @@ export default function DraftScreen() {
                         style={[styles.startButton, { backgroundColor: primaryColor }]}
                         onPress={() => router.back()}
                     >
-                        <ThemedText style={styles.startButtonText}>Back to League</ThemedText>
+                        <ThemedText style={styles.startButtonText}>Back to Group</ThemedText>
                     </TouchableOpacity>
                 </View>
             </ThemedView>

@@ -24,8 +24,8 @@ export interface User {
   completedLessons: string[]; // IDs of completed lessons
 }
 
-export interface LeagueSettings {
-  leagueSize: number;
+export interface GroupSettings {
+  groupSize: number;
   startingBalance: number;
   competitionPeriod: '1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year';
   startDate: string; // ISO date string
@@ -36,12 +36,12 @@ export interface LeagueSettings {
   tradingEnabled: boolean;
 }
 
-export interface League {
+export interface Group {
   id: string;
   name: string;
   adminUserId: string;
   members: User[];
-  settings: LeagueSettings;
+  settings: GroupSettings;
   status: 'pending' | 'active' | 'completed';
   currentWeek: number;
   joinCode?: string;
@@ -63,7 +63,7 @@ export interface PortfolioSlot {
 
 export interface Portfolio {
   id: string;
-  leagueId: string;
+  groupId: string;
   userId: string;
   name: string;
   cashBalance: number;
@@ -83,7 +83,7 @@ export interface DraftPick {
 }
 
 export interface DraftState {
-  leagueId: string;
+  groupId: string;
   status: 'pending' | 'active' | 'paused' | 'completed';
   currentRound: number;
   currentPickNumber: number;
@@ -94,7 +94,7 @@ export interface DraftState {
 
 export interface Matchup {
   id: string;
-  leagueId: string;
+  groupId: string;
   week: number;
   userAId: string;
   userBId: string;
@@ -115,7 +115,7 @@ export interface TradeAsset {
 
 export interface Trade {
   id: string;
-  leagueId: string;
+  groupId: string;
   proposerId: string;
   recipientId: string;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
@@ -127,7 +127,7 @@ export interface Trade {
 
 export interface WaiverClaim {
   id: string;
-  leagueId: string;
+  groupId: string;
   userId: string;
   assetId: string;
   dropAssetId?: string; // Optional asset to drop

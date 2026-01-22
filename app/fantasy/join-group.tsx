@@ -1,12 +1,12 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
+import { GroupService } from '@/src/services/fantasy/groupService';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function JoinLeagueScreen() {
+export default function JoinGroupScreen() {
     const router = useRouter();
     const primaryColor = useThemeColor({}, 'primary' as any);
     const cardBg = useThemeColor({}, 'cardBackground' as any);
@@ -29,21 +29,21 @@ export default function JoinLeagueScreen() {
 
         setLoading(true);
         try {
-            const result = await LeagueService.joinByCode(joinCode.trim());
+            const result = await GroupService.joinByCode(joinCode.trim());
             Alert.alert(
                 'Success',
-                `You have joined ${result.league.name}!`,
+                `You have joined ${result.group.name}!`,
                 [
                     {
-                        text: 'View League',
+                        text: 'View Group',
                         onPress: () => {
-                            router.replace(`/fantasy/league/${result.league.id}`);
+                            router.replace(`/fantasy/group/${result.group.id}`);
                         }
                     }
                 ]
             );
         } catch (error: any) {
-            let message = 'Failed to join league';
+            let message = 'Failed to join group';
             if (error.message) {
                 message = error.message;
             }
@@ -57,14 +57,14 @@ export default function JoinLeagueScreen() {
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
-                    <ThemedText type="title">Join League</ThemedText>
+                    <ThemedText type="title">Join Group</ThemedText>
                     <ThemedText style={styles.subtitle}>
-                        Enter the 6-character code to join an existing league
+                        Enter the 6-character code to join an existing group
                     </ThemedText>
                 </View>
 
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-                    <ThemedText style={styles.label}>League Join Code</ThemedText>
+                    <ThemedText style={styles.label}>Group Join Code</ThemedText>
                     <TextInput
                         style={[styles.input, { backgroundColor: cardBg, borderColor, color: textColor }]}
                         placeholder="e.g. ABC123"
@@ -76,7 +76,7 @@ export default function JoinLeagueScreen() {
                         autoCorrect={false}
                     />
                     <ThemedText style={styles.helperText}>
-                        Ask the league admin for the join code
+                        Ask the group admin for the join code
                     </ThemedText>
                 </View>
 
@@ -86,7 +86,7 @@ export default function JoinLeagueScreen() {
                     disabled={loading}
                 >
                     <ThemedText style={styles.joinButtonText}>
-                        {loading ? 'Joining...' : 'Join League'}
+                        {loading ? 'Joining...' : 'Join Group'}
                     </ThemedText>
                 </TouchableOpacity>
 
@@ -98,9 +98,9 @@ export default function JoinLeagueScreen() {
 
                 <TouchableOpacity
                     style={[styles.createButton, { borderColor }]}
-                    onPress={() => router.push('/fantasy/create-league')}
+                    onPress={() => router.push('/fantasy/create-group')}
                 >
-                    <ThemedText style={styles.createButtonText}>Create New League</ThemedText>
+                    <ThemedText style={styles.createButtonText}>Create New Group</ThemedText>
                 </TouchableOpacity>
             </ScrollView>
         </ThemedView>

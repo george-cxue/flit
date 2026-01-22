@@ -6,16 +6,16 @@ const CURRENT_USER_ID = 'user_1';
 
 export const PortfolioService = {
     getPortfolios: async (): Promise<Portfolio[]> => {
-        // Note: This would require getting portfolios across all leagues for a user
+        // Note: This would require getting portfolios across all groups for a user
         // The backend doesn't have a dedicated endpoint for this yet
         // For now, this is a placeholder
-        throw new Error('getPortfolios not implemented - use getPortfolioByLeagueId instead');
+        throw new Error('getPortfolios not implemented - use getPortfolioByGroupId instead');
     },
 
-    getPortfolioByLeagueId: async (leagueId: string, userId?: string): Promise<Portfolio | undefined> => {
+    getPortfolioByGroupId: async (groupId: string, userId?: string): Promise<Portfolio | undefined> => {
         try {
             const targetUserId = userId || CURRENT_USER_ID;
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/portfolio/${targetUserId}`);
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/portfolio/${targetUserId}`);
             return response.data;
         } catch (error) {
             if ((error as any).response?.status === 404) {

@@ -1,24 +1,24 @@
 import { apiClient, handleApiError } from '../api';
-import { League, LeagueSettings } from '@/src/types/fantasy';
+import { Group, GroupSettings } from '@/src/types/fantasy';
 
 // TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
+const CURRENT_USER_ID = 'cmkn5ix8o000110hyj2i6vca4'; // johndoe
 
-export const LeagueService = {
-    getLeagues: async (): Promise<League[]> => {
+export const GroupService = {
+    getGroups: async (): Promise<Group[]> => {
         try {
-            const response = await apiClient.get('/fantasy-leagues', {
+            const response = await apiClient.get('/fantasy-groups', {
                 params: { userId: CURRENT_USER_ID }
             });
-            return response.data.leagues || [];
+            return response.data.groups || [];
         } catch (error) {
             throw handleApiError(error);
         }
     },
 
-    getLeagueById: async (id: string): Promise<League | undefined> => {
+    getGroupById: async (id: string): Promise<Group | undefined> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${id}`);
+            const response = await apiClient.get(`/fantasy-groups/${id}`);
             return response.data;
         } catch (error) {
             if ((error as any).response?.status === 404) {
@@ -28,9 +28,9 @@ export const LeagueService = {
         }
     },
 
-    createLeague: async (name: string, settings: LeagueSettings): Promise<League> => {
+    createGroup: async (name: string, settings: GroupSettings): Promise<Group> => {
         try {
-            const response = await apiClient.post('/fantasy-leagues', {
+            const response = await apiClient.post('/fantasy-groups', {
                 name,
                 adminUserId: CURRENT_USER_ID,
                 settings
@@ -41,9 +41,9 @@ export const LeagueService = {
         }
     },
 
-    startCompetition: async (leagueId: string): Promise<void> => {
+    startCompetition: async (groupId: string): Promise<void> => {
         try {
-            await apiClient.post(`/fantasy-leagues/${leagueId}/start`, {
+            await apiClient.post(`/fantasy-groups/${groupId}/start`, {
                 userId: CURRENT_USER_ID
             });
         } catch (error) {
@@ -51,9 +51,9 @@ export const LeagueService = {
         }
     },
 
-    joinByCode: async (joinCode: string): Promise<{ league: League; membership: any }> => {
+    joinByCode: async (joinCode: string): Promise<{ group: Group; membership: any }> => {
         try {
-            const response = await apiClient.post('/fantasy-leagues/join-by-code', {
+            const response = await apiClient.post('/fantasy-groups/join-by-code', {
                 joinCode: joinCode.toUpperCase(),
                 userId: CURRENT_USER_ID
             });
@@ -63,9 +63,9 @@ export const LeagueService = {
         }
     },
 
-    leaveLeague: async (leagueId: string): Promise<{ message: string; leagueDeleted: boolean }> => {
+    leaveGroup: async (groupId: string): Promise<{ message: string; groupDeleted: boolean }> => {
         try {
-            const response = await apiClient.delete(`/fantasy-leagues/${leagueId}/leave`, {
+            const response = await apiClient.delete(`/fantasy-groups/${groupId}/leave`, {
                 data: { userId: CURRENT_USER_ID }
             });
             return response.data;

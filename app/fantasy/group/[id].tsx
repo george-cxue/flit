@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
-import { League } from '@/src/types/fantasy';
+import { GroupService } from '@/src/services/fantasy/groupService';
+import { Group } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
@@ -19,10 +19,10 @@ interface MemberWithPortfolio {
     returnPercent: number;
 }
 
-export default function LeagueDetailScreen() {
+export default function GroupDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const [league, setLeague] = useState<League | null>(null);
+    const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
     const [membersWithPortfolios, setMembersWithPortfolios] = useState<MemberWithPortfolio[]>([]);
 
@@ -31,17 +31,17 @@ export default function LeagueDetailScreen() {
     const borderColor = useThemeColor({}, 'border' as any);
 
     useEffect(() => {
-        const fetchLeagueAndPortfolios = async () => {
+        const fetchGroupAndPortfolios = async () => {
             try {
                 if (typeof id === 'string') {
-                    const data = await LeagueService.getLeagueById(id);
-                    setLeague(data || null);
+                    const data = await GroupService.getGroupById(id);
+                    setGroup(data || null);
                     
                     if (data) {
                         // Fetch portfolio data for all members
                         const portfolioPromises = data.members.map(async (member: any) => {
                             try {
-                                const response = await apiClient.get(`/fantasy-leagues/${id}/portfolio/${member.id}`);
+                                const response = await apiClient.get(`/fantasy-groups/${id}/portfolio/${member.id}`);
                                 const portfolio = response.data;
                                 
                                 // Calculate total value the same way as portfolio context
@@ -73,12 +73,12 @@ export default function LeagueDetailScreen() {
                     }
                 }
             } catch (error) {
-                setLeague(null);
+                setGroup(null);
             } finally {
                 setLoading(false);
             }
         };
-        fetchLeagueAndPortfolios();
+        fetchGroupAndPortfolios();
     }, [id]);
 
     if (loading) {
@@ -89,23 +89,28 @@ export default function LeagueDetailScreen() {
         );
     }
 
-    if (!league) {
+    if (!group) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ThemedText>League not found</ThemedText>
+                <ThemedText>Group not found</ThemedText>
             </ThemedView>
         );
     }
 
     // Check if competition has started
     const now = new Date();
-    const startDate = new Date(league.settings.startDate);
+    const startDate = new Date(group.settings.startDate);
     const competitionStarted = now >= startDate;
 
     // Calculate end date based on competition period
     const getEndDate = () => {
         const end = new Date(startDate);
-        switch (league.settings.competitionPeriod) {
+        if (!group.settings.competitionPeriod) {
+            // Default to 1 year if not specified
+            end.setFullYear(end.getFullYear() + 1);
+            return end;
+        }
+        switch (group.settings.competitionPeriod) {
             case '1_week': end.setDate(end.getDate() + 7); break;
             case '2_weeks': end.setDate(end.getDate() + 14); break;
             case '1_month': end.setMonth(end.getMonth() + 1); break;
@@ -119,16 +124,17 @@ export default function LeagueDetailScreen() {
     const endDate = getEndDate();
     const competitionEnded = now >= endDate;
 
-    const formatPeriod = (period: string) => {
+    const formatPeriod = (period: string | undefined) => {
+        if (!period) return 'Not specified';
         return period.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
     const handleShareCode = async () => {
-        if (!league.joinCode) return;
+        if (!group.joinCode) return;
 
         try {
             await Share.share({
-                message: `Join my league "${league.name}"! Use code: ${league.joinCode}`,
+                message: `Join my group "${group.name}"! Use code: ${group.joinCode}`,
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -139,15 +145,15 @@ export default function LeagueDetailScreen() {
         console.log('Start competition button pressed');
 
         try {
-            console.log('Starting competition for league:', league.id);
-            await LeagueService.startCompetition(league.id);
+            console.log('Starting competition for group:', group.id);
+            await GroupService.startCompetition(group.id);
             console.log('Competition started successfully');
 
             // Reload the page to show updated status
-            const updatedLeague = await LeagueService.getLeagueById(league.id);
-            console.log('Updated league:', updatedLeague);
-            if (updatedLeague) {
-                setLeague(updatedLeague);
+            const updatedGroup = await GroupService.getGroupById(group.id);
+            console.log('Updated group:', updatedGroup);
+            if (updatedGroup) {
+                setGroup(updatedGroup);
             }
             
             if (Platform.OS === 'web') {
@@ -165,20 +171,20 @@ export default function LeagueDetailScreen() {
         }
     };
 
-    const handleLeaveLeague = () => {
+    const handleLeaveGroup = () => {
         // Web-compatible confirmation
         if (Platform.OS === 'web') {
             const confirmed = window.confirm(
-                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.'
+                'Are you sure you want to leave this group? Your portfolio and all data for this group will be permanently deleted.'
             );
             if (confirmed) {
-                performLeaveLeague();
+                performLeaveGroup();
             }
         } else {
             // Native alert for iOS/Android
             Alert.alert(
-                'Leave League',
-                'Are you sure you want to leave this league? Your portfolio and all data for this league will be permanently deleted.',
+                'Leave Group',
+                'Are you sure you want to leave this group? Your portfolio and all data for this group will be permanently deleted.',
                 [
                     {
                         text: 'Cancel',
@@ -187,27 +193,27 @@ export default function LeagueDetailScreen() {
                     {
                         text: 'Leave',
                         style: 'destructive',
-                        onPress: performLeaveLeague,
+                        onPress: performLeaveGroup,
                     },
                 ]
             );
         }
     };
 
-    const performLeaveLeague = async () => {
+    const performLeaveGroup = async () => {
         try {
-            console.log('Leaving league:', league.id);
-            const result = await LeagueService.leaveLeague(league.id);
-            console.log('Leave league result:', result);
+            console.log('Leaving group:', group.id);
+            const result = await GroupService.leaveGroup(group.id);
+            console.log('Leave group result:', result);
 
-            // Navigate back to league tab
-            router.replace('/(tabs)/league');
+            // Navigate back to group tab
+            router.replace('/(tabs)/group');
 
             // Show success message after a short delay
             setTimeout(() => {
-                const successMessage = result.leagueDeleted 
-                    ? 'You left the league. The league was deleted as no members remain.'
-                    : 'You have successfully left the league.';
+                const successMessage = result.groupDeleted 
+                    ? 'You left the group. The group was deleted as no members remain.'
+                    : 'You have successfully left the group.';
                 
                 if (Platform.OS === 'web') {
                     window.alert(successMessage);
@@ -216,8 +222,8 @@ export default function LeagueDetailScreen() {
                 }
             }, 300);
         } catch (error) {
-            console.error('Error leaving league:', error);
-            const errorMessage = 'Failed to leave league. Please try again.';
+            console.error('Error leaving group:', error);
+            const errorMessage = 'Failed to leave group. Please try again.';
             if (Platform.OS === 'web') {
                 window.alert(errorMessage);
             } else {
@@ -226,10 +232,10 @@ export default function LeagueDetailScreen() {
         }
     };
 
-    const isAdmin = league.adminUserId === 'user_1'; // TODO: Get actual current user ID
+    const isAdmin = group.adminUserId === 'user_1'; // TODO: Get actual current user ID
 
-    console.log('League admin check:', {
-        adminUserId: league.adminUserId,
+    console.log('Group admin check:', {
+        adminUserId: group.adminUserId,
         isAdmin,
         competitionStarted
     });
@@ -238,7 +244,7 @@ export default function LeagueDetailScreen() {
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
-                    <ThemedText type="title">{league.name}</ThemedText>
+                    <ThemedText type="title">{group.name}</ThemedText>
                     <View style={[
                         styles.statusBadge,
                         { backgroundColor: competitionEnded ? '#9E9E9E' : competitionStarted ? '#4CAF50' : '#FFC107' }
@@ -252,7 +258,7 @@ export default function LeagueDetailScreen() {
                 {/* Competition Status */}
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
                     <ThemedText type="subtitle" style={styles.cardTitle}>Competition Period</ThemedText>
-                    <ThemedText style={styles.periodText}>{formatPeriod(league.settings.competitionPeriod)}</ThemedText>
+                    <ThemedText style={styles.periodText}>{formatPeriod(group.settings.competitionPeriod)}</ThemedText>
                     <View style={styles.dateRange}>
                         <ThemedText style={styles.dateText}>
                             {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
@@ -281,10 +287,10 @@ export default function LeagueDetailScreen() {
                         <TouchableOpacity
                             style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
                             onPress={() => {
-                                // Navigate to portfolio tab with this league selected
+                                // Navigate to portfolio tab with this group selected
                                 router.push({
                                     pathname: '/(tabs)/portfolio',
-                                    params: { leagueId: league.id }
+                                    params: { groupId: group.id }
                                 });
                             }}
                         >
@@ -296,11 +302,11 @@ export default function LeagueDetailScreen() {
                 </View>
 
                 {/* Join Code */}
-                {league.joinCode && !competitionEnded && (
+                {group.joinCode && !competitionEnded && (
                     <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-                        <ThemedText type="subtitle" style={styles.cardTitle}>League Join Code</ThemedText>
+                        <ThemedText type="subtitle" style={styles.cardTitle}>Group Join Code</ThemedText>
                         <View style={styles.joinCodeContainer}>
-                            <ThemedText style={styles.joinCodeText}>{league.joinCode}</ThemedText>
+                            <ThemedText style={styles.joinCodeText}>{group.joinCode}</ThemedText>
                             <TouchableOpacity
                                 style={[styles.shareButton, { backgroundColor: primaryColor }]}
                                 onPress={handleShareCode}
@@ -309,7 +315,7 @@ export default function LeagueDetailScreen() {
                             </TouchableOpacity>
                         </View>
                         <ThemedText style={styles.helperText}>
-                            Share this code with friends to invite them to your league
+                            Share this code with friends to invite them to your group
                         </ThemedText>
                     </View>
                 )}
@@ -333,11 +339,11 @@ export default function LeagueDetailScreen() {
                                             // Navigate to portfolio tab for editing
                                             router.push({
                                                 pathname: '/(tabs)/portfolio',
-                                                params: { leagueId: league.id }
+                                                params: { groupId: group.id }
                                             });
                                         } else {
                                             // Navigate to read-only portfolio view
-                                            router.push(`/fantasy/portfolio/${league.id}?userId=${member.id}&readonly=true`);
+                                            router.push(`/fantasy/portfolio/${group.id}?userId=${member.id}&readonly=true`);
                                         }
                                     }}
                                 >
@@ -382,7 +388,7 @@ export default function LeagueDetailScreen() {
                 {!competitionStarted && (
                     <View style={styles.section}>
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Members</ThemedText>
-                        {league.members.map((member) => (
+                        {group.members.map((member) => (
                             <View key={member.id} style={[styles.memberRow, { borderBottomColor: borderColor }]}>
                                 <View style={styles.memberInfo}>
                                     <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
@@ -391,7 +397,7 @@ export default function LeagueDetailScreen() {
                                         <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
                                     </View>
                                 </View>
-                                {member.id === league.adminUserId && (
+                                {member.id === group.adminUserId && (
                                     <View style={[styles.adminBadge, { borderColor: primaryColor }]}>
                                         <ThemedText style={[styles.adminText, { color: primaryColor }]}>Admin</ThemedText>
                                     </View>
@@ -403,23 +409,23 @@ export default function LeagueDetailScreen() {
 
                 {/* Settings Summary */}
                 <View style={styles.section}>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>League Settings</ThemedText>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Group Settings</ThemedText>
                     <View style={[styles.settingsCard, { backgroundColor: cardBg, borderColor }]}>
-                        <SettingRow label="League Size" value={`${league.settings.leagueSize} Players`} />
-                        <SettingRow label="Starting Balance" value={`$${league.settings.startingBalance.toLocaleString()}`} />
-                        <SettingRow label="Scoring" value={league.settings.scoringMethod} />
-                        <SettingRow label="Trading" value={league.settings.tradingEnabled ? 'Enabled' : 'Disabled'} />
+                        <SettingRow label="Group Size" value={`${group.settings.groupSize} Players`} />
+                        <SettingRow label="Starting Balance" value={`$${group.settings.startingBalance.toLocaleString()}`} />
+                        <SettingRow label="Scoring" value={group.settings.scoringMethod} />
+                        <SettingRow label="Trading" value={group.settings.tradingEnabled ? 'Enabled' : 'Disabled'} />
                     </View>
                 </View>
 
-                {/* Leave League */}
+                {/* Leave Group */}
                 <View style={styles.section}>
                     <TouchableOpacity
                         style={[styles.dangerButton, { borderColor: '#F44336' }]}
-                        onPress={handleLeaveLeague}
+                        onPress={handleLeaveGroup}
                     >
                         <ThemedText style={[styles.dangerButtonText, { color: '#F44336' }]}>
-                            Leave League
+                            Leave Group
                         </ThemedText>
                     </TouchableOpacity>
                 </View>

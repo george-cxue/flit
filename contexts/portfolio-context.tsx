@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
-import { LeagueService } from '@/src/services/fantasy/leagueService';
+import { GroupService } from '@/src/services/fantasy/groupService';
 import { apiClient } from '@/src/services/api';
 import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
 
@@ -45,8 +45,8 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     try {
       setLoading(true);
 
-      // Fetch all leagues for the user
-      const leagues = await LeagueService.getLeagues();
+      // Fetch all groups for the user
+      const leagues = await GroupService.getGroups();
 
       if (leagues.length === 0) {
         setPortfolios({});
@@ -54,24 +54,24 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         return;
       }
 
-      // Set first league as selected if none selected
+      // Set first group as selected if none selected
       if (!selectedLeagueId && leagues.length > 0) {
         setSelectedLeagueId(leagues[0].id);
       }
 
-      // Fetch portfolio for each league
-      const portfolioPromises = leagues.map(async (league) => {
+      // Fetch portfolio for each group
+      const portfolioPromises = leagues.map(async (group) => {
         try {
-          const response = await apiClient.get(`/fantasy-leagues/${league.id}/portfolio/${CURRENT_USER_ID}`);
+          const response = await apiClient.get(`/fantasy-groups/${group.id}/portfolio/${CURRENT_USER_ID}`);
           const backendPortfolio = response.data;
 
           // Transform backend portfolio to frontend Portfolio type
           const totalValue = backendPortfolio.totalValue || backendPortfolio.cashBalance;
-          const startingBalance = league.settings.startingBalance || 10000;
-          const leagueStartDate = new Date(league.settings.startDate || Date.now());
+          const startingBalance = group.settings.startingBalance || 10000;
+          const leagueStartDate = new Date(group.settings.startDate || Date.now());
 
           // Generate unique performance history for this portfolio
-          const volatilityFactor = calculateVolatilityFactor(league.id, startingBalance);
+          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
           const history = generatePortfolioHistory(
             totalValue,
             startingBalance,
@@ -80,7 +80,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           );
 
           const portfolio: Portfolio = {
-            leagueId: league.id,
+            leagueId: group.id,
             totalValue,
             liquidFunds: backendPortfolio.cashBalance,
             lessonRewards: 0, // Not tracked in backend yet
@@ -101,19 +101,19 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
             history,
           };
 
-          return { leagueId: league.id, portfolio };
+          return { leagueId: group.id, portfolio };
         } catch (error) {
-          console.error(`Failed to fetch portfolio for league ${league.id}:`, error);
+          console.error(`Failed to fetch portfolio for group ${group.id}:`, error);
 
           // Return default portfolio if fetch fails
-          const startingBalance = league.settings.startingBalance || 10000;
-          const leagueStartDate = new Date(league.settings.startDate || Date.now());
-          const volatilityFactor = calculateVolatilityFactor(league.id, startingBalance);
+          const startingBalance = group.settings.startingBalance || 10000;
+          const leagueStartDate = new Date(group.settings.startDate || Date.now());
+          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
 
           return {
-            leagueId: league.id,
+            leagueId: group.id,
             portfolio: {
-              leagueId: league.id,
+              leagueId: group.id,
               totalValue: startingBalance,
               liquidFunds: startingBalance,
               lessonRewards: 0,
