@@ -1,19 +1,35 @@
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
+import { useAuth } from '@clerk/clerk-expo';
+import { SignOutButton } from '@/components/sign-out-button';
 
 export default function HomeScreen() {
+  const { isLoaded, isSignedIn } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
   const { portfolios, loading } = usePortfolio();
+
+  // Redirect to sign-in if not authenticated
+  if (!isLoaded) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </ThemedView>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const primaryColor = useThemeColor({}, 'primary' as any);
@@ -62,12 +78,17 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.greeting}>
-            {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            {profileName?.trim() ? "Let's keep growing your money skills." : 'Ready to level up your financial skills?'}
-          </ThemedText>
+          <View style={styles.headerRow}>
+            <View style={styles.headerText}>
+              <ThemedText type="title" style={styles.greeting}>
+                {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
+              </ThemedText>
+              <ThemedText style={styles.subtitle}>
+                {profileName?.trim() ? "Let's keep growing your money skills." : 'Ready to level up your financial skills?'}
+              </ThemedText>
+            </View>
+            <SignOutButton />
+          </View>
         </View>
 
         {/* Financial IQ Score Card */}
@@ -214,6 +235,20 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 28,

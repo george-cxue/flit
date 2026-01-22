@@ -4,6 +4,7 @@ import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio'
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { apiClient } from '@/src/services/api';
 import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
+import { useAuthContext } from '@/contexts/auth-context';
 
 interface PortfolioContextType {
   // Current state
@@ -32,9 +33,8 @@ interface PortfolioProviderProps {
   children: ReactNode;
 }
 
-const CURRENT_USER_ID = 'user_1';
-
 export function PortfolioProvider({ children }: PortfolioProviderProps) {
+  const { userId, isLoaded: authLoaded } = useAuthContext();
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('1M');
   const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>({});
@@ -42,6 +42,12 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
 
   // Fetch portfolios from backend
   const fetchPortfolios = async () => {
+    if (!userId) {
+      setPortfolios({});
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -62,7 +68,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
       // Fetch portfolio for each group
       const portfolioPromises = leagues.map(async (group) => {
         try {
-          const response = await apiClient.get(`/fantasy-groups/${group.id}/portfolio/${CURRENT_USER_ID}`);
+          const response = await apiClient.get(`/fantasy-groups/${group.id}/portfolio/${userId}`);
           const backendPortfolio = response.data;
 
           // Transform backend portfolio to frontend Portfolio type
@@ -145,10 +151,12 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     }
   };
 
-  // Initial fetch
+  // Initial fetch when auth is loaded and user is available
   useEffect(() => {
-    fetchPortfolios();
-  }, []);
+    if (authLoaded) {
+      fetchPortfolios();
+    }
+  }, [authLoaded, userId]);
 
   const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
     setPortfolios((prev) => {
