@@ -56,9 +56,6 @@ export default function SignInScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
-          <Text style={[styles.subtitle, { color: colors.icon }]}>
-            Sign in to continue your financial journey
-          </Text>
         </View>
 
         <View style={styles.form}>

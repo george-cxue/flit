@@ -15,8 +15,7 @@ export default function AuthRoutesLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerBackTitle: 'Back',
+        headerShown: false,
       }}
     >
       <Stack.Screen

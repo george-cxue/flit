@@ -150,9 +150,6 @@ export default function SignUpScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
-          <Text style={[styles.subtitle, { color: colors.icon }]}>
-            Start your financial literacy journey with Flit
-          </Text>
         </View>
 
         <View style={styles.form}>
