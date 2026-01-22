@@ -2,7 +2,8 @@ import { apiClient, handleApiError } from '../api';
 import { Group, GroupSettings } from '@/src/types/fantasy';
 
 // TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'cmkn5ix8o000110hyj2i6vca4'; // johndoe
+// Using phillipgao's user ID for now
+const CURRENT_USER_ID = 'cmkpyj219000010x8m00psw6m'; // phillipgao
 
 export const GroupService = {
     getGroups: async (): Promise<Group[]> => {

@@ -1,14 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Stock } from '@/types/portfolio';
-import { MOCK_STOCKS } from '@/data/mock-portfolio';
+import { apiClient } from '@/src/services/api';
 
 interface StockSearchProps {
   liquidFunds: number;
-  onBuyStock: (stock: Stock, shares: number) => void;
+  onBuyStock: (stock: Stock, shares: number) => Promise<void>;
 }
 
 export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
@@ -16,37 +16,84 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [shares, setShares] = useState('1');
   const [showModal, setShowModal] = useState(false);
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
 
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const cardBackground = useThemeColor({}, 'cardBackground');
 
-  const filteredStocks = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    return MOCK_STOCKS.filter(
-      (stock) =>
-        stock.symbol.toLowerCase().includes(query) ||
-        stock.name.toLowerCase().includes(query) ||
-        stock.sector.toLowerCase().includes(query)
-    ).slice(0, 10);
+  // Fetch stocks from API when search query changes
+  useEffect(() => {
+    const fetchStocks = async () => {
+      if (!searchQuery.trim()) {
+        setStocks([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await apiClient.get('/assets', {
+          params: {
+            search: searchQuery,
+            type: 'Stock',
+            isActive: true,
+          },
+        });
+
+        // Map API response to Stock type
+        const mappedStocks: Stock[] = response.data.map((asset: any) => ({
+          symbol: asset.ticker,
+          name: asset.name,
+          currentPrice: asset.currentPrice,
+          previousClose: asset.previousClose,
+          changePercent: asset.previousClose > 0 
+            ? ((asset.currentPrice - asset.previousClose) / asset.previousClose) * 100 
+            : 0,
+          sector: asset.sector || 'Unknown',
+          marketCap: asset.marketCap,
+          tier: asset.tier,
+        }));
+
+        setStocks(mappedStocks.slice(0, 10)); // Limit to 10 results
+      } catch (error) {
+        console.error('Error fetching stocks:', error);
+        setStocks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchStocks, 300); // Debounce search
+    return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
+
+  const filteredStocks = stocks;
 
   const totalCost = useMemo(() => {
     if (!selectedStock) return 0;
     return selectedStock.currentPrice * parseInt(shares || '0');
   }, [selectedStock, shares]);
 
-  const handleBuyStock = () => {
+  const handleBuyStock = async () => {
     if (selectedStock && shares) {
       const numShares = parseInt(shares);
       if (numShares > 0 && totalCost <= liquidFunds) {
-        onBuyStock(selectedStock, numShares);
-        setShares('1');
-        setShowModal(false);
-        setSelectedStock(null);
-        setSearchQuery('');
+        try {
+          setPurchasing(true);
+          await onBuyStock(selectedStock, numShares);
+          setShares('1');
+          setShowModal(false);
+          setSelectedStock(null);
+          setSearchQuery('');
+        } catch (error) {
+          console.error('Failed to purchase stock:', error);
+          alert('Failed to purchase stock. Please try again.');
+        } finally {
+          setPurchasing(false);
+        }
       }
     }
   };
@@ -71,7 +118,14 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
         />
       </View>
 
-      {filteredStocks.length > 0 && (
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={primaryColor} />
+          <ThemedText style={styles.loadingText}>Searching...</ThemedText>
+        </View>
+      )}
+
+      {!loading && filteredStocks.length > 0 && (
         <View style={[styles.resultsContainer, { backgroundColor: cardBackground }]}>
           <FlatList
             data={filteredStocks}
@@ -191,13 +245,19 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                     styles.buyButton,
                     {
                       backgroundColor:
-                        totalCost > liquidFunds || totalCost === 0 ? '#888' : primaryColor,
+                        totalCost > liquidFunds || totalCost === 0 || purchasing ? '#888' : primaryColor,
                     },
                   ]}
                   onPress={handleBuyStock}
-                  disabled={totalCost > liquidFunds || totalCost === 0}
+                  disabled={totalCost > liquidFunds || totalCost === 0 || purchasing}
                 >
-                  <ThemedText style={styles.buyButtonText}>Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}</ThemedText>
+                  {purchasing ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <ThemedText style={styles.buyButtonText}>
+                      Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}
+                    </ThemedText>
+                  )}
                 </TouchableOpacity>
               </>
             )}
@@ -382,5 +442,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginLeft: 10,
+    fontSize: 14,
+    opacity: 0.7,
   },
 });

@@ -5,6 +5,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
+import { AssetAllocationManager } from '@/components/portfolio/asset-allocation-manager';
 import { StockSearch } from '@/components/portfolio/stock-search';
 import { HoldingsList } from '@/components/portfolio/holdings-list';
 import { MOCK_SP500 } from '@/data/mock-portfolio';
@@ -25,6 +26,7 @@ export default function PortfolioScreen() {
     setTimeFrame,
     allocateFunds,
     buyStock,
+    sellStock,
     getCurrentPortfolio,
     portfolios,
     loading,
@@ -78,8 +80,12 @@ export default function PortfolioScreen() {
     allocateFunds(selectedLeagueId, asset, amount);
   };
 
-  const handleBuyStock = (stock: Stock, shares: number) => {
-    buyStock(selectedLeagueId, stock, shares);
+  const handleBuyStock = async (stock: Stock, shares: number) => {
+    await buyStock(selectedLeagueId, stock, shares);
+  };
+
+  const handleSellStock = async (symbol: string, shares: number) => {
+    await sellStock(selectedLeagueId, symbol, shares);
   };
 
   return (
@@ -131,12 +137,27 @@ export default function PortfolioScreen() {
           </ThemedText>
           <View style={styles.balanceRow}>
             <View style={styles.balanceItem}>
-              <ThemedText style={styles.balanceLabel}>Liquid Funds</ThemedText>
+              <ThemedText style={styles.balanceLabel}>Cash</ThemedText>
               <ThemedText style={styles.balanceValue}>
                 ${currentPortfolio.liquidFunds.toFixed(2)}
               </ThemedText>
             </View>
+            <View style={styles.balanceItem}>
+              <ThemedText style={styles.balanceLabel}>Stocks</ThemedText>
+              <ThemedText style={styles.balanceValue}>
+                ${(currentPortfolio.totalValue - currentPortfolio.liquidFunds - currentPortfolio.allocation.savings - currentPortfolio.allocation.bonds - currentPortfolio.allocation.indexFunds).toFixed(2)}
+              </ThemedText>
+            </View>
+            <View style={styles.balanceItem}>
+              <ThemedText style={styles.balanceLabel}>Other</ThemedText>
+              <ThemedText style={styles.balanceValue}>
+                ${(currentPortfolio.allocation.savings + currentPortfolio.allocation.bonds + currentPortfolio.allocation.indexFunds).toFixed(2)}
+              </ThemedText>
+            </View>
           </View>
+          <ThemedText style={styles.balanceNote}>
+            Portfolio value is automatically updated every hour with real-time stock prices
+          </ThemedText>
         </View>
 
         {/* Performance Chart */}
@@ -176,12 +197,12 @@ export default function PortfolioScreen() {
           ))}
         </ScrollView>
 
-        {/* Asset Allocation */}
+        {/* Other Assets - Buy/Sell */}
         <View style={[styles.section, { backgroundColor: cardBackground }]}>
-          <AssetAllocationComponent
+          <AssetAllocationManager
             allocation={currentPortfolio.allocation}
-            liquidFunds={currentPortfolio.liquidFunds}
-            onAllocate={handleAllocate}
+            cashBalance={currentPortfolio.liquidFunds}
+            onAllocate={allocateFunds.bind(null, selectedLeagueId)}
           />
         </View>
 
@@ -195,7 +216,7 @@ export default function PortfolioScreen() {
 
         {/* Holdings List */}
         <View style={[styles.section, { backgroundColor: cardBackground }]}>
-          <HoldingsList holdings={currentPortfolio.holdings} />
+          <HoldingsList holdings={currentPortfolio.holdings} onSellStock={handleSellStock} />
         </View>
       </ThemedView>
     </ScrollView>
@@ -268,9 +289,11 @@ const styles = StyleSheet.create({
   balanceRow: {
     flexDirection: 'row',
     gap: 32,
+    marginBottom: 12,
   },
   balanceItem: {
     alignItems: 'center',
+    flex: 1,
   },
   balanceLabel: {
     fontSize: 12,
@@ -280,6 +303,13 @@ const styles = StyleSheet.create({
   balanceValue: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  balanceNote: {
+    fontSize: 11,
+    opacity: 0.5,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   timeFrameContainer: {
     flexDirection: 'row',
