@@ -34,8 +34,6 @@ interface PortfolioProviderProps {
   children: ReactNode;
 }
 
-const CURRENT_USER_ID = 'user_1';
-
 export function PortfolioProvider({ children }: PortfolioProviderProps) {
   const { userId, isLoaded: authLoaded } = useAuthContext();
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
