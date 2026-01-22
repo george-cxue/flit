@@ -15,8 +15,9 @@ interface PortfolioContextType {
   // Actions
   setSelectedLeagueId: (id: string) => void;
   setTimeFrame: (timeFrame: TimeFrame) => void;
-  allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => void;
+  allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => Promise<void>;
   buyStock: (leagueId: string, stock: Stock, shares: number) => void;
+  sellStock: (leagueId: string, symbol: string, shares: number) => Promise<void>;
   ensurePortfolioExists: (leagueId: string, leagueName: string) => void;
   refreshPortfolios: () => Promise<void>;
 
@@ -47,8 +48,10 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
 
       // Fetch all groups for the user
       const leagues = await GroupService.getGroups();
+      console.log('Fetched leagues:', leagues.length);
 
       if (leagues.length === 0) {
+        console.log('No leagues found');
         setPortfolios({});
         setLoading(false);
         return;
@@ -59,16 +62,21 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setSelectedLeagueId(leagues[0].id);
       }
 
-      // Fetch portfolio for each group
-      const portfolioPromises = leagues.map(async (group) => {
+      // Fetch all portfolios from new API endpoint
+      const response = await apiClient.get('/fantasy-portfolio');
+      const backendPortfolios = response.data;
+      console.log('Fetched portfolios from backend:', backendPortfolios.length);
+
+      // Transform each portfolio
+      const portfolioPromises = backendPortfolios.map(async (backendPortfolio: any) => {
         try {
-          const response = await apiClient.get(`/fantasy-groups/${group.id}/portfolio/${CURRENT_USER_ID}`);
-          const backendPortfolio = response.data;
+          const group = leagues.find(g => g.id === backendPortfolio.groupId);
+          if (!group) return null;
 
           // Transform backend portfolio to frontend Portfolio type
-          const totalValue = backendPortfolio.totalValue || backendPortfolio.cashBalance;
-          const startingBalance = group.settings.startingBalance || 10000;
-          const leagueStartDate = new Date(group.settings.startDate || Date.now());
+          const totalValue = Number(backendPortfolio.totalValue) || Number(backendPortfolio.cashBalance);
+          const startingBalance = 10000; // Default starting balance
+          const leagueStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Default to 30 days ago
 
           // Generate unique performance history for this portfolio
           const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
@@ -80,63 +88,47 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           );
 
           const portfolio: Portfolio = {
-            leagueId: group.id,
+            leagueId: backendPortfolio.groupId,
             totalValue,
-            liquidFunds: backendPortfolio.cashBalance,
-            lessonRewards: 0, // Not tracked in backend yet
+            liquidFunds: Number(backendPortfolio.cashBalance),
+            lessonRewards: 0,
             allocation: {
-              savings: 0,
-              bonds: 0,
-              indexFunds: 0,
+              savings: Number(backendPortfolio.savingsAccount || 0),
+              bonds: Number(backendPortfolio.bonds || 0),
+              indexFunds: Number(backendPortfolio.indexFunds || 0),
             },
             holdings: backendPortfolio.slots?.map((slot: any) => ({
               symbol: slot.asset?.ticker || '',
               name: slot.asset?.name || '',
-              shares: slot.shares,
-              averagePrice: slot.averageCost,
-              currentPrice: slot.asset?.currentPrice || slot.currentPrice,
-              totalValue: slot.shares * (slot.asset?.currentPrice || slot.currentPrice),
-              changePercent: slot.gainLossPercent || 0,
+              shares: Number(slot.shares),
+              averagePrice: Number(slot.averageCost),
+              currentPrice: Number(slot.asset?.currentPrice || slot.currentPrice),
+              totalValue: Number(slot.shares) * Number(slot.asset?.currentPrice || slot.currentPrice),
+              changePercent: Number(slot.gainLossPercent) || 0,
             })) || [],
             history,
           };
 
-          return { leagueId: group.id, portfolio };
+          return { leagueId: backendPortfolio.groupId, portfolio };
         } catch (error) {
-          console.error(`Failed to fetch portfolio for group ${group.id}:`, error);
-
-          // Return default portfolio if fetch fails
-          const startingBalance = group.settings.startingBalance || 10000;
-          const leagueStartDate = new Date(group.settings.startDate || Date.now());
-          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-
-          return {
-            leagueId: group.id,
-            portfolio: {
-              leagueId: group.id,
-              totalValue: startingBalance,
-              liquidFunds: startingBalance,
-              lessonRewards: 0,
-              allocation: { savings: 0, bonds: 0, indexFunds: 0 },
-              holdings: [],
-              history: generatePortfolioHistory(
-                startingBalance,
-                startingBalance,
-                leagueStartDate,
-                volatilityFactor
-              ),
-            },
-          };
+          console.error(`Failed to transform portfolio for group ${backendPortfolio.groupId}:`, error);
+          return null;
         }
       });
 
       const portfolioResults = await Promise.all(portfolioPromises);
+      // Filter out null results
+      // Filter out null results
       const newPortfolios: Record<string, Portfolio> = {};
 
-      portfolioResults.forEach(({ leagueId, portfolio }) => {
-        newPortfolios[leagueId] = portfolio;
+      portfolioResults.forEach((result) => {
+        if (result) {
+          const { leagueId, portfolio } = result;
+          newPortfolios[leagueId] = portfolio;
+        }
       });
 
+      console.log('Transformed portfolios:', Object.keys(newPortfolios));
       setPortfolios(newPortfolios);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
@@ -150,76 +142,63 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     fetchPortfolios();
   }, []);
 
-  const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
-    setPortfolios((prev) => {
-      const portfolio = prev[leagueId];
-      if (!portfolio) return prev;
+  const allocateFunds = async (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
+    try {
+      // Call backend API to update allocation
+      const response = await apiClient.post('/fantasy-portfolio/allocate', {
+        groupId: leagueId,
+        assetType: asset,
+        amount,
+      });
 
-      return {
-        ...prev,
-        [leagueId]: {
-          ...portfolio,
-          liquidFunds: portfolio.liquidFunds - amount,
-          allocation: {
-            ...portfolio.allocation,
-            [asset]: portfolio.allocation[asset] + amount,
-          },
-          // totalValue stays the same - just converting cash to assets
-        },
-      };
-    });
+      if (response.data.success) {
+        // Refresh portfolios to get updated data from backend
+        await fetchPortfolios();
+      }
+    } catch (error) {
+      console.error('Error allocating funds:', error);
+      throw error;
+    }
   };
 
-  const buyStock = (leagueId: string, stock: Stock, shares: number) => {
-    const totalCost = stock.currentPrice * shares;
-    setPortfolios((prev) => {
-      const portfolio = prev[leagueId];
-      if (!portfolio) return prev;
+  const buyStock = async (leagueId: string, stock: Stock, shares: number) => {
+    try {
+      // Call backend API to execute trade
+      const response = await apiClient.post('/fantasy-portfolio/trade', {
+        groupId: leagueId,
+        ticker: stock.symbol,
+        shares,
+        tradeType: 'buy',
+      });
 
-      const existingHolding = portfolio.holdings.find((h) => h.symbol === stock.symbol);
-
-      let updatedHoldings;
-      if (existingHolding) {
-        const totalShares = existingHolding.shares + shares;
-        const newAveragePrice =
-          (existingHolding.averagePrice * existingHolding.shares + totalCost) / totalShares;
-
-        updatedHoldings = portfolio.holdings.map((h) =>
-          h.symbol === stock.symbol
-            ? {
-                ...h,
-                shares: totalShares,
-                averagePrice: newAveragePrice,
-                totalValue: stock.currentPrice * totalShares,
-                changePercent: ((stock.currentPrice - newAveragePrice) / newAveragePrice) * 100,
-              }
-            : h
-        );
-      } else {
-        updatedHoldings = [
-          ...portfolio.holdings,
-          {
-            symbol: stock.symbol,
-            name: stock.name,
-            shares,
-            averagePrice: stock.currentPrice,
-            currentPrice: stock.currentPrice,
-            totalValue: totalCost,
-            changePercent: 0,
-          },
-        ];
+      if (response.data.success) {
+        // Refresh portfolios to get updated data from backend
+        await fetchPortfolios();
       }
+    } catch (error) {
+      console.error('Error buying stock:', error);
+      throw error;
+    }
+  };
 
-      return {
-        ...prev,
-        [leagueId]: {
-          ...portfolio,
-          liquidFunds: portfolio.liquidFunds - totalCost,
-          holdings: updatedHoldings,
-          // totalValue stays the same - just converting cash to stocks
-        },
-      };
-    });
+  const sellStock = async (leagueId: string, symbol: string, shares: number) => {
+    try {
+      // Call backend API to execute sell trade
+      const response = await apiClient.post('/fantasy-portfolio/trade', {
+        groupId: leagueId,
+        ticker: symbol,
+        shares,
+        tradeType: 'sell',
+      });
+
+      if (response.data.success) {
+        // Refresh portfolios to get updated data from backend
+        await fetchPortfolios();
+      }
+    } catch (error) {
+      console.error('Error selling stock:', error);
+      throw error;
+    }
   };
 
   const getCurrentPortfolio = (): Portfolio | null => {
@@ -252,6 +231,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     setTimeFrame,
     allocateFunds,
     buyStock,
+    sellStock,
     ensurePortfolioExists,
     refreshPortfolios,
     getCurrentPortfolio,

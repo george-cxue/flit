@@ -8,7 +8,7 @@ import { apiClient } from '@/src/services/api';
 
 interface StockSearchProps {
   liquidFunds: number;
-  onBuyStock: (stock: Stock, shares: number) => void;
+  onBuyStock: (stock: Stock, shares: number) => Promise<void>;
 }
 
 export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
@@ -18,6 +18,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   const [showModal, setShowModal] = useState(false);
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
 
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
@@ -76,15 +77,23 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
     return selectedStock.currentPrice * parseInt(shares || '0');
   }, [selectedStock, shares]);
 
-  const handleBuyStock = () => {
+  const handleBuyStock = async () => {
     if (selectedStock && shares) {
       const numShares = parseInt(shares);
       if (numShares > 0 && totalCost <= liquidFunds) {
-        onBuyStock(selectedStock, numShares);
-        setShares('1');
-        setShowModal(false);
-        setSelectedStock(null);
-        setSearchQuery('');
+        try {
+          setPurchasing(true);
+          await onBuyStock(selectedStock, numShares);
+          setShares('1');
+          setShowModal(false);
+          setSelectedStock(null);
+          setSearchQuery('');
+        } catch (error) {
+          console.error('Failed to purchase stock:', error);
+          alert('Failed to purchase stock. Please try again.');
+        } finally {
+          setPurchasing(false);
+        }
       }
     }
   };
@@ -236,13 +245,19 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                     styles.buyButton,
                     {
                       backgroundColor:
-                        totalCost > liquidFunds || totalCost === 0 ? '#888' : primaryColor,
+                        totalCost > liquidFunds || totalCost === 0 || purchasing ? '#888' : primaryColor,
                     },
                   ]}
                   onPress={handleBuyStock}
-                  disabled={totalCost > liquidFunds || totalCost === 0}
+                  disabled={totalCost > liquidFunds || totalCost === 0 || purchasing}
                 >
-                  <ThemedText style={styles.buyButtonText}>Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}</ThemedText>
+                  {purchasing ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <ThemedText style={styles.buyButtonText}>
+                      Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}
+                    </ThemedText>
+                  )}
                 </TouchableOpacity>
               </>
             )}
