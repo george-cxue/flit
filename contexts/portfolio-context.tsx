@@ -4,6 +4,7 @@ import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio'
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { apiClient } from '@/src/services/api';
 import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
+import { useAuthContext } from '@/contexts/auth-context';
 
 interface PortfolioContextType {
   // Current state
@@ -16,7 +17,7 @@ interface PortfolioContextType {
   setSelectedLeagueId: (id: string) => void;
   setTimeFrame: (timeFrame: TimeFrame) => void;
   allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => Promise<void>;
-  buyStock: (leagueId: string, stock: Stock, shares: number) => void;
+  buyStock: (leagueId: string, stock: Stock, shares: number) => Promise<void>;
   sellStock: (leagueId: string, symbol: string, shares: number) => Promise<void>;
   ensurePortfolioExists: (leagueId: string, leagueName: string) => void;
   refreshPortfolios: () => Promise<void>;
@@ -36,6 +37,7 @@ interface PortfolioProviderProps {
 const CURRENT_USER_ID = 'user_1';
 
 export function PortfolioProvider({ children }: PortfolioProviderProps) {
+  const { userId, isLoaded: authLoaded } = useAuthContext();
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('1M');
   const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>({});
@@ -43,11 +45,18 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
 
   // Fetch portfolios from backend
   const fetchPortfolios = async () => {
+    if (!userId) {
+      setPortfolios({});
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
       // Fetch all groups for the user
       const leagues = await GroupService.getGroups();
+      console.log('Fetched leagues:', leagues.length);
       console.log('Fetched leagues:', leagues.length);
 
       if (leagues.length === 0) {
@@ -137,10 +146,12 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     }
   };
 
-  // Initial fetch
+  // Initial fetch when auth is loaded and user is available
   useEffect(() => {
-    fetchPortfolios();
-  }, []);
+    if (authLoaded) {
+      fetchPortfolios();
+    }
+  }, [authLoaded, userId]);
 
   const allocateFunds = async (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
     try {
