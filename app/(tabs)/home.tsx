@@ -8,7 +8,7 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuth } from '@clerk/clerk-expo';
-import { SignOutButton } from '@/components/sign-out-button';
+import { ProfileButton } from '@/components/profile-button';
 
 export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -88,7 +88,7 @@ export default function HomeScreen() {
                 {profileName?.trim() ? "Let's keep growing your money skills." : 'Ready to level up your financial skills?'}
               </ThemedText>
             </View>
-            <SignOutButton />
+            <ProfileButton />
           </View>
         </View>
 
