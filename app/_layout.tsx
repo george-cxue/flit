@@ -26,7 +26,7 @@ export default function RootLayout() {
 
     // Redirect to home if not in tabs, fantasy, or valid routes
     // Skip redirect if on index (it has its own redirect)
-    if (!inTabs && !inFantasy && !isIndex && segments[0] !== "modal" && segments[0] !== "onboarding") {
+    if (!inTabs && !inFantasy && !isIndex && segments[0] !== "modal" && segments[0] !== "onboarding" && segments[0] !== "lesson") {
       router.replace("/(tabs)/home");
     }
   }, [segments, router]);
@@ -41,6 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="fantasy" options={{ headerShown: false }} />
+        <Stack.Screen name="lesson" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

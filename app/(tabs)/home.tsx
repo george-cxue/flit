@@ -6,12 +6,21 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter } from 'expo-router';
+import { useLessons } from '@/hooks/use-lessons';
+import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
+  const { isLessonCompleted } = useLessons();
+
+  // Find the first incomplete lesson across all courses to feature as "Today's Lesson"
+  const allLessons = lessonService.getAllLessons();
+  const todaysLesson = allLessons.find(
+    (l) => !isLessonCompleted(l.courseId, l.id)
+  ) ?? allLessons[0];
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const primaryColor = useThemeColor({}, 'primary' as any);
@@ -114,37 +123,43 @@ export default function HomeScreen() {
         </View>
 
         {/* Today's Lesson */}
-        <TouchableOpacity
-          style={[styles.lessonCard, { backgroundColor: cardBg, borderColor, borderLeftColor: primaryColor }]}
-        >
-          <View style={styles.lessonHeader}>
-            <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
-              Today&apos;s Lesson
-            </ThemedText>
-            <View style={styles.lessonBadge}>
-              <ThemedText style={[styles.lessonBadgeText, { color: primaryColor }]}>
-                +$500
+        {todaysLesson && (
+          <TouchableOpacity
+            style={[styles.lessonCard, { backgroundColor: cardBg, borderColor, borderLeftColor: primaryColor }]}
+            onPress={() => router.push({ pathname: '/lesson/[id]', params: { id: todaysLesson.id } })}
+          >
+            <View style={styles.lessonHeader}>
+              <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
+                Today&apos;s Lesson
               </ThemedText>
+              <View style={styles.lessonBadge}>
+                <ThemedText style={[styles.lessonBadgeText, { color: primaryColor }]}>
+                  +${todaysLesson.reward}
+                </ThemedText>
+              </View>
             </View>
-          </View>
 
-          <ThemedText style={styles.lessonName}>
-            Understanding Compound Interest
-          </ThemedText>
-          <ThemedText style={styles.lessonDescription}>
-            Learn how your money can grow exponentially over time
-          </ThemedText>
+            <ThemedText style={styles.lessonName}>
+              {todaysLesson.title}
+            </ThemedText>
+            <ThemedText style={styles.lessonDescription}>
+              {todaysLesson.description}
+            </ThemedText>
 
-          <View style={styles.lessonMeta}>
-            <ThemedText style={styles.lessonDuration}>5 min</ThemedText>
-            <ThemedText style={styles.lessonSeparator}>•</ThemedText>
-            <ThemedText style={styles.lessonLevel}>Intermediate</ThemedText>
-          </View>
-        </TouchableOpacity>
+            <View style={styles.lessonMeta}>
+              <ThemedText style={styles.lessonDuration}>{todaysLesson.estimatedMinutes} min</ThemedText>
+              <ThemedText style={styles.lessonSeparator}>•</ThemedText>
+              <ThemedText style={styles.lessonLevel}>{todaysLesson.difficulty}</ThemedText>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            onPress={() => router.push('/(tabs)/lesson')}
+          >
             <ThemedText style={styles.actionIcon}>📚</ThemedText>
             <ThemedText style={styles.actionLabel}>Browse Lessons</ThemedText>
           </TouchableOpacity>

@@ -1,412 +1,403 @@
-import { useState } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLessons } from '@/hooks/use-lessons';
+import { lessonService } from '@/src/services/lessonService';
+import { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
 
-export default function LessonScreen() {
+export default function LessonsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const router = useRouter();
 
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const primaryColor = useThemeColor({}, 'primary' as any);
   const successColor = useThemeColor({}, 'success' as any);
-  const dangerColor = useThemeColor({}, 'danger' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const handleAnswerSelect = (index: number) => {
-    setSelectedAnswer(index);
-    // For demo: answer 2 is correct
-    setIsCorrect(index === 2);
-  };
+  const { isLessonCompleted, getCourseCompletionCount } = useLessons();
 
-  const answers = [
-    'Only the initial investment amount',
-    'Interest calculated on a monthly basis',
-    'Interest earned on both principal and accumulated interest',
-    'A type of savings account',
-  ];
+  const courses = lessonService.getCourses();
+
+  const handleLessonPress = (lesson: Lesson) => {
+    router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } });
+  };
 
   return (
     <ThemedView style={styles.container}>
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: '40%', backgroundColor: primaryColor }]} />
-        </View>
-        <TouchableOpacity style={styles.closeButton}>
-          <ThemedText style={styles.closeButtonText}>✕</ThemedText>
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Lesson Header */}
+        {/* Header */}
         <View style={styles.header}>
-          <View style={[styles.lessonBadge, { backgroundColor: colors.primaryPale }]}>
-            <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
-              Lesson 4 of 10
-            </ThemedText>
-          </View>
-          <ThemedText type="title" style={styles.lessonTitle}>
-            Understanding Compound Interest
+          <ThemedText type="title" style={styles.title}>
+            Lessons
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Complete lessons to earn learning dollars and unlock assets.
           </ThemedText>
         </View>
 
-        {/* Educational Content */}
-        <View style={[styles.contentCard, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText style={styles.contentText}>
-            Compound interest is interest calculated on the initial principal and also on the
-            accumulated interest from previous periods.
-          </ThemedText>
-
-          <View style={styles.exampleBox}>
-            <ThemedText style={styles.exampleTitle}>Example:</ThemedText>
-            <ThemedText style={styles.exampleText}>
-              Invest $1,000 at 8% annual interest:
-            </ThemedText>
-            <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>Year 1:</ThemedText>
-              <ThemedText style={styles.exampleValue}>$1,080</ThemedText>
-            </View>
-            <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>Year 5:</ThemedText>
-              <ThemedText style={styles.exampleValue}>$1,469</ThemedText>
-            </View>
-            <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>Year 10:</ThemedText>
-              <ThemedText style={[styles.exampleValue, { color: successColor, fontWeight: 'bold' }]}>
-                $2,159
-              </ThemedText>
-            </View>
-          </View>
-
-          <View style={[styles.keyPoint, { backgroundColor: colors.primaryPale }]}>
-            <ThemedText style={styles.keyPointIcon}>💡</ThemedText>
-            <ThemedText style={styles.keyPointText}>
-              The longer you invest, the more powerful compound interest becomes!
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* Interactive Question */}
-        <View style={styles.questionSection}>
-          <ThemedText type="defaultSemiBold" style={styles.questionText}>
-            What is compound interest?
-          </ThemedText>
-
-          <View style={styles.answersContainer}>
-            {answers.map((answer, index) => {
-              const isSelected = selectedAnswer === index;
-              const showResult = isSelected && isCorrect !== null;
-
-              let answerStyle = [styles.answerButton, { backgroundColor: cardBg, borderColor }];
-              if (isSelected && isCorrect) {
-                answerStyle.push({ borderColor: successColor, backgroundColor: colors.success + '15' });
-              } else if (isSelected && !isCorrect) {
-                answerStyle.push({ borderColor: dangerColor, backgroundColor: colors.danger + '15' });
-              }
-
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={answerStyle}
-                  onPress={() => handleAnswerSelect(index)}
-                  disabled={selectedAnswer !== null}
-                >
-                  <View style={[styles.answerCircle, { borderColor }]}>
-                    {isSelected && (
-                      <View
-                        style={[
-                          styles.answerCircleFill,
-                          { backgroundColor: isCorrect ? successColor : dangerColor },
-                        ]}
-                      />
-                    )}
-                  </View>
-                  <ThemedText style={styles.answerText}>{answer}</ThemedText>
-                  {showResult && (
-                    <ThemedText style={styles.resultIcon}>
-                      {isCorrect ? '✓' : '✗'}
-                    </ThemedText>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Feedback Section */}
-        {isCorrect !== null && (
-          <View
-            style={[
-              styles.feedbackCard,
-              {
-                backgroundColor: isCorrect ? successColor + '15' : dangerColor + '15',
-                borderColor: isCorrect ? successColor : dangerColor,
-              },
-            ]}
-          >
-            <ThemedText style={[styles.feedbackTitle, { color: isCorrect ? successColor : dangerColor }]}>
-              {isCorrect ? '🎉 Correct!' : '❌ Not quite'}
-            </ThemedText>
-            <ThemedText style={styles.feedbackText}>
-              {isCorrect
-                ? "Great job! You've earned +$500 learning dollars."
-                : 'Compound interest includes interest on both principal and previously earned interest.'}
-            </ThemedText>
-          </View>
-        )}
-
-        {/* Earnings Display */}
-        <View style={[styles.earningsCard, { backgroundColor: cardBg, borderColor }]}>
-          <View style={styles.earningsRow}>
-            <ThemedText style={styles.earningsLabel}>Lesson Progress</ThemedText>
-            <ThemedText type="defaultSemiBold" style={styles.earningsValue}>
-              4 / 8 questions
-            </ThemedText>
-          </View>
-          <View style={styles.earningsRow}>
-            <ThemedText style={styles.earningsLabel}>Earned This Lesson</ThemedText>
-            <ThemedText type="defaultSemiBold" style={[styles.earningsValue, { color: successColor }]}>
-              +$2,000
-            </ThemedText>
-          </View>
-        </View>
+        {/* Courses */}
+        {courses.map((course) => (
+          <CourseSection
+            key={course.id}
+            course={course}
+            cardBg={cardBg}
+            borderColor={borderColor}
+            primaryColor={primaryColor}
+            successColor={successColor}
+            colors={colors}
+            isLessonCompleted={isLessonCompleted}
+            completedCount={getCourseCompletionCount(course.id)}
+            totalCount={lessonService.getTotalLessonsCount(course.id)}
+            onLessonPress={handleLessonPress}
+          />
+        ))}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      {/* Bottom Action Button */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            {
-              backgroundColor: isCorrect ? primaryColor : borderColor,
-              opacity: isCorrect ? 1 : 0.5,
-            },
-          ]}
-          disabled={!isCorrect}
-        >
-          <ThemedText style={styles.continueButtonText}>
-            {isCorrect ? 'Continue' : 'Select an answer'}
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
     </ThemedView>
   );
 }
 
+// ─── Course Section ───────────────────────────────────────────────────────────
+
+function CourseSection({
+  course,
+  cardBg,
+  borderColor,
+  primaryColor,
+  successColor,
+  colors,
+  isLessonCompleted,
+  completedCount,
+  totalCount,
+  onLessonPress,
+}: {
+  course: LessonCourse;
+  cardBg: string;
+  borderColor: string;
+  primaryColor: string;
+  successColor: string;
+  colors: (typeof Colors)['light'];
+  isLessonCompleted: (courseId: string, lessonId: string) => boolean;
+  completedCount: number;
+  totalCount: number;
+  onLessonPress: (lesson: Lesson) => void;
+}) {
+  const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  return (
+    <View style={styles.courseSection}>
+      {/* Course Header Card */}
+      <View style={[styles.courseHeader, { backgroundColor: primaryColor }]}>
+        <View style={styles.courseHeaderTop}>
+          <View>
+            <ThemedText style={styles.courseAttribution}>{course.attribution}</ThemedText>
+            <ThemedText style={styles.courseTitle}>{course.title}</ThemedText>
+          </View>
+          <ThemedText style={styles.courseLicense}>{course.license}</ThemedText>
+        </View>
+        <ThemedText style={styles.courseDescription}>{course.description}</ThemedText>
+        <View style={styles.courseProgressRow}>
+          <View style={styles.courseProgressBar}>
+            <View
+              style={[
+                styles.courseProgressFill,
+                { width: `${progressPct}%` },
+              ]}
+            />
+          </View>
+          <ThemedText style={styles.courseProgressLabel}>
+            {completedCount}/{totalCount} lessons
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Units */}
+      {course.units.map((unit) => (
+        <UnitSection
+          key={unit.id}
+          unit={unit}
+          courseId={course.id}
+          cardBg={cardBg}
+          borderColor={borderColor}
+          primaryColor={primaryColor}
+          successColor={successColor}
+          colors={colors}
+          isLessonCompleted={isLessonCompleted}
+          onLessonPress={onLessonPress}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ─── Unit Section ─────────────────────────────────────────────────────────────
+
+function UnitSection({
+  unit,
+  courseId,
+  cardBg,
+  borderColor,
+  primaryColor,
+  successColor,
+  colors,
+  isLessonCompleted,
+  onLessonPress,
+}: {
+  unit: LessonUnit;
+  courseId: string;
+  cardBg: string;
+  borderColor: string;
+  primaryColor: string;
+  successColor: string;
+  colors: (typeof Colors)['light'];
+  isLessonCompleted: (courseId: string, lessonId: string) => boolean;
+  onLessonPress: (lesson: Lesson) => void;
+}) {
+  const unitCompleted = unit.lessons.filter((l) =>
+    isLessonCompleted(courseId, l.id)
+  ).length;
+
+  return (
+    <View style={[styles.unitSection, { backgroundColor: cardBg, borderColor }]}>
+      {/* Unit header */}
+      <View style={styles.unitHeader}>
+        <ThemedText style={styles.unitIcon}>{unit.icon}</ThemedText>
+        <View style={styles.unitHeaderText}>
+          <ThemedText type="defaultSemiBold" style={styles.unitTitle}>
+            {unit.title}
+          </ThemedText>
+          <ThemedText style={styles.unitMeta}>
+            {unitCompleted}/{unit.lessons.length} complete
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Lessons */}
+      {unit.lessons.map((lesson, index) => {
+        const completed = isLessonCompleted(courseId, lesson.id);
+        const isLast = index === unit.lessons.length - 1;
+
+        return (
+          <TouchableOpacity
+            key={lesson.id}
+            style={[
+              styles.lessonRow,
+              !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
+            ]}
+            onPress={() => onLessonPress(lesson)}
+          >
+            {/* Status indicator */}
+            <View
+              style={[
+                styles.lessonStatusDot,
+                {
+                  backgroundColor: completed ? successColor : colors.primaryPale,
+                  borderColor: completed ? successColor : borderColor,
+                },
+              ]}
+            >
+              {completed && (
+                <ThemedText style={styles.lessonCheckmark}>✓</ThemedText>
+              )}
+            </View>
+
+            <View style={styles.lessonInfo}>
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.lessonTitle, completed && { opacity: 0.5 }]}
+                numberOfLines={1}
+              >
+                {lesson.title}
+              </ThemedText>
+              <ThemedText style={styles.lessonMeta}>
+                {lesson.estimatedMinutes} min · {lesson.difficulty}
+              </ThemedText>
+            </View>
+
+            <View style={styles.lessonRight}>
+              <View style={[styles.rewardBadge, { backgroundColor: colors.primaryPale }]}>
+                <ThemedText style={[styles.rewardText, { color: primaryColor }]}>
+                  +${lesson.reward}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.chevron}>›</ThemedText>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 12,
-    gap: 12,
-  },
-  progressBarBg: {
-    flex: 1,
-    height: 12,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    opacity: 0.6,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingTop: 60,
   },
   header: {
     marginBottom: 24,
   },
-  lessonBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
+  title: {
+    fontSize: 28,
+    marginBottom: 6,
   },
-  badgeText: {
+  subtitle: {
+    fontSize: 15,
+    opacity: 0.6,
+    lineHeight: 22,
+  },
+  courseSection: {
+    marginBottom: 28,
+  },
+  courseHeader: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  courseHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  courseAttribution: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  courseTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  courseLicense: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    paddingTop: 2,
+  },
+  courseDescription: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  courseProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  courseProgressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  courseProgressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 3,
+  },
+  courseProgressLabel: {
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
     fontWeight: '600',
   },
-  lessonTitle: {
-    fontSize: 26,
-  },
-  contentCard: {
+  unitSection: {
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
     borderWidth: 1,
-  },
-  contentText: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  exampleBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  exampleTitle: {
-    fontSize: 14,
-    fontWeight: '600',
     marginBottom: 12,
-    opacity: 0.7,
+    overflow: 'hidden',
   },
-  exampleText: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  exampleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  exampleLabel: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  exampleValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  keyPoint: {
+  unitHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    padding: 16,
     gap: 12,
   },
-  keyPointIcon: {
-    fontSize: 24,
+  unitIcon: {
+    fontSize: 28,
   },
-  keyPointText: {
+  unitHeaderText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
   },
-  questionSection: {
-    marginBottom: 24,
+  unitTitle: {
+    fontSize: 16,
+    marginBottom: 2,
   },
-  questionText: {
-    fontSize: 20,
-    marginBottom: 20,
+  unitMeta: {
+    fontSize: 13,
+    opacity: 0.5,
   },
-  answersContainer: {
-    gap: 12,
-  },
-  answerButton: {
+  lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
   },
-  answerCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  lessonStatusDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  answerCircleFill: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  answerText: {
-    flex: 1,
-    fontSize: 15,
-  },
-  resultIcon: {
-    fontSize: 20,
-  },
-  feedbackCard: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    marginBottom: 24,
-  },
-  feedbackTitle: {
-    fontSize: 16,
+  lessonCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8,
   },
-  feedbackText: {
-    fontSize: 14,
-    lineHeight: 20,
+  lessonInfo: {
+    flex: 1,
   },
-  earningsCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    gap: 12,
+  lessonTitle: {
+    fontSize: 15,
+    marginBottom: 2,
   },
-  earningsRow: {
+  lessonMeta: {
+    fontSize: 12,
+    opacity: 0.5,
+  },
+  lessonRight: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
-  earningsLabel: {
-    fontSize: 14,
-    opacity: 0.7,
+  rewardBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  earningsValue: {
-    fontSize: 16,
+  rewardText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chevron: {
+    fontSize: 20,
+    opacity: 0.4,
   },
   bottomPadding: {
-    height: 100,
-  },
-  bottomBar: {
-    padding: 20,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  continueButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    height: 40,
   },
 });
