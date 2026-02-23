@@ -15,6 +15,8 @@ import { AuthProvider } from "@/contexts/auth-context";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
