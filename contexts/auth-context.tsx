@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
 import { apiClient, setAuthTokenGetter } from '@/src/services/api';
 
@@ -32,16 +32,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { user: clerkUser } = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isMountedRef = useRef(true);
 
   // Set up the auth token getter for the API client
   useEffect(() => {
     setAuthTokenGetter(getToken);
   }, [getToken]);
 
-  const syncUser = async () => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const syncUser = useCallback(async () => {
     if (!isSignedIn || !clerkUser) {
-      setUser(null);
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setUser(null);
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -63,25 +73,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       );
 
-      setUser(response.data.user);
+      if (isMountedRef.current) {
+        setUser(response.data.user);
+      }
     } catch (error) {
       console.error('Failed to sync user:', error);
-      setUser(null);
+      if (isMountedRef.current) {
+        setUser(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [isSignedIn, clerkUser, getToken]);
 
   useEffect(() => {
     if (clerkLoaded) {
       if (isSignedIn && clerkUser) {
         syncUser();
       } else {
-        setUser(null);
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setUser(null);
+          setIsLoading(false);
+        }
       }
     }
-  }, [clerkLoaded, isSignedIn, clerkUser]);
+  }, [clerkLoaded, isSignedIn, clerkUser, syncUser]);
 
   const value: AuthContextType = {
     isLoaded: clerkLoaded && !isLoading,

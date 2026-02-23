@@ -18,6 +18,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const { portfolios, loading } = usePortfolio();
 
+  // Call ALL hooks before any conditional returns
+  const cardBg = useThemeColor({}, 'cardBackground' as any);
+  const primaryColor = useThemeColor({}, 'primary' as any);
+  const successColor = useThemeColor({}, 'success' as any);
+  const borderColor = useThemeColor({}, 'border' as any);
+
   // Redirect to sign-in if not authenticated
   if (!isLoaded) {
     return (
@@ -30,11 +36,6 @@ export default function HomeScreen() {
   if (!isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
   }
-
-  const cardBg = useThemeColor({}, 'cardBackground' as any);
-  const primaryColor = useThemeColor({}, 'primary' as any);
-  const successColor = useThemeColor({}, 'success' as any);
-  const borderColor = useThemeColor({}, 'border' as any);
 
   // Get first portfolio
   const firstPortfolio = Object.values(portfolios)[0];
@@ -61,8 +62,8 @@ export default function HomeScreen() {
     router.push('/(tabs)/lesson');
   };
 
-  const handleViewLeagues = () => {
-    router.push('/(tabs)/league');
+  const handleViewGroups = () => {
+    router.push('/(tabs)/group');
   };
 
   const handleViewAllPortfolios = () => {
@@ -202,10 +203,10 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
-            onPress={handleViewLeagues}
+            onPress={handleViewGroups}
           >
             <ThemedText style={styles.actionIcon}>🏆</ThemedText>
-            <ThemedText style={styles.actionLabel}>View Leagues</ThemedText>
+            <ThemedText style={styles.actionLabel}>View Groups</ThemedText>
           </TouchableOpacity>
         </View>
 

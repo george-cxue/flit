@@ -1,7 +1,7 @@
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 
@@ -15,16 +15,26 @@ export function SignOutButton({ style }: SignOutButtonProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [isLoading, setIsLoading] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleSignOut = async () => {
-    setIsLoading(true);
+    if (isMountedRef.current) {
+      setIsLoading(true);
+    }
     try {
       await signOut();
-      router.replace('/');
+      // Don't try to navigate - Clerk will handle the redirect
     } catch (err) {
       console.error('Error signing out:', JSON.stringify(err, null, 2));
-    } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
