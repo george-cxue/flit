@@ -12,8 +12,10 @@ import {
   ScrollView,
 } from 'react-native';
 import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import { PENDING_SIGNUP_KEY } from '@/src/constants/auth';
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -23,6 +25,10 @@ export default function SignUpScreen() {
 
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,13 +37,54 @@ export default function SignUpScreen() {
   const onSignUpPress = async () => {
     if (!isLoaded) return;
 
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedUsername = username.trim();
+    const trimmedDate = dateOfBirth.trim();
+
+    if (!trimmedFirstName) {
+      setError('First name is required');
+      return;
+    }
+    if (!trimmedLastName) {
+      setError('Last name is required');
+      return;
+    }
+    if (!trimmedUsername) {
+      setError('Username is required');
+      return;
+    }
+    if (trimmedUsername.length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+    if (!trimmedDate) {
+      setError('Date of birth is required');
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+      setError('Date of birth must be in YYYY-MM-DD format');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
+      const signUpData = {
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        username: trimmedUsername,
+        dateOfBirth: trimmedDate,
+      };
+
+      await AsyncStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(signUpData));
+
       await signUp.create({
         emailAddress,
         password,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
       });
 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
@@ -92,7 +139,7 @@ export default function SignUpScreen() {
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>Verify Email</Text>
             <Text style={[styles.subtitle, { color: colors.icon }]}>
-              We've sent a verification code to {emailAddress}
+              We&apos;ve sent a verification code to {emailAddress}
             </Text>
           </View>
 
@@ -158,6 +205,82 @@ export default function SignUpScreen() {
               <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
             </View>
           ) : null}
+
+          <View style={styles.inputRow}>
+            <View style={[styles.inputContainer, styles.halfInput]}>
+              <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                value={firstName}
+                placeholder="First name"
+                placeholderTextColor={colors.icon}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+              />
+            </View>
+            <View style={[styles.inputContainer, styles.halfInput]}>
+              <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                value={lastName}
+                placeholder="Last name"
+                placeholderTextColor={colors.icon}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Username</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.cardBackground,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              autoCapitalize="none"
+              value={username}
+              placeholder="Username"
+              placeholderTextColor={colors.icon}
+              onChangeText={setUsername}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Date of Birth</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.cardBackground,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={dateOfBirth}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.icon}
+              onChangeText={setDateOfBirth}
+            />
+          </View>
 
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: colors.text }]}>Email</Text>
@@ -249,6 +372,13 @@ const createStyles = (colors: typeof Colors.light) =>
     },
     form: {
       gap: 16,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    halfInput: {
+      flex: 1,
     },
     inputContainer: {
       gap: 8,

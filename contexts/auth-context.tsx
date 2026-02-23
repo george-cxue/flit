@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
 import { apiClient, setAuthTokenGetter } from '@/src/services/api';
+import { PENDING_SIGNUP_KEY } from '@/src/constants/auth';
 
 interface User {
   id: string;
@@ -18,7 +20,10 @@ interface AuthContextType {
   userId: string | null;
   user: User | null;
   clerkUserId: string | null;
+  syncError: string | null;
+  clearSyncError: () => void;
   syncUser: () => Promise<void>;
+  updateUserFromProfile: (profile: Pick<User, 'firstName' | 'lastName' | 'username'>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,23 +36,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { isLoaded: clerkLoaded, isSignedIn, userId: clerkUserId, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const [user, setUser] = useState<User | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMountedRef = useRef(true);
+  const getTokenRef = useRef(getToken);
+  const syncedForUserRef = useRef<string | null>(null);
 
-  // Set up the auth token getter for the API client
+  getTokenRef.current = getToken;
+
   useEffect(() => {
     setAuthTokenGetter(getToken);
   }, [getToken]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
 
+  const clerkId = clerkUser?.id;
+  const clerkEmail = clerkUser?.primaryEmailAddress?.emailAddress;
+  const clerkUsername = clerkUser?.username;
+  const clerkFirstName = clerkUser?.firstName;
+  const clerkLastName = clerkUser?.lastName;
+
   const syncUser = useCallback(async () => {
-    if (!isSignedIn || !clerkUser) {
+    if (!isSignedIn || !clerkId || !clerkEmail) {
       if (isMountedRef.current) {
         setUser(null);
         setIsLoading(false);
@@ -56,16 +70,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      const token = await getToken();
+      let pendingData: { firstName?: string; lastName?: string; username?: string; dateOfBirth?: string } = {};
+      try {
+        const stored = await AsyncStorage.getItem(PENDING_SIGNUP_KEY);
+        if (stored) {
+          pendingData = JSON.parse(stored);
+          await AsyncStorage.removeItem(PENDING_SIGNUP_KEY);
+        }
+      } catch {
+        // Ignore parse errors
+      }
+
+      const syncUsername = pendingData.username || clerkUsername || clerkEmail.split('@')[0];
+      const syncFirstName = pendingData.firstName || clerkFirstName;
+      const syncLastName = pendingData.lastName || clerkLastName;
+      const syncDateOfBirth = pendingData.dateOfBirth;
+
+      const payload: Record<string, string | undefined> = {
+        clerkId,
+        email: clerkEmail,
+        username: syncUsername || undefined,
+        firstName: syncFirstName || undefined,
+        lastName: syncLastName || undefined,
+        dateOfBirth: syncDateOfBirth || undefined,
+      };
+
+      const token = await getTokenRef.current();
       const response = await apiClient.post(
         '/users/sync',
-        {
-          clerkId: clerkUser.id,
-          email: clerkUser.primaryEmailAddress?.emailAddress,
-          username: clerkUser.username || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0],
-          firstName: clerkUser.firstName,
-          lastName: clerkUser.lastName,
-        },
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -75,31 +108,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (isMountedRef.current) {
         setUser(response.data.user);
+        setSyncError(null);
+        syncedForUserRef.current = clerkId;
       }
-    } catch (error) {
-      console.error('Failed to sync user:', error);
+    } catch (err: unknown) {
+      console.error('Failed to sync user:', err);
       if (isMountedRef.current) {
         setUser(null);
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+          'Failed to sync account. Please try again.';
+        setSyncError(message);
       }
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
       }
     }
-  }, [isSignedIn, clerkUser, getToken]);
+  }, [isSignedIn, clerkId, clerkEmail, clerkUsername, clerkFirstName, clerkLastName]);
+
+  const updateUserFromProfile = useCallback((profile: Pick<User, 'firstName' | 'lastName' | 'username'>) => {
+    setUser((prev) =>
+      prev ? { ...prev, firstName: profile.firstName ?? undefined, lastName: profile.lastName ?? undefined, username: profile.username } : null
+    );
+  }, []);
 
   useEffect(() => {
-    if (clerkLoaded) {
-      if (isSignedIn && clerkUser) {
+    if (!clerkLoaded) return;
+
+    if (isSignedIn && clerkId) {
+      if (syncedForUserRef.current !== clerkId) {
         syncUser();
-      } else {
-        if (isMountedRef.current) {
-          setUser(null);
-          setIsLoading(false);
-        }
+      }
+    } else {
+      syncedForUserRef.current = null;
+      if (isMountedRef.current) {
+        setUser(null);
+        setIsLoading(false);
       }
     }
-  }, [clerkLoaded, isSignedIn, clerkUser, syncUser]);
+  }, [clerkLoaded, isSignedIn, clerkId, syncUser]);
 
   const value: AuthContextType = {
     isLoaded: clerkLoaded && !isLoading,
@@ -107,7 +156,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     userId: user?.id || null,
     user,
     clerkUserId: clerkUserId || null,
+    syncError,
+    clearSyncError: () => setSyncError(null),
     syncUser,
+    updateUserFromProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

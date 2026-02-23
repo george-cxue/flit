@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from '@/src/services/api';
+import { useAuthContext } from '@/contexts/auth-context';
 
 const ONBOARDING_KEY = '@flit_onboarding_completed';
 const ONBOARDING_NAME_KEY = '@flit_onboarding_name';
 
 export function useOnboarding() {
+  const { userId, syncUser } = useAuthContext();
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [profileName, setProfileName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,15 +45,20 @@ export function useOnboarding() {
 
   const completeOnboarding = async (name?: string) => {
     try {
-      if (name && name.trim()) {
-        await persistName(name);
-      } else if (!profileName) {
-        await persistName('Investor');
-      }
+      const displayName = (name && name.trim()) || profileName || 'Investor';
+      await persistName(displayName);
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
       setHasCompletedOnboarding(true);
+
+      if (userId) {
+        await apiClient.put(`/users/${userId}`, {
+          onboardingComplete: true,
+          firstName: displayName,
+        });
+        await syncUser();
+      }
     } catch (error) {
-      console.error('Error saving onboarding status:', error);
+      console.error('Error completing onboarding:', error);
     }
   };
 

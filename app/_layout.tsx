@@ -15,8 +15,6 @@ import { AuthProvider } from "@/contexts/auth-context";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -32,6 +30,7 @@ export default function RootLayout() {
                   options={{ presentation: "modal", title: "Modal" }}
                 />
                 <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                <Stack.Screen name="profile" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="fantasy" options={{ headerShown: false }} />
