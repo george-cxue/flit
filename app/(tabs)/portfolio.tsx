@@ -1,9 +1,64 @@
+import { useCallback } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLessons, PORTFOLIO_BASE } from '@/hooks/use-lessons';
+
+// Fixed percentage allocations — dollar amounts are derived from portfolioBalance.
+const HOLDING_ALLOCATIONS = [
+  {
+    name: 'S&P 500 Index Fund',
+    ticker: 'VOO',
+    type: 'Index Fund',
+    pct: 26.5,
+    change: 8.2,
+    colorKey: 'primary' as const,
+  },
+  {
+    name: 'Tech Growth Stocks',
+    ticker: 'Portfolio',
+    type: 'Stocks',
+    pct: 18.3,
+    change: 12.5,
+    colorKey: 'primaryLight' as const,
+  },
+  {
+    name: 'Total Stock Market',
+    ticker: 'VTI',
+    type: 'Index Fund',
+    pct: 16.6,
+    change: 5.1,
+    color: '#10B981',
+  },
+  {
+    name: 'High-Yield Savings',
+    ticker: 'HYSA',
+    type: 'Savings',
+    pct: 20.4,
+    change: 4.5,
+    color: '#6366F1',
+  },
+  {
+    name: 'Emerging Markets',
+    ticker: 'VWO',
+    type: 'Index Fund',
+    pct: 10.2,
+    change: -2.3,
+    color: '#F59E0B',
+  },
+  {
+    name: 'Bond Index Fund',
+    ticker: 'BND',
+    type: 'Bonds',
+    pct: 8.1,
+    change: 1.8,
+    color: '#8B5CF6',
+  },
+] as const;
 
 export default function PortfolioScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -14,62 +69,33 @@ export default function PortfolioScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const holdings = [
-    {
-      name: 'S&P 500 Index Fund',
-      ticker: 'VOO',
-      type: 'Index Fund',
-      amount: 6500,
-      percentage: 26.5,
-      change: 8.2,
-      color: colors.primary,
+  const { portfolioBalance, reload } = useLessons();
+
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
+
+  const earned = portfolioBalance - PORTFOLIO_BASE;
+
+  // Resolve color and compute dollar amount for each holding
+  const holdings = HOLDING_ALLOCATIONS.map((h) => ({
+    ...h,
+    amount: Math.round(portfolioBalance * (h.pct / 100)),
+    color: 'colorKey' in h ? (colors[h.colorKey] as string) : h.color,
+  }));
+
+  // Summarise allocations by asset type
+  const allocationByType = holdings.reduce<Record<string, { pct: number; color: string }>>(
+    (acc, h) => {
+      if (!acc[h.type]) acc[h.type] = { pct: 0, color: h.color };
+      acc[h.type].pct += h.pct;
+      return acc;
     },
-    {
-      name: 'Tech Growth Stocks',
-      ticker: 'Portfolio',
-      type: 'Stocks',
-      amount: 4500,
-      percentage: 18.3,
-      change: 12.5,
-      color: colors.primaryLight,
-    },
-    {
-      name: 'Total Stock Market',
-      ticker: 'VTI',
-      type: 'Index Fund',
-      amount: 4073,
-      percentage: 16.6,
-      change: 5.1,
-      color: '#10B981',
-    },
-    {
-      name: 'High-Yield Savings',
-      ticker: 'HYSA',
-      type: 'Savings',
-      amount: 5000,
-      percentage: 20.4,
-      change: 4.5,
-      color: '#6366F1',
-    },
-    {
-      name: 'Emerging Markets',
-      ticker: 'VWO',
-      type: 'Index Fund',
-      amount: 2500,
-      percentage: 10.2,
-      change: -2.3,
-      color: '#F59E0B',
-    },
-    {
-      name: 'Bond Index Fund',
-      ticker: 'BND',
-      type: 'Bonds',
-      amount: 2000,
-      percentage: 8.1,
-      change: 1.8,
-      color: '#8B5CF6',
-    },
-  ];
+    {}
+  );
+  const allocationSummary = Object.entries(allocationByType).sort((a, b) => b[1].pct - a[1].pct);
 
   return (
     <ThemedView style={styles.container}>
@@ -88,59 +114,64 @@ export default function PortfolioScreen() {
         {/* Total Balance Card */}
         <View style={[styles.balanceCard, { backgroundColor: primaryColor }]}>
           <ThemedText style={styles.balanceLabel}>Total Portfolio Value</ThemedText>
-          <ThemedText style={styles.balanceAmount}>$24,573</ThemedText>
+          <ThemedText style={styles.balanceAmount}>${portfolioBalance.toLocaleString()}</ThemedText>
           <View style={styles.balanceChange}>
-            <ThemedText style={styles.changeText}>+$1,247 (5.3%)</ThemedText>
-            <ThemedText style={styles.changeLabel}>This Quarter</ThemedText>
+            {earned > 0 ? (
+              <>
+                <ThemedText style={styles.changeText}>
+                  +${earned.toLocaleString()} ({((earned / PORTFOLIO_BASE) * 100).toFixed(1)}%)
+                </ThemedText>
+                <ThemedText style={styles.changeLabel}>Earned from lessons</ThemedText>
+              </>
+            ) : (
+              <ThemedText style={styles.changeLabel}>
+                Complete lessons to grow your portfolio
+              </ThemedText>
+            )}
           </View>
 
           <View style={styles.balanceStats}>
             <View style={styles.statItem}>
-              <ThemedText style={styles.statLabel}>Total Invested</ThemedText>
-              <ThemedText style={styles.statValue}>$23,326</ThemedText>
+              <ThemedText style={styles.statLabel}>Starting Balance</ThemedText>
+              <ThemedText style={styles.statValue}>${PORTFOLIO_BASE.toLocaleString()}</ThemedText>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <ThemedText style={styles.statLabel}>Lifetime Earnings</ThemedText>
-              <ThemedText style={styles.statValue}>$15,500</ThemedText>
+              <ThemedText style={styles.statLabel}>Earned from Lessons</ThemedText>
+              <ThemedText style={styles.statValue}>
+                {earned > 0 ? `+$${earned.toLocaleString()}` : '$0'}
+              </ThemedText>
             </View>
           </View>
         </View>
 
-        {/* Portfolio Composition Pie Chart Representation */}
+        {/* Asset Allocation */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
           <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
             Asset Allocation
           </ThemedText>
 
+          {/* Stacked bar */}
           <View style={styles.pieChart}>
-            {/* Simplified pie chart using horizontal bars */}
             <View style={styles.pieRow}>
-              <View style={[styles.pieSegment, { width: '26.5%', backgroundColor: colors.primary }]} />
-              <View style={[styles.pieSegment, { width: '18.3%', backgroundColor: colors.primaryLight }]} />
-              <View style={[styles.pieSegment, { width: '16.6%', backgroundColor: '#10B981' }]} />
-              <View style={[styles.pieSegment, { width: '20.4%', backgroundColor: '#6366F1' }]} />
-              <View style={[styles.pieSegment, { width: '10.2%', backgroundColor: '#F59E0B' }]} />
-              <View style={[styles.pieSegment, { width: '8.1%', backgroundColor: '#8B5CF6' }]} />
+              {holdings.map((h, i) => (
+                <View
+                  key={i}
+                  style={[styles.pieSegment, { width: `${h.pct}%`, backgroundColor: h.color }]}
+                />
+              ))}
             </View>
           </View>
 
+          {/* Summary by type */}
           <View style={styles.allocationSummary}>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryDot, { backgroundColor: colors.primary }]} />
-              <ThemedText style={styles.summaryLabel}>Index Funds</ThemedText>
-              <ThemedText style={styles.summaryValue}>35%</ThemedText>
-            </View>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryDot, { backgroundColor: colors.primaryLight }]} />
-              <ThemedText style={styles.summaryLabel}>Stocks</ThemedText>
-              <ThemedText style={styles.summaryValue}>45%</ThemedText>
-            </View>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryDot, { backgroundColor: '#6366F1' }]} />
-              <ThemedText style={styles.summaryLabel}>Savings</ThemedText>
-              <ThemedText style={styles.summaryValue}>20%</ThemedText>
-            </View>
+            {allocationSummary.map(([type, { pct, color }]) => (
+              <View key={type} style={styles.summaryItem}>
+                <View style={[styles.summaryDot, { backgroundColor: color }]} />
+                <ThemedText style={styles.summaryLabel}>{type}</ThemedText>
+                <ThemedText style={styles.summaryValue}>{pct.toFixed(1)}%</ThemedText>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -169,7 +200,9 @@ export default function PortfolioScreen() {
               </View>
 
               <View style={styles.holdingValues}>
-                <ThemedText style={styles.holdingAmount}>${holding.amount.toLocaleString()}</ThemedText>
+                <ThemedText style={styles.holdingAmount}>
+                  ${holding.amount.toLocaleString()}
+                </ThemedText>
                 <ThemedText
                   style={[
                     styles.holdingChange,
@@ -186,9 +219,7 @@ export default function PortfolioScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-          >
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: primaryColor }]}>
             <ThemedText style={styles.primaryButtonText}>Allocate Funds</ThemedText>
           </TouchableOpacity>
 
