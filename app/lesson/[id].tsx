@@ -100,8 +100,11 @@ export default function LessonPlayerScreen() {
         setSelectedAnswer(null);
         setIsCorrect(null);
       } else {
-        // Last question answered — evaluate
-        const finalScore = correctCount + (isCorrect ? 1 : 0);
+        // Last question answered — evaluate.
+        // correctCount is already updated by handleAnswerSelect (via setCorrectCount)
+        // before handleContinue runs, because React re-renders between answer selection
+        // and the user pressing Continue. Adding isCorrect again would double-count.
+        const finalScore = correctCount;
         const total = questions.length;
         const passed = finalScore / total >= PASS_THRESHOLD;
 
