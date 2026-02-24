@@ -7,7 +7,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useLessons } from '@/hooks/use-lessons';
+import { useLessons, PORTFOLIO_BASE } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
@@ -15,7 +15,8 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
-  const { isLessonCompleted, learningDollars, reload } = useLessons();
+  const { isLessonCompleted, portfolioBalance, reload, resetProgress } = useLessons();
+  const portfolioEarned = portfolioBalance - PORTFOLIO_BASE;
 
   // Re-read AsyncStorage on focus so learning dollars update after lesson completion.
   useFocusEffect(
@@ -38,6 +39,10 @@ export default function HomeScreen() {
   const handleResetOnboarding = async () => {
     await resetOnboarding();
     router.replace('/onboarding');
+  };
+
+  const handleResetProgress = async () => {
+    await resetProgress();
   };
 
   return (
@@ -90,51 +95,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Portfolio Overview */}
+        {/* Portfolio Balance */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
           <View style={styles.cardHeader}>
             <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
               Portfolio Balance
-            </ThemedText>
-            <TouchableOpacity>
-              <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
-                View All →
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          <ThemedText style={styles.portfolioBalance}>$24,573</ThemedText>
-          <View style={styles.portfolioChange}>
-            <ThemedText style={[styles.changeText, { color: successColor }]}>
-              +$1,247 (5.3%)
-            </ThemedText>
-            <ThemedText style={styles.changeLabel}>this quarter</ThemedText>
-          </View>
-
-          <View style={styles.portfolioBreakdown}>
-            <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-              <ThemedText style={styles.breakdownLabel}>Stocks</ThemedText>
-              <ThemedText style={styles.breakdownValue}>45%</ThemedText>
-            </View>
-            <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.success }]} />
-              <ThemedText style={styles.breakdownLabel}>Index Funds</ThemedText>
-              <ThemedText style={styles.breakdownValue}>35%</ThemedText>
-            </View>
-            <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.primaryLight }]} />
-              <ThemedText style={styles.breakdownLabel}>Savings</ThemedText>
-              <ThemedText style={styles.breakdownValue}>20%</ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* Learning Dollars */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-          <View style={styles.cardHeader}>
-            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
-              Learning Dollars
             </ThemedText>
             <TouchableOpacity onPress={() => router.push('/(tabs)/lesson')}>
               <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
@@ -142,12 +107,22 @@ export default function HomeScreen() {
               </ThemedText>
             </TouchableOpacity>
           </View>
+
           <ThemedText style={styles.portfolioBalance}>
-            ${learningDollars.toLocaleString()}
+            ${portfolioBalance.toLocaleString()}
           </ThemedText>
-          <ThemedText style={[styles.changeLabel, { marginTop: 2 }]}>
-            Earned from completed lessons
-          </ThemedText>
+          {portfolioEarned > 0 ? (
+            <View style={styles.portfolioChange}>
+              <ThemedText style={[styles.changeText, { color: successColor }]}>
+                +${portfolioEarned.toLocaleString()}
+              </ThemedText>
+              <ThemedText style={styles.changeLabel}>earned from lessons</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={[styles.changeLabel, { marginTop: 2 }]}>
+              Starting balance · complete lessons to grow it
+            </ThemedText>
+          )}
         </View>
 
         {/* Today's Lesson */}
@@ -215,6 +190,14 @@ export default function HomeScreen() {
           onPress={handleResetOnboarding}
         >
           <ThemedText style={styles.debugButtonText}>🔄 Reset Onboarding (Debug)</ThemedText>
+        </TouchableOpacity>
+
+        {/* Debug: Reset Lesson Progress */}
+        <TouchableOpacity
+          style={[styles.debugButton, { backgroundColor: cardBg, borderColor }]}
+          onPress={handleResetProgress}
+        >
+          <ThemedText style={styles.debugButtonText}>🗑️ Reset Lesson Progress (Debug)</ThemedText>
         </TouchableOpacity>
 
         <View style={styles.bottomPadding} />

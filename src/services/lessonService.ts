@@ -56,4 +56,22 @@ export const lessonService = {
     if (!course) return 0;
     return course.units.reduce((sum, unit) => sum + unit.lessons.length, 0);
   },
+
+  /** Returns the lesson immediately before `lessonId` in the same unit, or undefined if it's first. */
+  getPreviousLesson(unitId: string, lessonId: string): import('@/src/types/lesson').Lesson | undefined {
+    const unit = this.getUnitById(unitId);
+    if (!unit) return undefined;
+    const idx = unit.lessons.findIndex((l) => l.id === lessonId);
+    if (idx <= 0) return undefined;
+    return unit.lessons[idx - 1];
+  },
+
+  /** Returns the unit immediately before `unitId` in the same course, or undefined if it's first. */
+  getPreviousUnit(courseId: string, unitId: string): import('@/src/types/lesson').LessonUnit | undefined {
+    const course = this.getCourseById(courseId);
+    if (!course) return undefined;
+    const idx = course.units.findIndex((u) => u.id === unitId);
+    if (idx <= 0) return undefined;
+    return course.units[idx - 1];
+  },
 };

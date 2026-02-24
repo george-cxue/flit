@@ -20,7 +20,7 @@ export default function LessonsScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const { isLessonCompleted, getCourseCompletionCount, learningDollars, reload } = useLessons();
+  const { isLessonCompleted, getCourseCompletionCount, portfolioBalance, reload } = useLessons();
 
   // Re-read AsyncStorage whenever this tab comes back into focus
   // so completion state from the lesson player is immediately reflected.
@@ -51,14 +51,14 @@ export default function LessonsScreen() {
             Lessons
           </ThemedText>
 
-          {/* Learning Dollars Balance */}
+          {/* Portfolio Balance */}
           <View style={[styles.balanceCard, { backgroundColor: primaryColor }]}>
-            <ThemedText style={styles.balanceLabel}>Learning Dollars</ThemedText>
+            <ThemedText style={styles.balanceLabel}>Portfolio Balance</ThemedText>
             <ThemedText style={styles.balanceAmount}>
-              ${learningDollars.toLocaleString()}
+              ${portfolioBalance.toLocaleString()}
             </ThemedText>
             <ThemedText style={styles.balanceHint}>
-              Earned by completing lessons · used to invest
+              Complete lessons to grow your portfolio
             </ThemedText>
           </View>
         </View>
@@ -241,20 +241,29 @@ function CourseContent({
       </View>
 
       {/* Units */}
-      {course.units.map((unit) => (
-        <UnitSection
-          key={unit.id}
-          unit={unit}
-          courseId={course.id}
-          cardBg={cardBg}
-          borderColor={borderColor}
-          primaryColor={primaryColor}
-          successColor={successColor}
-          colors={colors}
-          isLessonCompleted={isLessonCompleted}
-          onLessonPress={onLessonPress}
-        />
-      ))}
+      {course.units.map((unit, unitIndex) => {
+        // A unit is locked if any lesson in the previous unit is incomplete
+        const prevUnit = unitIndex > 0 ? course.units[unitIndex - 1] : null;
+        const unitLocked =
+          prevUnit !== null &&
+          prevUnit.lessons.some((l) => !isLessonCompleted(course.id, l.id));
+
+        return (
+          <UnitSection
+            key={unit.id}
+            unit={unit}
+            courseId={course.id}
+            unitLocked={unitLocked}
+            cardBg={cardBg}
+            borderColor={borderColor}
+            primaryColor={primaryColor}
+            successColor={successColor}
+            colors={colors}
+            isLessonCompleted={isLessonCompleted}
+            onLessonPress={onLessonPress}
+          />
+        );
+      })}
     </>
   );
 }
@@ -264,6 +273,7 @@ function CourseContent({
 function UnitSection({
   unit,
   courseId,
+  unitLocked,
   cardBg,
   borderColor,
   primaryColor,
@@ -274,6 +284,7 @@ function UnitSection({
 }: {
   unit: LessonUnit;
   courseId: string;
+  unitLocked: boolean;
   cardBg: string;
   borderColor: string;
   primaryColor: string;
@@ -287,72 +298,105 @@ function UnitSection({
   ).length;
 
   return (
-    <View style={[styles.unitSection, { backgroundColor: cardBg, borderColor }]}>
+    <View
+      style={[
+        styles.unitSection,
+        { backgroundColor: cardBg, borderColor },
+        unitLocked && styles.unitSectionLocked,
+      ]}
+    >
       <View style={styles.unitHeader}>
-        <ThemedText style={styles.unitIcon}>{unit.icon}</ThemedText>
+        <ThemedText style={[styles.unitIcon, unitLocked && styles.lockedOpacity]}>
+          {unitLocked ? '🔒' : unit.icon}
+        </ThemedText>
         <View style={styles.unitHeaderText}>
-          <ThemedText type="defaultSemiBold" style={styles.unitTitle}>
+          <ThemedText
+            type="defaultSemiBold"
+            style={[styles.unitTitle, unitLocked && styles.lockedOpacity]}
+          >
             {unit.title}
           </ThemedText>
           <ThemedText style={styles.unitMeta}>
-            {unitCompleted}/{unit.lessons.length} complete
+            {unitLocked
+              ? 'Complete previous unit to unlock'
+              : `${unitCompleted}/${unit.lessons.length} complete`}
           </ThemedText>
         </View>
       </View>
 
-      {unit.lessons.map((lesson, index) => {
-        const completed = isLessonCompleted(courseId, lesson.id);
-        const isLast = index === unit.lessons.length - 1;
+      {!unitLocked &&
+        unit.lessons.map((lesson, index) => {
+          const completed = isLessonCompleted(courseId, lesson.id);
+          // A lesson is locked if the lesson before it in this unit is not completed
+          const prevLesson = index > 0 ? unit.lessons[index - 1] : null;
+          const lessonLocked =
+            prevLesson !== null && !isLessonCompleted(courseId, prevLesson.id);
+          const isLast = index === unit.lessons.length - 1;
 
-        return (
-          <TouchableOpacity
-            key={lesson.id}
-            style={[
-              styles.lessonRow,
-              !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
-            ]}
-            onPress={() => onLessonPress(lesson)}
-          >
-            <View
+          return (
+            <TouchableOpacity
+              key={lesson.id}
               style={[
-                styles.lessonStatusDot,
-                {
-                  backgroundColor: completed ? successColor : colors.primaryPale,
-                  borderColor: completed ? successColor : borderColor,
-                },
+                styles.lessonRow,
+                !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
+                lessonLocked && styles.lessonRowLocked,
               ]}
+              onPress={() => !lessonLocked && onLessonPress(lesson)}
+              activeOpacity={lessonLocked ? 1 : 0.7}
             >
-              {completed && (
-                <ThemedText style={styles.lessonCheckmark}>✓</ThemedText>
-              )}
-            </View>
-
-            <View style={styles.lessonInfo}>
-              <ThemedText
-                type="defaultSemiBold"
-                style={[styles.lessonTitle, completed && { opacity: 0.45 }]}
-                numberOfLines={1}
+              <View
+                style={[
+                  styles.lessonStatusDot,
+                  {
+                    backgroundColor: completed
+                      ? successColor
+                      : lessonLocked
+                      ? borderColor
+                      : colors.primaryPale,
+                    borderColor: completed ? successColor : borderColor,
+                  },
+                ]}
               >
-                {lesson.title}
-              </ThemedText>
-              <ThemedText style={styles.lessonMeta}>
-                {lesson.estimatedMinutes} min · {lesson.difficulty}
-              </ThemedText>
-            </View>
+                {completed ? (
+                  <ThemedText style={styles.lessonCheckmark}>✓</ThemedText>
+                ) : lessonLocked ? (
+                  <ThemedText style={styles.lessonLockIcon}>🔒</ThemedText>
+                ) : null}
+              </View>
 
-            <View style={styles.lessonRight}>
-              {!completed && (
-                <View style={[styles.rewardBadge, { backgroundColor: colors.primaryPale }]}>
-                  <ThemedText style={[styles.rewardText, { color: primaryColor }]}>
-                    +${lesson.reward}
-                  </ThemedText>
-                </View>
-              )}
-              <ThemedText style={styles.chevron}>›</ThemedText>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
+              <View style={styles.lessonInfo}>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[
+                    styles.lessonTitle,
+                    (completed || lessonLocked) && { opacity: 0.45 },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {lesson.title}
+                </ThemedText>
+                <ThemedText style={styles.lessonMeta}>
+                  {lessonLocked
+                    ? 'Complete previous lesson first'
+                    : `${lesson.estimatedMinutes} min · ${lesson.difficulty}`}
+                </ThemedText>
+              </View>
+
+              <View style={styles.lessonRight}>
+                {!completed && !lessonLocked && (
+                  <View style={[styles.rewardBadge, { backgroundColor: colors.primaryPale }]}>
+                    <ThemedText style={[styles.rewardText, { color: primaryColor }]}>
+                      +${lesson.reward}
+                    </ThemedText>
+                  </View>
+                )}
+                {!lessonLocked && (
+                  <ThemedText style={styles.chevron}>›</ThemedText>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
     </View>
   );
 }
@@ -486,6 +530,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   lessonCheckmark: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
+  lessonLockIcon: { fontSize: 10 },
+  unitSectionLocked: { opacity: 0.55 },
+  lockedOpacity: { opacity: 0.45 },
+  lessonRowLocked: { opacity: 0.5 },
   lessonInfo: { flex: 1 },
   lessonTitle: { fontSize: 15, marginBottom: 2 },
   lessonMeta: { fontSize: 12, opacity: 0.5 },

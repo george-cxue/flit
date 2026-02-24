@@ -4,23 +4,24 @@ import { UserLessonState, LessonProgress } from '@/src/types/lesson';
 import { lessonService } from '@/src/services/lessonService';
 
 const LESSON_PROGRESS_KEY = '@flit_lesson_progress';
-const LEARNING_DOLLARS_KEY = '@flit_learning_dollars';
+const PORTFOLIO_BALANCE_KEY = '@flit_portfolio_balance';
+export const PORTFOLIO_BASE = 1000;
 
 export function useLessons() {
   const [state, setState] = useState<UserLessonState>({});
-  const [learningDollars, setLearningDollars] = useState(0);
+  const [portfolioBalance, setPortfolioBalance] = useState(PORTFOLIO_BASE);
   const [isLoading, setIsLoading] = useState(true);
 
   // Stable reload function — safe to call from useFocusEffect on any screen.
   // setState/setLearningDollars are stable React identities, so deps array is empty.
   const reload = useCallback(async () => {
     try {
-      const [storedProgress, storedDollars] = await Promise.all([
+      const [storedProgress, storedBalance] = await Promise.all([
         AsyncStorage.getItem(LESSON_PROGRESS_KEY),
-        AsyncStorage.getItem(LEARNING_DOLLARS_KEY),
+        AsyncStorage.getItem(PORTFOLIO_BALANCE_KEY),
       ]);
       if (storedProgress) setState(JSON.parse(storedProgress));
-      if (storedDollars) setLearningDollars(Number(storedDollars));
+      if (storedBalance) setPortfolioBalance(Number(storedBalance));
     } catch (error) {
       console.error('Error loading lesson data:', error);
     } finally {
@@ -56,17 +57,17 @@ export function useLessons() {
         },
       };
 
-      const newDollars = learningDollars + reward;
+      const newBalance = portfolioBalance + reward;
 
       setState(newState);
-      setLearningDollars(newDollars);
+      setPortfolioBalance(newBalance);
 
       await Promise.all([
         AsyncStorage.setItem(LESSON_PROGRESS_KEY, JSON.stringify(newState)),
-        AsyncStorage.setItem(LEARNING_DOLLARS_KEY, String(newDollars)),
+        AsyncStorage.setItem(PORTFOLIO_BALANCE_KEY, String(newBalance)),
       ]);
     },
-    [state, learningDollars]
+    [state, portfolioBalance]
   );
 
   const getLessonProgress = useCallback(
@@ -103,16 +104,16 @@ export function useLessons() {
 
   const resetProgress = async () => {
     setState({});
-    setLearningDollars(0);
+    setPortfolioBalance(PORTFOLIO_BASE);
     await Promise.all([
       AsyncStorage.removeItem(LESSON_PROGRESS_KEY),
-      AsyncStorage.removeItem(LEARNING_DOLLARS_KEY),
+      AsyncStorage.setItem(PORTFOLIO_BALANCE_KEY, String(PORTFOLIO_BASE)),
     ]);
   };
 
   return {
     isLoading,
-    learningDollars,
+    portfolioBalance,
     completedLessonIds,
     completeLesson,
     getLessonProgress,

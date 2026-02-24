@@ -41,10 +41,18 @@ export default function LessonPlayerScreen() {
   const borderColor = useThemeColor({}, 'border' as any);
   const warningColor = useThemeColor({}, 'warning' as any);
 
-  const { completeLesson } = useLessons();
+  const { completeLesson, isLessonCompleted } = useLessons();
 
   const lesson = lessonService.getLessonById(id ?? '');
   const course = lesson ? lessonService.getCourseById(lesson.courseId) : undefined;
+
+  // Determine if this lesson is locked (previous lesson or previous unit incomplete)
+  const prevLesson = lesson ? lessonService.getPreviousLesson(lesson.unitId, lesson.id) : undefined;
+  const prevUnit = lesson ? lessonService.getPreviousUnit(lesson.courseId, lesson.unitId) : undefined;
+  const isLocked =
+    (prevLesson !== undefined && !isLessonCompleted(lesson!.courseId, prevLesson.id)) ||
+    (prevUnit !== undefined &&
+      prevUnit.lessons.some((l) => !isLessonCompleted(lesson!.courseId, l.id)));
 
   const [phase, setPhase] = useState<Phase>('content');
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -118,7 +126,7 @@ export default function LessonPlayerScreen() {
         }
       }
     }
-  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, isCorrect]);
+  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount]);
 
   const handleRetry = useCallback(() => {
     setPhase('question');
@@ -135,6 +143,36 @@ export default function LessonPlayerScreen() {
     return (
       <ThemedView style={styles.container}>
         <ThemedText style={{ padding: 40 }}>Lesson not found.</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  // ── Locked Screen ─────────────────────────────────────────────────
+  if (isLocked) {
+    return (
+      <ThemedView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.resultContent}>
+          <ThemedText style={styles.resultEmoji}>🔒</ThemedText>
+          <ThemedText type="title" style={styles.resultTitle}>
+            Lesson Locked
+          </ThemedText>
+          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
+          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+            <ThemedText style={[styles.resultLabel, { textAlign: 'center' }]}>
+              {prevLesson
+                ? `Complete "${prevLesson.title}" before starting this lesson.`
+                : `Complete all lessons in the previous unit first.`}
+            </ThemedText>
+          </View>
+        </ScrollView>
+        <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+          <TouchableOpacity
+            style={[styles.continueButton, { backgroundColor: primaryColor }]}
+            onPress={handleClose}
+          >
+            <ThemedText style={styles.continueButtonText}>Back to Lessons</ThemedText>
+          </TouchableOpacity>
+        </View>
       </ThemedView>
     );
   }
@@ -228,7 +266,7 @@ export default function LessonPlayerScreen() {
               </View>
             )}
             <View style={styles.resultRow}>
-              <ThemedText style={styles.resultLabel}>Learning dollars earned</ThemedText>
+              <ThemedText style={styles.resultLabel}>Added to portfolio</ThemedText>
               <ThemedText
                 type="defaultSemiBold"
                 style={[styles.resultValue, { color: successColor }]}
@@ -324,12 +362,12 @@ export default function LessonPlayerScreen() {
               />
             ))}
             <View style={[styles.rewardCard, { backgroundColor: cardBg, borderColor }]}>
-              <ThemedText style={styles.rewardLabel}>Pass this lesson to earn</ThemedText>
+              <ThemedText style={styles.rewardLabel}>Pass this lesson to add to portfolio</ThemedText>
               <ThemedText
                 type="defaultSemiBold"
                 style={[styles.rewardValue, { color: successColor }]}
               >
-                +${lesson.reward.toLocaleString()} learning dollars
+                +${lesson.reward.toLocaleString()}
               </ThemedText>
             </View>
             {questions.length > 0 && (
