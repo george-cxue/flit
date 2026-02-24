@@ -11,11 +11,9 @@ export function useLessons() {
   const [learningDollars, setLearningDollars] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async () => {
+  // Stable reload function — safe to call from useFocusEffect on any screen.
+  // setState/setLearningDollars are stable React identities, so deps array is empty.
+  const reload = useCallback(async () => {
     try {
       const [storedProgress, storedDollars] = await Promise.all([
         AsyncStorage.getItem(LESSON_PROGRESS_KEY),
@@ -28,7 +26,11 @@ export function useLessons() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   /**
    * Called only when the user has passed (>= PASS_THRESHOLD).
@@ -117,5 +119,6 @@ export function useLessons() {
     isLessonCompleted,
     getCourseCompletionCount,
     resetProgress,
+    reload,
   };
 }

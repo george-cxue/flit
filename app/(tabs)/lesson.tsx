@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -20,7 +20,15 @@ export default function LessonsScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const { isLessonCompleted, getCourseCompletionCount, learningDollars } = useLessons();
+  const { isLessonCompleted, getCourseCompletionCount, learningDollars, reload } = useLessons();
+
+  // Re-read AsyncStorage whenever this tab comes back into focus
+  // so completion state from the lesson player is immediately reflected.
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
 
   const courses = lessonService.getCourses();
   const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id ?? '');

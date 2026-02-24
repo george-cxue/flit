@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -5,7 +6,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useOnboarding } from '@/hooks/use-onboarding';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
@@ -14,7 +15,14 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
-  const { isLessonCompleted, learningDollars } = useLessons();
+  const { isLessonCompleted, learningDollars, reload } = useLessons();
+
+  // Re-read AsyncStorage on focus so learning dollars update after lesson completion.
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
 
   // Find the first incomplete lesson across all courses to feature as "Today's Lesson"
   const allLessons = lessonService.getAllLessons();
