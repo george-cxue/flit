@@ -5,9 +5,9 @@ import { Trade } from '@/src/types/fantasy';
 const CURRENT_USER_ID = 'user_1';
 
 export const TradeService = {
-    getTrades: async (leagueId: string): Promise<Trade[]> => {
+    getTrades: async (groupId: string): Promise<Trade[]> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/trades`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/trades`, {
                 params: { userId: CURRENT_USER_ID }
             });
             return response.data.trades || [];
@@ -17,13 +17,13 @@ export const TradeService = {
     },
 
     proposeTrade: async (
-        leagueId: string,
+        groupId: string,
         recipientId: string,
         offeredAssets: string[],
         requestedAssets: string[]
     ): Promise<Trade> => {
         try {
-            const response = await apiClient.post(`/fantasy-leagues/${leagueId}/trades`, {
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/trades`, {
                 proposerId: CURRENT_USER_ID,
                 recipientId,
                 offeredAssetIds: offeredAssets,

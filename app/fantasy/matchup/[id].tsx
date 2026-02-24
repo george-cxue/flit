@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function MatchupScreen() {
-    const { id } = useLocalSearchParams(); // League ID
+    const { id } = useLocalSearchParams(); // Group ID
     const [matchup, setMatchup] = useState<Matchup | undefined>(undefined);
     const [loading, setLoading] = useState(true);
 

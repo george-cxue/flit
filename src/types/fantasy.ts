@@ -24,53 +24,54 @@ export interface User {
   completedLessons: string[]; // IDs of completed lessons
 }
 
-export interface LeagueSettings {
-  leagueSize: number;
-  seasonLength: number;
-  draftDate: string; // ISO date string
-  portfolioSize: number;
-  activeSlots: number;
-  benchSlots: number;
+export interface GroupSettings {
+  groupSize: number;
+  startingBalance: number;
+  competitionPeriod: '1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year';
+  startDate: string; // ISO date string
   scoringMethod: 'Total Return %' | 'Absolute Gain $';
   enabledAssetClasses: AssetType[];
   minAssetPrice: number;
-  draftType: 'Snake' | 'Auction';
-  draftTimePerPick: number;
-  matchupType: 'Head-to-head' | 'Rotisserie';
-  playoffsEnabled: boolean;
-  tradeDeadlineWeek: number;
-  waiverPriority: 'Rolling' | 'Reverse Standings';
+  allowShortSelling: boolean;
+  tradingEnabled: boolean;
 }
 
-export interface League {
+export interface Group {
   id: string;
   name: string;
   adminUserId: string;
   members: User[];
-  settings: LeagueSettings;
-  status: 'pre-draft' | 'drafting' | 'active' | 'completed';
+  settings: GroupSettings;
+  status: 'pending' | 'active' | 'completed';
   currentWeek: number;
+  joinCode?: string;
 }
 
 export interface PortfolioSlot {
   id: string;
   assetId: string;
   asset?: Asset; // Hydrated asset
-  status: 'ACTIVE' | 'BENCH';
-  acquiredAt: string;
-  purchasePrice: number;
-  currentValue: number;
+  shares: number;
+  averageCost: number; // Average cost per share
+  currentPrice: number;
+  totalValue: number;
+  gainLoss: number;
   gainLossPercent: number;
+  status?: 'ACTIVE' | 'BENCH'; // Optional, for draft leagues
+  acquiredAt: string;
 }
 
 export interface Portfolio {
   id: string;
-  leagueId: string;
+  groupId: string;
   userId: string;
   name: string;
+  cashBalance: number;
   slots: PortfolioSlot[];
+  totalHoldingsValue: number;
   totalValue: number;
-  weeklyReturn: number;
+  weeklyGainLoss: number;
+  weeklyGainLossPercent: number;
 }
 
 export interface DraftPick {
@@ -82,7 +83,7 @@ export interface DraftPick {
 }
 
 export interface DraftState {
-  leagueId: string;
+  groupId: string;
   status: 'pending' | 'active' | 'paused' | 'completed';
   currentRound: number;
   currentPickNumber: number;
@@ -93,7 +94,7 @@ export interface DraftState {
 
 export interface Matchup {
   id: string;
-  leagueId: string;
+  groupId: string;
   week: number;
   userAId: string;
   userBId: string;
@@ -114,7 +115,7 @@ export interface TradeAsset {
 
 export interface Trade {
   id: string;
-  leagueId: string;
+  groupId: string;
   proposerId: string;
   recipientId: string;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
@@ -126,7 +127,7 @@ export interface Trade {
 
 export interface WaiverClaim {
   id: string;
-  leagueId: string;
+  groupId: string;
   userId: string;
   assetId: string;
   dropAssetId?: string; // Optional asset to drop

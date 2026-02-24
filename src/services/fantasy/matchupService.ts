@@ -5,9 +5,9 @@ import { Matchup } from '@/src/types/fantasy';
 const CURRENT_USER_ID = 'user_1';
 
 export const MatchupService = {
-    getCurrentMatchup: async (leagueId: string): Promise<Matchup | undefined> => {
+    getCurrentMatchup: async (groupId: string): Promise<Matchup | undefined> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/matchup/current`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/matchup/current`, {
                 params: { userId: CURRENT_USER_ID }
             });
             return response.data;
@@ -19,9 +19,9 @@ export const MatchupService = {
         }
     },
 
-    getMatchupByWeek: async (leagueId: string, week: number): Promise<Matchup | undefined> => {
+    getMatchupByWeek: async (groupId: string, week: number): Promise<Matchup | undefined> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/matchup/week/${week}`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/matchup/week/${week}`, {
                 params: { userId: CURRENT_USER_ID }
             });
             return response.data;
@@ -37,8 +37,8 @@ export const MatchupService = {
      * Legacy method - use getMatchupByWeek instead
      * Note: Backend returns single matchup per user per week, not array
      */
-    getMatchupsByWeek: async (leagueId: string, week: number): Promise<Matchup[]> => {
-        const matchup = await MatchupService.getMatchupByWeek(leagueId, week);
+    getMatchupsByWeek: async (groupId: string, week: number): Promise<Matchup[]> => {
+        const matchup = await MatchupService.getMatchupByWeek(groupId, week);
         return matchup ? [matchup] : [];
     },
 };

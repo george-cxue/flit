@@ -3,13 +3,13 @@ import { Asset } from '@/src/types/fantasy';
 
 export const MarketService = {
     /**
-     * Search for available assets in a league's market
-     * @param leagueId - The league ID to search within
+     * Search for available assets in a group's market
+     * @param groupId - The group ID to search within
      * @param query - Search query for ticker or asset name
      */
-    searchAssets: async (leagueId: string, query: string = ''): Promise<Asset[]> => {
+    searchAssets: async (groupId: string, query: string = ''): Promise<Asset[]> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/market/assets`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/market/assets`, {
                 params: { search: query }
             });
             return response.data.assets || [];
@@ -38,9 +38,9 @@ export const MarketService = {
      * Legacy method - searches by ticker (less efficient)
      * Consider migrating to getAssetById where possible
      */
-    getAssetByTicker: async (leagueId: string, ticker: string): Promise<Asset | undefined> => {
+    getAssetByTicker: async (groupId: string, ticker: string): Promise<Asset | undefined> => {
         try {
-            const assets = await MarketService.searchAssets(leagueId, ticker);
+            const assets = await MarketService.searchAssets(groupId, ticker);
             return assets.find(a => a.ticker.toUpperCase() === ticker.toUpperCase());
         } catch (error) {
             throw handleApiError(error);

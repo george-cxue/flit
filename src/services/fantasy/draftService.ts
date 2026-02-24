@@ -5,18 +5,18 @@ import { Asset, DraftPick, DraftState } from '@/src/types/fantasy';
 const CURRENT_USER_ID = 'user_1';
 
 export const DraftService = {
-    getDraftState: async (leagueId: string): Promise<DraftState> => {
+    getDraftState: async (groupId: string): Promise<DraftState> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/draft`);
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/draft`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
         }
     },
 
-    makePick: async (leagueId: string, assetId: string): Promise<DraftPick> => {
+    makePick: async (groupId: string, assetId: string): Promise<DraftPick> => {
         try {
-            const response = await apiClient.post(`/fantasy-leagues/${leagueId}/draft/pick`, {
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/draft/pick`, {
                 userId: CURRENT_USER_ID,
                 assetId
             });
@@ -26,18 +26,18 @@ export const DraftService = {
         }
     },
 
-    startDraft: async (leagueId: string): Promise<DraftState> => {
+    startDraft: async (groupId: string): Promise<DraftState> => {
         try {
-            const response = await apiClient.post(`/fantasy-leagues/${leagueId}/draft/start`);
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/draft/start`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
         }
     },
 
-    getDraftableAssets: async (leagueId: string, query: string = ''): Promise<Asset[]> => {
+    getDraftableAssets: async (groupId: string, query: string = ''): Promise<Asset[]> => {
         try {
-            const response = await apiClient.get(`/fantasy-leagues/${leagueId}/draft/assets`, {
+            const response = await apiClient.get(`/fantasy-groups/${groupId}/draft/assets`, {
                 params: { search: query }
             });
             return response.data.assets || [];

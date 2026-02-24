@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, TextInput } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -33,27 +33,40 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { completeOnboarding } = useOnboarding();
+  const { completeOnboarding, profileName } = useOnboarding();
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [name, setName] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const primaryColor = useThemeColor({}, 'primary' as any);
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
+  useEffect(() => {
+    if (profileName) {
+      setName(profileName);
+    }
+  }, [profileName]);
+
   const handleNext = async () => {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
+      setErrorMessage('');
     } else {
-      // Mark onboarding as complete and navigate to main app
-      await completeOnboarding();
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        setErrorMessage('Please enter your name so we can personalize your experience.');
+        return;
+      }
+      await completeOnboarding(trimmedName);
       router.replace('/(tabs)/home');
     }
   };
 
   const handleSkip = async () => {
-    // Mark onboarding as complete even when skipped
-    await completeOnboarding();
+    const trimmedName = name.trim() || 'Investor';
+    await completeOnboarding(trimmedName);
     router.replace('/(tabs)/home');
   };
 
@@ -150,6 +163,37 @@ export default function OnboardingScreen() {
               <ThemedText style={styles.rankName}>You</ThemedText>
               <ThemedText style={[styles.rankScore, { color: primaryColor }]}>847</ThemedText>
             </View>
+          </View>
+        )}
+
+        {currentStep === onboardingSteps.length - 1 && (
+          <View style={[styles.nameCard, { backgroundColor: cardBg, borderColor }]}>
+            <ThemedText type="defaultSemiBold" style={styles.nameLabel}>
+              What should we call you?
+            </ThemedText>
+            <TextInput
+              style={[
+                styles.nameInput,
+                {
+                  borderColor: errorMessage ? colors.danger : borderColor,
+                  color: colors.text,
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                },
+              ]}
+              placeholder="Enter your first name"
+              placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.4)'}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (errorMessage) setErrorMessage('');
+              }}
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+            <ThemedText style={styles.nameHint}>We&apos;ll show this on your home page and leagues.</ThemedText>
+            {errorMessage ? (
+              <ThemedText style={[styles.nameError, { color: colors.danger }]}>{errorMessage}</ThemedText>
+            ) : null}
           </View>
         )}
       </View>
@@ -311,6 +355,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginTop: 8,
+  },
+  nameCard: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    marginTop: 16,
+  },
+  nameLabel: {
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  nameHint: {
+    marginTop: 8,
+    fontSize: 13,
+    opacity: 0.6,
+  },
+  nameError: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '600',
   },
   rankRow: {
     flexDirection: 'row',
