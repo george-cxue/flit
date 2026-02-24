@@ -75,8 +75,12 @@ export interface LessonCourse {
   license: string;
   licenseUrl: string;
   sourceUrl: string;
+  icon: string;
+  isComingSoon?: boolean;
   units: LessonUnit[];
 }
+
+export const PASS_THRESHOLD = 0.75; // 75% required to pass a lesson
 
 export interface LessonProgress {
   lessonId: string;

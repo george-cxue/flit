@@ -1,8 +1,20 @@
 import { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
 import { KHAN_ACADEMY_FINANCIAL_LITERACY } from '@/src/mocks/lessons/khan-academy-financial-literacy';
+import {
+  STOCK_MARKET_BASICS,
+  CRYPTO_FUNDAMENTALS,
+  REAL_ESTATE_101,
+  RETIREMENT_PLANNING,
+} from '@/src/mocks/lessons/dummy-courses';
 
-// All available courses. Add new courses to this array.
-const ALL_COURSES: LessonCourse[] = [KHAN_ACADEMY_FINANCIAL_LITERACY];
+// All available courses in display order. Real courses first, then coming-soon.
+const ALL_COURSES: LessonCourse[] = [
+  KHAN_ACADEMY_FINANCIAL_LITERACY,
+  STOCK_MARKET_BASICS,
+  CRYPTO_FUNDAMENTALS,
+  REAL_ESTATE_101,
+  RETIREMENT_PLANNING,
+];
 
 export const lessonService = {
   getCourses(): LessonCourse[] {

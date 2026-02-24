@@ -14,13 +14,14 @@ import { LessonCourse } from '@/src/types/lesson';
 
 export const KHAN_ACADEMY_FINANCIAL_LITERACY: LessonCourse = {
   id: 'khan_academy_financial_literacy',
-  title: 'Khan Academy Financial Literacy',
+  title: 'Financial Literacy',
   description:
     'Build a strong foundation for your financial future. From budgeting and saving to investing and retirement, this course covers the essential money skills everyone needs.',
   attribution: 'Khan Academy',
   license: 'CC BY-NC-SA 4.0',
   licenseUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
   sourceUrl: 'https://www.khanacademy.org/college-careers-more/financial-literacy',
+  icon: '📚',
   units: [
     // ─────────────────────────────────────────────────────────────────
     // UNIT 1: Budgeting and Saving

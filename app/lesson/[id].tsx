@@ -13,7 +13,8 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
-import {
+import { PASS_THRESHOLD } from '@/src/types/lesson';
+import type {
   ContentBlock,
   LessonQuestion,
   ParagraphBlock,
@@ -23,7 +24,9 @@ import {
   ListBlock,
 } from '@/src/types/lesson';
 
-type Phase = 'content' | 'question' | 'complete';
+type Phase = 'content' | 'question' | 'failed' | 'complete';
+
+const PASS_PCT = Math.round(PASS_THRESHOLD * 100); // 75
 
 export default function LessonPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,21 +39,32 @@ export default function LessonPlayerScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const dangerColor = useThemeColor({}, 'danger' as any);
   const borderColor = useThemeColor({}, 'border' as any);
+  const warningColor = useThemeColor({}, 'warning' as any);
 
   const { completeLesson } = useLessons();
 
   const lesson = lessonService.getLessonById(id ?? '');
+  const course = lesson ? lessonService.getCourseById(lesson.courseId) : undefined;
 
   const [phase, setPhase] = useState<Phase>('content');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
+  // Stored at the moment we evaluate pass/fail so both result screens can read it
+  const [quizResult, setQuizResult] = useState<{ score: number; total: number } | null>(null);
 
   const questions: LessonQuestion[] = lesson?.questions ?? [];
   const currentQuestion = questions[questionIndex];
-  const totalSteps = 1 + questions.length; // content + each question
-  const currentStep = phase === 'content' ? 1 : phase === 'question' ? 1 + questionIndex + 1 : totalSteps + 1;
+
+  // Progress bar: content=1 step, each question=1 step, complete/failed = full
+  const totalSteps = 1 + questions.length;
+  const currentStep =
+    phase === 'content'
+      ? 1
+      : phase === 'question'
+      ? 2 + questionIndex
+      : totalSteps + 1;
   const progressPct = Math.min((currentStep / (totalSteps + 1)) * 100, 100);
 
   const handleAnswerSelect = useCallback(
@@ -67,7 +81,9 @@ export default function LessonPlayerScreen() {
   const handleContinue = useCallback(async () => {
     if (phase === 'content') {
       if (questions.length === 0) {
+        // No questions — auto-pass
         await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
+        setQuizResult({ score: 0, total: 0 });
         setPhase('complete');
       } else {
         setPhase('question');
@@ -84,21 +100,33 @@ export default function LessonPlayerScreen() {
         setSelectedAnswer(null);
         setIsCorrect(null);
       } else {
-        // All questions done
-        await completeLesson(
-          lesson!.courseId,
-          lesson!.id,
-          correctCount + (isCorrect ? 1 : 0),
-          questions.length
-        );
-        setPhase('complete');
+        // Last question answered — evaluate
+        const finalScore = correctCount + (isCorrect ? 1 : 0);
+        const total = questions.length;
+        const passed = finalScore / total >= PASS_THRESHOLD;
+
+        setQuizResult({ score: finalScore, total });
+
+        if (passed) {
+          await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
+          setPhase('complete');
+        } else {
+          setPhase('failed');
+        }
       }
     }
   }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, isCorrect]);
 
-  const handleClose = () => {
-    router.back();
-  };
+  const handleRetry = useCallback(() => {
+    setPhase('question');
+    setQuestionIndex(0);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setCorrectCount(0);
+    setQuizResult(null);
+  }, []);
+
+  const handleClose = () => router.back();
 
   if (!lesson) {
     return (
@@ -108,51 +136,117 @@ export default function LessonPlayerScreen() {
     );
   }
 
+  // ── Failed Screen ─────────────────────────────────────────────────
+  if (phase === 'failed' && quizResult) {
+    const pct = Math.round((quizResult.score / quizResult.total) * 100);
+    return (
+      <ThemedView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.resultContent}>
+          <ThemedText style={styles.resultEmoji}>😔</ThemedText>
+          <ThemedText type="title" style={styles.resultTitle}>
+            Not quite!
+          </ThemedText>
+          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
+
+          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.resultRow}>
+              <ThemedText style={styles.resultLabel}>Your score</ThemedText>
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.resultValue, { color: dangerColor }]}
+              >
+                {quizResult.score}/{quizResult.total} ({pct}%)
+              </ThemedText>
+            </View>
+            <View style={styles.resultRow}>
+              <ThemedText style={styles.resultLabel}>Required to pass</ThemedText>
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.resultValue, { color: warningColor }]}
+              >
+                {PASS_PCT}%
+              </ThemedText>
+            </View>
+            <View
+              style={[
+                styles.failHint,
+                { backgroundColor: dangerColor + '12', borderColor: dangerColor + '40' },
+              ]}
+            >
+              <ThemedText style={[styles.failHintText, { color: dangerColor }]}>
+                Re-read the lesson content and try again. You can do it!
+              </ThemedText>
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+          <TouchableOpacity
+            style={[styles.continueButton, { backgroundColor: primaryColor }]}
+            onPress={handleRetry}
+          >
+            <ThemedText style={styles.continueButtonText}>Try Again</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleClose}>
+            <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>
+              Back to Lessons
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    );
+  }
+
   // ── Completion Screen ─────────────────────────────────────────────
-  if (phase === 'complete') {
-    const finalScore = correctCount;
-    const total = questions.length;
+  if (phase === 'complete' && quizResult !== null) {
+    const total = quizResult.total;
+    const finalScore = quizResult.score;
     const pct = total > 0 ? Math.round((finalScore / total) * 100) : 100;
 
     return (
       <ThemedView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.completionContent}>
-          <ThemedText style={styles.completionEmoji}>🎉</ThemedText>
-          <ThemedText type="title" style={styles.completionTitle}>
-            Lesson Complete!
+        <ScrollView contentContainerStyle={styles.resultContent}>
+          <ThemedText style={styles.resultEmoji}>🎉</ThemedText>
+          <ThemedText type="title" style={styles.resultTitle}>
+            Lesson Passed!
           </ThemedText>
-          <ThemedText style={styles.completionSubtitle}>
-            {lesson.title}
-          </ThemedText>
+          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
 
-          <View style={[styles.completionCard, { backgroundColor: cardBg, borderColor }]}>
-            <View style={styles.completionRow}>
-              <ThemedText style={styles.completionLabel}>Questions correct</ThemedText>
-              <ThemedText type="defaultSemiBold" style={[styles.completionValue, { color: successColor }]}>
-                {total > 0 ? `${finalScore} / ${total}` : '—'}
-              </ThemedText>
-            </View>
+          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
             {total > 0 && (
-              <View style={styles.completionRow}>
-                <ThemedText style={styles.completionLabel}>Score</ThemedText>
-                <ThemedText type="defaultSemiBold" style={[styles.completionValue, { color: successColor }]}>
-                  {pct}%
+              <View style={styles.resultRow}>
+                <ThemedText style={styles.resultLabel}>Score</ThemedText>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.resultValue, { color: successColor }]}
+                >
+                  {finalScore}/{total} ({pct}%)
                 </ThemedText>
               </View>
             )}
-            <View style={styles.completionRow}>
-              <ThemedText style={styles.completionLabel}>Earned</ThemedText>
-              <ThemedText type="defaultSemiBold" style={[styles.completionValue, { color: successColor }]}>
-                +${lesson.reward.toLocaleString()} learning dollars
+            <View style={styles.resultRow}>
+              <ThemedText style={styles.resultLabel}>Learning dollars earned</ThemedText>
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.resultValue, { color: successColor }]}
+              >
+                +${lesson.reward.toLocaleString()}
               </ThemedText>
             </View>
           </View>
 
-          <View style={[styles.attributionBox, { backgroundColor: colors.primaryPale, borderColor: colors.primaryLight }]}>
-            <ThemedText style={[styles.attributionText, { color: colors.primary }]}>
-              Content based on Khan Academy Financial Literacy • CC BY-NC-SA 4.0
-            </ThemedText>
-          </View>
+          {course?.attribution ? (
+            <View
+              style={[
+                styles.attributionBox,
+                { backgroundColor: colors.primaryPale, borderColor: colors.primaryLight },
+              ]}
+            >
+              <ThemedText style={[styles.attributionText, { color: colors.primary }]}>
+                {course.attribution} • {course.license}
+              </ThemedText>
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
@@ -167,8 +261,9 @@ export default function LessonPlayerScreen() {
     );
   }
 
-  // ── Lesson Content Screen ─────────────────────────────────────────
-  const continueEnabled = phase === 'content' || (phase === 'question' && selectedAnswer !== null);
+  // ── Content / Question Screen ─────────────────────────────────────
+  const continueEnabled =
+    phase === 'content' || (phase === 'question' && selectedAnswer !== null);
 
   return (
     <ThemedView style={styles.container}>
@@ -192,7 +287,7 @@ export default function LessonPlayerScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header badge */}
         <View style={styles.header}>
           <View style={[styles.lessonBadge, { backgroundColor: colors.primaryPale }]}>
             <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
@@ -226,11 +321,26 @@ export default function LessonPlayerScreen() {
               />
             ))}
             <View style={[styles.rewardCard, { backgroundColor: cardBg, borderColor }]}>
-              <ThemedText style={styles.rewardLabel}>Complete this lesson to earn</ThemedText>
-              <ThemedText type="defaultSemiBold" style={[styles.rewardValue, { color: successColor }]}>
+              <ThemedText style={styles.rewardLabel}>Pass this lesson to earn</ThemedText>
+              <ThemedText
+                type="defaultSemiBold"
+                style={[styles.rewardValue, { color: successColor }]}
+              >
                 +${lesson.reward.toLocaleString()} learning dollars
               </ThemedText>
             </View>
+            {questions.length > 0 && (
+              <View
+                style={[
+                  styles.passRequirement,
+                  { backgroundColor: warningColor + '15', borderColor: warningColor + '50' },
+                ]}
+              >
+                <ThemedText style={[styles.passRequirementText, { color: warningColor }]}>
+                  ⚡ {PASS_PCT}% required to pass ({Math.ceil(questions.length * PASS_THRESHOLD)}/{questions.length} correct)
+                </ThemedText>
+              </View>
+            )}
           </>
         )}
 
@@ -263,10 +373,7 @@ export default function LessonPlayerScreen() {
                 return (
                   <TouchableOpacity
                     key={index}
-                    style={[
-                      styles.answerButton,
-                      { backgroundColor: bgC, borderColor: borderC },
-                    ]}
+                    style={[styles.answerButton, { backgroundColor: bgC, borderColor: borderC }]}
                     onPress={() => handleAnswerSelect(index)}
                     disabled={selectedAnswer !== null}
                   >
@@ -291,7 +398,6 @@ export default function LessonPlayerScreen() {
               })}
             </View>
 
-            {/* Feedback */}
             {selectedAnswer !== null && (
               <View
                 style={[
@@ -375,14 +481,12 @@ function ContentBlockView({
           {(block as ParagraphBlock).text}
         </ThemedText>
       );
-
     case 'heading':
       return (
         <ThemedText type="defaultSemiBold" style={styles.contentHeading}>
           {(block as HeadingBlock).text}
         </ThemedText>
       );
-
     case 'example': {
       const b = block as ExampleBlock;
       return (
@@ -390,9 +494,7 @@ function ContentBlockView({
           <ThemedText type="defaultSemiBold" style={styles.exampleTitle}>
             {b.title}
           </ThemedText>
-          {b.body && (
-            <ThemedText style={styles.exampleBody}>{b.body}</ThemedText>
-          )}
+          {b.body && <ThemedText style={styles.exampleBody}>{b.body}</ThemedText>}
           {b.rows?.map((row, i) => (
             <View key={i} style={styles.exampleRow}>
               <ThemedText style={styles.exampleLabel}>{row.label}</ThemedText>
@@ -404,7 +506,6 @@ function ContentBlockView({
         </View>
       );
     }
-
     case 'keypoint': {
       const b = block as KeypointBlock;
       return (
@@ -416,7 +517,6 @@ function ContentBlockView({
         </View>
       );
     }
-
     case 'list': {
       const b = block as ListBlock;
       return (
@@ -430,7 +530,6 @@ function ContentBlockView({
         </View>
       );
     }
-
     default:
       return null;
   }
@@ -439,9 +538,7 @@ function ContentBlockView({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -457,10 +554,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
+  progressBarFill: { height: '100%', borderRadius: 5 },
   closeButton: {
     width: 32,
     height: 32,
@@ -469,20 +563,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeButtonText: {
-    fontSize: 18,
-    opacity: 0.6,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 24,
-  },
+  closeButtonText: { fontSize: 18, opacity: 0.6 },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  header: { marginBottom: 24 },
   lessonBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
@@ -490,41 +574,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  lessonTitle: {
-    fontSize: 26,
-    lineHeight: 32,
-  },
-  // Content blocks
-  contentText: {
-    fontSize: 16,
-    lineHeight: 26,
-    marginBottom: 16,
-  },
-  contentHeading: {
-    fontSize: 18,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  exampleBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 16,
-  },
-  exampleTitle: {
-    fontSize: 14,
-    marginBottom: 10,
-    opacity: 0.8,
-  },
-  exampleBody: {
-    fontSize: 14,
-    marginBottom: 10,
-    opacity: 0.7,
-  },
+  badgeText: { fontSize: 12, fontWeight: '600' },
+  lessonTitle: { fontSize: 26, lineHeight: 32 },
+  contentText: { fontSize: 16, lineHeight: 26, marginBottom: 16 },
+  contentHeading: { fontSize: 18, marginTop: 8, marginBottom: 12 },
+  exampleBox: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 16 },
+  exampleTitle: { fontSize: 14, marginBottom: 10, opacity: 0.8 },
+  exampleBody: { fontSize: 14, marginBottom: 10, opacity: 0.7 },
   exampleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -532,15 +588,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
   },
-  exampleLabel: {
-    fontSize: 14,
-    opacity: 0.7,
-    flex: 1,
-  },
-  exampleValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  exampleLabel: { fontSize: 14, opacity: 0.7, flex: 1 },
+  exampleValue: { fontSize: 14, fontWeight: '600' },
   keypoint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -549,61 +598,33 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  keypointIcon: {
-    fontSize: 22,
-    lineHeight: 28,
-  },
-  keypointText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '500',
-  },
-  listBlock: {
-    marginBottom: 16,
-    gap: 10,
-  },
-  listItem: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  listBullet: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 'bold',
-  },
-  listText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 24,
-  },
+  keypointIcon: { fontSize: 22, lineHeight: 28 },
+  keypointText: { flex: 1, fontSize: 14, lineHeight: 22, fontWeight: '500' },
+  listBlock: { marginBottom: 16, gap: 10 },
+  listItem: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  listBullet: { fontSize: 16, lineHeight: 24, fontWeight: 'bold' },
+  listText: { flex: 1, fontSize: 15, lineHeight: 24 },
   rewardCard: {
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
     marginTop: 8,
+    marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  rewardLabel: {
-    fontSize: 14,
-    opacity: 0.7,
+  rewardLabel: { fontSize: 14, opacity: 0.7 },
+  rewardValue: { fontSize: 16 },
+  passRequirement: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 4,
   },
-  rewardValue: {
-    fontSize: 16,
-  },
-  // Question phase
-  questionText: {
-    fontSize: 20,
-    lineHeight: 28,
-    marginBottom: 24,
-  },
-  answersContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
+  passRequirementText: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  questionText: { fontSize: 20, lineHeight: 28, marginBottom: 24 },
+  answersContainer: { gap: 12, marginBottom: 24 },
   answerButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -620,95 +641,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  answerCircleFill: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  answerText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  resultIcon: {
-    fontSize: 20,
-  },
-  feedbackCard: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    marginBottom: 16,
-  },
-  feedbackTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  feedbackText: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  bottomPadding: {
-    height: 60,
-  },
-  // Bottom bar
-  bottomBar: {
-    padding: 20,
-    paddingBottom: 36,
-    borderTopWidth: 1,
-  },
-  continueButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Completion screen
-  completionContent: {
-    padding: 32,
-    alignItems: 'center',
-    flexGrow: 1,
-  },
-  completionEmoji: {
-    fontSize: 72,
-    marginTop: 60,
-    marginBottom: 16,
-  },
-  completionTitle: {
-    fontSize: 28,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  completionSubtitle: {
-    fontSize: 16,
-    opacity: 0.6,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  completionCard: {
+  answerCircleFill: { width: 14, height: 14, borderRadius: 7 },
+  answerText: { flex: 1, fontSize: 15, lineHeight: 22 },
+  resultIcon: { fontSize: 20 },
+  feedbackCard: { borderRadius: 12, borderWidth: 2, padding: 16, marginBottom: 16 },
+  feedbackTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
+  feedbackText: { fontSize: 14, lineHeight: 22 },
+  bottomPadding: { height: 60 },
+  bottomBar: { padding: 20, paddingBottom: 36, borderTopWidth: 1, gap: 10 },
+  continueButton: { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+  continueButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  secondaryButton: { alignItems: 'center', paddingVertical: 10 },
+  secondaryButtonText: { fontSize: 15, fontWeight: '600' },
+  // Result screens (pass & fail)
+  resultContent: { padding: 32, alignItems: 'center', flexGrow: 1 },
+  resultEmoji: { fontSize: 72, marginTop: 60, marginBottom: 16 },
+  resultTitle: { fontSize: 28, marginBottom: 8, textAlign: 'center' },
+  resultSubtitle: { fontSize: 16, opacity: 0.6, textAlign: 'center', marginBottom: 32 },
+  resultCard: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
     width: '100%',
-    gap: 12,
+    gap: 14,
     marginBottom: 20,
   },
-  completionRow: {
+  resultRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  completionLabel: {
-    fontSize: 14,
-    opacity: 0.7,
+  resultLabel: { fontSize: 14, opacity: 0.7 },
+  resultValue: { fontSize: 16 },
+  failHint: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 4,
   },
-  completionValue: {
-    fontSize: 16,
-  },
+  failHintText: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
   attributionBox: {
     borderRadius: 8,
     borderWidth: 1,
@@ -716,9 +687,5 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 8,
   },
-  attributionText: {
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
+  attributionText: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
 });

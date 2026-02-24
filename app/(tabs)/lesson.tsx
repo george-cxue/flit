@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -7,7 +8,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
-import { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
+import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
 
 export default function LessonsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -19,9 +20,11 @@ export default function LessonsScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const { isLessonCompleted, getCourseCompletionCount } = useLessons();
+  const { isLessonCompleted, getCourseCompletionCount, learningDollars } = useLessons();
 
   const courses = lessonService.getCourses();
+  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id ?? '');
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId);
 
   const handleLessonPress = (lesson: Lesson) => {
     router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } });
@@ -39,27 +42,104 @@ export default function LessonsScreen() {
           <ThemedText type="title" style={styles.title}>
             Lessons
           </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Complete lessons to earn learning dollars and unlock assets.
-          </ThemedText>
+
+          {/* Learning Dollars Balance */}
+          <View style={[styles.balanceCard, { backgroundColor: primaryColor }]}>
+            <ThemedText style={styles.balanceLabel}>Learning Dollars</ThemedText>
+            <ThemedText style={styles.balanceAmount}>
+              ${learningDollars.toLocaleString()}
+            </ThemedText>
+            <ThemedText style={styles.balanceHint}>
+              Earned by completing lessons · used to invest
+            </ThemedText>
+          </View>
         </View>
 
-        {/* Courses */}
-        {courses.map((course) => (
-          <CourseSection
-            key={course.id}
-            course={course}
+        {/* Course Selector */}
+        <ThemedText type="defaultSemiBold" style={styles.sectionLabel}>
+          Courses
+        </ThemedText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.courseRow}
+          style={styles.courseScroll}
+        >
+          {courses.map((course) => {
+            const isSelected = course.id === selectedCourseId;
+            const completed = getCourseCompletionCount(course.id);
+            const total = lessonService.getTotalLessonsCount(course.id);
+
+            return (
+              <TouchableOpacity
+                key={course.id}
+                style={[
+                  styles.courseCard,
+                  {
+                    backgroundColor: isSelected ? primaryColor : cardBg,
+                    borderColor: isSelected ? primaryColor : borderColor,
+                  },
+                ]}
+                onPress={() => setSelectedCourseId(course.id)}
+                activeOpacity={0.75}
+              >
+                <ThemedText style={styles.courseCardIcon}>{course.icon}</ThemedText>
+                <ThemedText
+                  style={[
+                    styles.courseCardTitle,
+                    { color: isSelected ? '#FFFFFF' : undefined },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {course.title}
+                </ThemedText>
+                {course.isComingSoon ? (
+                  <ThemedText
+                    style={[
+                      styles.courseCardMeta,
+                      { color: isSelected ? 'rgba(255,255,255,0.7)' : undefined },
+                    ]}
+                  >
+                    Coming Soon
+                  </ThemedText>
+                ) : (
+                  <ThemedText
+                    style={[
+                      styles.courseCardMeta,
+                      { color: isSelected ? 'rgba(255,255,255,0.7)' : undefined },
+                    ]}
+                  >
+                    {completed}/{total} complete
+                  </ThemedText>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Selected Course Content */}
+        {selectedCourse?.isComingSoon ? (
+          <ComingSoonPlaceholder
+            course={selectedCourse}
+            cardBg={cardBg}
+            borderColor={borderColor}
+            primaryColor={primaryColor}
+            colors={colors}
+          />
+        ) : selectedCourse ? (
+          <CourseContent
+            course={selectedCourse}
             cardBg={cardBg}
             borderColor={borderColor}
             primaryColor={primaryColor}
             successColor={successColor}
             colors={colors}
             isLessonCompleted={isLessonCompleted}
-            completedCount={getCourseCompletionCount(course.id)}
-            totalCount={lessonService.getTotalLessonsCount(course.id)}
+            completedCount={getCourseCompletionCount(selectedCourse.id)}
+            totalCount={lessonService.getTotalLessonsCount(selectedCourse.id)}
             onLessonPress={handleLessonPress}
           />
-        ))}
+        ) : null}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -67,9 +147,40 @@ export default function LessonsScreen() {
   );
 }
 
-// ─── Course Section ───────────────────────────────────────────────────────────
+// ─── Coming Soon Placeholder ──────────────────────────────────────────────────
 
-function CourseSection({
+function ComingSoonPlaceholder({
+  course,
+  cardBg,
+  borderColor,
+  primaryColor,
+  colors,
+}: {
+  course: LessonCourse;
+  cardBg: string;
+  borderColor: string;
+  primaryColor: string;
+  colors: (typeof Colors)['light'];
+}) {
+  return (
+    <View style={[styles.comingSoonCard, { backgroundColor: cardBg, borderColor }]}>
+      <ThemedText style={styles.comingSoonIcon}>{course.icon}</ThemedText>
+      <ThemedText type="defaultSemiBold" style={styles.comingSoonTitle}>
+        {course.title}
+      </ThemedText>
+      <ThemedText style={styles.comingSoonDescription}>{course.description}</ThemedText>
+      <View style={[styles.comingSoonBadge, { backgroundColor: colors.primaryPale }]}>
+        <ThemedText style={[styles.comingSoonBadgeText, { color: primaryColor }]}>
+          🚀 Coming Soon
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
+// ─── Course Content (Units + Lessons) ────────────────────────────────────────
+
+function CourseContent({
   course,
   cardBg,
   borderColor,
@@ -95,30 +206,30 @@ function CourseSection({
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
-    <View style={styles.courseSection}>
-      {/* Course Header Card */}
-      <View style={[styles.courseHeader, { backgroundColor: primaryColor }]}>
-        <View style={styles.courseHeaderTop}>
-          <View>
-            <ThemedText style={styles.courseAttribution}>{course.attribution}</ThemedText>
-            <ThemedText style={styles.courseTitle}>{course.title}</ThemedText>
-          </View>
-          <ThemedText style={styles.courseLicense}>{course.license}</ThemedText>
-        </View>
-        <ThemedText style={styles.courseDescription}>{course.description}</ThemedText>
-        <View style={styles.courseProgressRow}>
-          <View style={styles.courseProgressBar}>
-            <View
-              style={[
-                styles.courseProgressFill,
-                { width: `${progressPct}%` },
-              ]}
-            />
-          </View>
-          <ThemedText style={styles.courseProgressLabel}>
-            {completedCount}/{totalCount} lessons
+    <>
+      {/* Course progress strip */}
+      <View style={[styles.courseProgress, { backgroundColor: cardBg, borderColor }]}>
+        <View style={styles.courseProgressTop}>
+          <ThemedText type="defaultSemiBold" style={styles.courseProgressTitle}>
+            {course.title}
+          </ThemedText>
+          <ThemedText style={styles.courseProgressCount}>
+            {completedCount}/{totalCount}
           </ThemedText>
         </View>
+        <View style={styles.courseProgressBarBg}>
+          <View
+            style={[
+              styles.courseProgressBarFill,
+              { width: `${progressPct}%`, backgroundColor: primaryColor },
+            ]}
+          />
+        </View>
+        {course.attribution ? (
+          <ThemedText style={styles.courseAttribution}>
+            {course.attribution} · {course.license}
+          </ThemedText>
+        ) : null}
       </View>
 
       {/* Units */}
@@ -136,7 +247,7 @@ function CourseSection({
           onLessonPress={onLessonPress}
         />
       ))}
-    </View>
+    </>
   );
 }
 
@@ -169,7 +280,6 @@ function UnitSection({
 
   return (
     <View style={[styles.unitSection, { backgroundColor: cardBg, borderColor }]}>
-      {/* Unit header */}
       <View style={styles.unitHeader}>
         <ThemedText style={styles.unitIcon}>{unit.icon}</ThemedText>
         <View style={styles.unitHeaderText}>
@@ -182,7 +292,6 @@ function UnitSection({
         </View>
       </View>
 
-      {/* Lessons */}
       {unit.lessons.map((lesson, index) => {
         const completed = isLessonCompleted(courseId, lesson.id);
         const isLast = index === unit.lessons.length - 1;
@@ -196,7 +305,6 @@ function UnitSection({
             ]}
             onPress={() => onLessonPress(lesson)}
           >
-            {/* Status indicator */}
             <View
               style={[
                 styles.lessonStatusDot,
@@ -214,7 +322,7 @@ function UnitSection({
             <View style={styles.lessonInfo}>
               <ThemedText
                 type="defaultSemiBold"
-                style={[styles.lessonTitle, completed && { opacity: 0.5 }]}
+                style={[styles.lessonTitle, completed && { opacity: 0.45 }]}
                 numberOfLines={1}
               >
                 {lesson.title}
@@ -225,11 +333,13 @@ function UnitSection({
             </View>
 
             <View style={styles.lessonRight}>
-              <View style={[styles.rewardBadge, { backgroundColor: colors.primaryPale }]}>
-                <ThemedText style={[styles.rewardText, { color: primaryColor }]}>
-                  +${lesson.reward}
-                </ThemedText>
-              </View>
+              {!completed && (
+                <View style={[styles.rewardBadge, { backgroundColor: colors.primaryPale }]}>
+                  <ThemedText style={[styles.rewardText, { color: primaryColor }]}>
+                    +${lesson.reward}
+                  </ThemedText>
+                </View>
+              )}
               <ThemedText style={styles.chevron}>›</ThemedText>
             </View>
           </TouchableOpacity>
@@ -242,86 +352,100 @@ function UnitSection({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 20, paddingTop: 60 },
+  header: { marginBottom: 20 },
+  title: { fontSize: 28, marginBottom: 16 },
+  // Learning dollars balance
+  balanceCard: {
+    borderRadius: 16,
     padding: 20,
-    paddingTop: 60,
+    marginBottom: 4,
   },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    opacity: 0.6,
-    lineHeight: 22,
-  },
-  courseSection: {
-    marginBottom: 28,
-  },
-  courseHeader: {
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-  },
-  courseHeaderTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  courseAttribution: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
+  balanceLabel: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  courseTitle: {
+  balanceAmount: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 40,
     fontWeight: 'bold',
+    marginBottom: 4,
   },
-  courseLicense: {
+  balanceHint: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    paddingTop: 2,
+    fontSize: 12,
   },
-  courseDescription: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
+  // Course selector
+  sectionLabel: {
+    fontSize: 16,
+    marginBottom: 12,
+    marginTop: 8,
   },
-  courseProgressRow: {
-    flexDirection: 'row',
+  courseScroll: { marginHorizontal: -20 },
+  courseRow: { paddingHorizontal: 20, gap: 12, paddingBottom: 4 },
+  courseCard: {
+    width: 140,
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 14,
+    gap: 6,
+  },
+  courseCardIcon: { fontSize: 28, marginBottom: 2 },
+  courseCardTitle: { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  courseCardMeta: { fontSize: 11, opacity: 0.6 },
+  // Coming soon
+  comingSoonCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
     alignItems: 'center',
     gap: 12,
   },
-  courseProgressBar: {
-    flex: 1,
+  comingSoonIcon: { fontSize: 56 },
+  comingSoonTitle: { fontSize: 20, textAlign: 'center' },
+  comingSoonDescription: {
+    fontSize: 14,
+    opacity: 0.6,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  comingSoonBadge: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  comingSoonBadgeText: { fontSize: 14, fontWeight: '700' },
+  // Course progress strip
+  courseProgress: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  courseProgressTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  courseProgressTitle: { fontSize: 15 },
+  courseProgressCount: { fontSize: 13, opacity: 0.5 },
+  courseProgressBarBg: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: '#E5E7EB',
     borderRadius: 3,
     overflow: 'hidden',
   },
-  courseProgressFill: {
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 3,
-  },
-  courseProgressLabel: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  courseProgressBarFill: { height: '100%', borderRadius: 3 },
+  courseAttribution: { fontSize: 11, opacity: 0.4 },
+  // Units
   unitSection: {
     borderRadius: 16,
     borderWidth: 1,
@@ -334,20 +458,10 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  unitIcon: {
-    fontSize: 28,
-  },
-  unitHeaderText: {
-    flex: 1,
-  },
-  unitTitle: {
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  unitMeta: {
-    fontSize: 13,
-    opacity: 0.5,
-  },
+  unitIcon: { fontSize: 28 },
+  unitHeaderText: { flex: 1 },
+  unitTitle: { fontSize: 16, marginBottom: 2 },
+  unitMeta: { fontSize: 13, opacity: 0.5 },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -363,41 +477,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lessonCheckmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTitle: {
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  lessonMeta: {
-    fontSize: 12,
-    opacity: 0.5,
-  },
-  lessonRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rewardBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  rewardText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chevron: {
-    fontSize: 20,
-    opacity: 0.4,
-  },
-  bottomPadding: {
-    height: 40,
-  },
+  lessonCheckmark: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
+  lessonInfo: { flex: 1 },
+  lessonTitle: { fontSize: 15, marginBottom: 2 },
+  lessonMeta: { fontSize: 12, opacity: 0.5 },
+  lessonRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rewardBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  rewardText: { fontSize: 12, fontWeight: '700' },
+  chevron: { fontSize: 20, opacity: 0.4 },
+  bottomPadding: { height: 40 },
 });

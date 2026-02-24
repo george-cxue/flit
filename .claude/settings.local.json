@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.khanacademy.org)",
+      "WebSearch",
+      "WebFetch(domain:blog.khanacademy.org)",
+      "WebFetch(domain:support.khanacademy.org)",
+      "WebFetch(domain:lessonplanofhappiness.com)",
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}

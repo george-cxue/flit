@@ -14,7 +14,7 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
-  const { isLessonCompleted } = useLessons();
+  const { isLessonCompleted, learningDollars } = useLessons();
 
   // Find the first incomplete lesson across all courses to feature as "Today's Lesson"
   const allLessons = lessonService.getAllLessons();
@@ -122,6 +122,26 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Learning Dollars */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.cardHeader}>
+            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+              Learning Dollars
+            </ThemedText>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/lesson')}>
+              <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
+                Browse Lessons →
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+          <ThemedText style={styles.portfolioBalance}>
+            ${learningDollars.toLocaleString()}
+          </ThemedText>
+          <ThemedText style={[styles.changeLabel, { marginTop: 2 }]}>
+            Earned from completed lessons
+          </ThemedText>
+        </View>
+
         {/* Today's Lesson */}
         {todaysLesson && (
           <TouchableOpacity
@@ -161,7 +181,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/lesson')}
           >
             <ThemedText style={styles.actionIcon}>📚</ThemedText>
-            <ThemedText style={styles.actionLabel}>Browse Lessons</ThemedText>
+            <ThemedText style={styles.actionLabel}>Lessons</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}>
