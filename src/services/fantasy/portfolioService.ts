@@ -1,8 +1,5 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Portfolio } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
 
 export const PortfolioService = {
     getPortfolios: async (): Promise<Portfolio[]> => {
@@ -14,7 +11,10 @@ export const PortfolioService = {
 
     getPortfolioByGroupId: async (groupId: string, userId?: string): Promise<Portfolio | undefined> => {
         try {
-            const targetUserId = userId || CURRENT_USER_ID;
+            const targetUserId = userId || getAuthenticatedUserId();
+            if (!targetUserId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.get(`/fantasy-groups/${groupId}/portfolio/${targetUserId}`);
             return response.data;
         } catch (error) {
@@ -31,6 +31,40 @@ export const PortfolioService = {
                 activeSlotIds,
                 benchSlotIds
             });
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    buyAsset: async (groupId: string, assetId: string, shares: number): Promise<any> => {
+        try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/buy`, {
+                userId,
+                assetId,
+                shares
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    sellAsset: async (groupId: string, assetId: string, shares: number): Promise<any> => {
+        try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/sell`, {
+                userId,
+                assetId,
+                shares
+            });
+            return response.data;
         } catch (error) {
             throw handleApiError(error);
         }

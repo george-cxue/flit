@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
 import { apiClient } from '@/src/services/api';
+import { useAuthContext } from '@/contexts/auth-context';
 
 interface MemberWithPortfolio {
     id: string;
@@ -22,6 +23,7 @@ interface MemberWithPortfolio {
 export default function GroupDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const { user } = useAuthContext();
     const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
     const [membersWithPortfolios, setMembersWithPortfolios] = useState<MemberWithPortfolio[]>([]);
@@ -232,10 +234,11 @@ export default function GroupDetailScreen() {
         }
     };
 
-    const isAdmin = group.adminUserId === 'user_1'; // TODO: Get actual current user ID
+    const isAdmin = group.adminUserId === user?.id;
 
     console.log('Group admin check:', {
         adminUserId: group.adminUserId,
+        currentUserId: user?.id,
         isAdmin,
         competitionStarted
     });
@@ -290,7 +293,7 @@ export default function GroupDetailScreen() {
                                 // Navigate to portfolio tab with this group selected
                                 router.push({
                                     pathname: '/(tabs)/portfolio',
-                                    params: { groupId: group.id }
+                                    params: { leagueId: group.id }
                                 });
                             }}
                         >
@@ -325,7 +328,7 @@ export default function GroupDetailScreen() {
                     <View style={styles.section}>
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Portfolio Rankings</ThemedText>
                         {membersWithPortfolios.map((member, index) => {
-                            const isCurrentUser = member.id === 'user_1'; // TODO: Get actual current user ID
+                            const isCurrentUser = member.id === user?.id;
                             const displayName = member.firstName && member.lastName 
                                 ? `${member.firstName} ${member.lastName}` 
                                 : member.name || member.username;
@@ -339,7 +342,7 @@ export default function GroupDetailScreen() {
                                             // Navigate to portfolio tab for editing
                                             router.push({
                                                 pathname: '/(tabs)/portfolio',
-                                                params: { groupId: group.id }
+                                                params: { leagueId: group.id }
                                             });
                                         } else {
                                             // Navigate to read-only portfolio view

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
 import { GroupService } from '@/src/services/fantasy/groupService';
+import { PortfolioService } from '@/src/services/fantasy/portfolioService';
 import { apiClient } from '@/src/services/api';
 import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -17,7 +18,8 @@ interface PortfolioContextType {
   setSelectedLeagueId: (id: string) => void;
   setTimeFrame: (timeFrame: TimeFrame) => void;
   allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => void;
-  buyStock: (leagueId: string, stock: Stock, shares: number) => void;
+  buyStock: (leagueId: string, stock: Stock, shares: number) => Promise<void>;
+  sellStock: (leagueId: string, symbol: string, shares: number) => Promise<void>;
   ensurePortfolioExists: (leagueId: string, leagueName: string) => void;
   refreshPortfolios: () => Promise<void>;
 
@@ -110,6 +112,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               indexFunds: 0,
             },
             holdings: backendPortfolio.slots?.map((slot: any) => ({
+              assetId: slot.assetId || slot.asset?.id,
               symbol: slot.asset?.ticker || '',
               name: slot.asset?.name || '',
               shares: slot.shares,
@@ -196,56 +199,45 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     });
   };
 
-  const buyStock = (leagueId: string, stock: Stock, shares: number) => {
-    const totalCost = stock.currentPrice * shares;
-    setPortfolios((prev) => {
-      const portfolio = prev[leagueId];
-      if (!portfolio) return prev;
+  const buyStock = async (leagueId: string, stock: Stock, shares: number) => {
+    if (!stock.id) {
+      throw new Error('Stock ID is required to buy stock');
+    }
 
-      const existingHolding = portfolio.holdings.find((h) => h.symbol === stock.symbol);
+    try {
+      // Call backend API to buy the asset
+      await PortfolioService.buyAsset(leagueId, stock.id, shares);
+      
+      // Refresh portfolios from backend to get updated data
+      await fetchPortfolios();
+    } catch (error) {
+      console.error('Failed to buy stock:', error);
+      throw error;
+    }
+  };
 
-      let updatedHoldings;
-      if (existingHolding) {
-        const totalShares = existingHolding.shares + shares;
-        const newAveragePrice =
-          (existingHolding.averagePrice * existingHolding.shares + totalCost) / totalShares;
-
-        updatedHoldings = portfolio.holdings.map((h) =>
-          h.symbol === stock.symbol
-            ? {
-                ...h,
-                shares: totalShares,
-                averagePrice: newAveragePrice,
-                totalValue: stock.currentPrice * totalShares,
-                changePercent: ((stock.currentPrice - newAveragePrice) / newAveragePrice) * 100,
-              }
-            : h
-        );
-      } else {
-        updatedHoldings = [
-          ...portfolio.holdings,
-          {
-            symbol: stock.symbol,
-            name: stock.name,
-            shares,
-            averagePrice: stock.currentPrice,
-            currentPrice: stock.currentPrice,
-            totalValue: totalCost,
-            changePercent: 0,
-          },
-        ];
+  const sellStock = async (leagueId: string, symbol: string, shares: number) => {
+    try {
+      // Find the asset ID from current holdings
+      const portfolio = portfolios[leagueId];
+      if (!portfolio) {
+        throw new Error('Portfolio not found');
       }
 
-      return {
-        ...prev,
-        [leagueId]: {
-          ...portfolio,
-          liquidFunds: portfolio.liquidFunds - totalCost,
-          holdings: updatedHoldings,
-          // totalValue stays the same - just converting cash to stocks
-        },
-      };
-    });
+      const holding = portfolio.holdings.find((h) => h.symbol === symbol);
+      if (!holding || !holding.assetId) {
+        throw new Error('Asset not found in portfolio');
+      }
+
+      // Call backend API to sell the asset
+      await PortfolioService.sellAsset(leagueId, holding.assetId, shares);
+      
+      // Refresh portfolios from backend to get updated data
+      await fetchPortfolios();
+    } catch (error) {
+      console.error('Failed to sell stock:', error);
+      throw error;
+    }
   };
 
   const getCurrentPortfolio = (): Portfolio | null => {
@@ -278,6 +270,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     setTimeFrame,
     allocateFunds,
     buyStock,
+    sellStock,
     ensurePortfolioExists,
     refreshPortfolios,
     getCurrentPortfolio,

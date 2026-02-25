@@ -1,8 +1,5 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Asset, DraftPick, DraftState } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
 
 export const DraftService = {
     getDraftState: async (groupId: string): Promise<DraftState> => {
@@ -16,8 +13,12 @@ export const DraftService = {
 
     makePick: async (groupId: string, assetId: string): Promise<DraftPick> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.post(`/fantasy-groups/${groupId}/draft/pick`, {
-                userId: CURRENT_USER_ID,
+                userId,
                 assetId
             });
             return response.data;
@@ -28,7 +29,13 @@ export const DraftService = {
 
     startDraft: async (groupId: string): Promise<DraftState> => {
         try {
-            const response = await apiClient.post(`/fantasy-groups/${groupId}/draft/start`);
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/draft/start`, {
+                userId
+            });
             return response.data;
         } catch (error) {
             throw handleApiError(error);

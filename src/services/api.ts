@@ -4,9 +4,24 @@ import * as SecureStore from 'expo-secure-store';
 
 // Token getter function - will be set by AuthProvider
 let getAuthToken: (() => Promise<string | null>) | null = null;
+let getCurrentUserId: (() => string | null) | null = null;
 
 export const setAuthTokenGetter = (getter: () => Promise<string | null>) => {
   getAuthToken = getter;
+};
+
+export const setCurrentUserIdGetter = (getter: () => string | null) => {
+  getCurrentUserId = getter;
+};
+
+export const getAuthenticatedUserId = (): string | null => {
+  if (!getCurrentUserId) {
+    console.warn('[API] getCurrentUserId not set');
+    return null;
+  }
+  const userId = getCurrentUserId();
+  console.log('[API] Getting authenticated user ID:', userId);
+  return userId;
 };
 
 // Determine the API base URL based on the environment

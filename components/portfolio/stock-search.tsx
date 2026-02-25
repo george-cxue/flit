@@ -45,6 +45,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
 
         // Map API response to Stock type
         const mappedStocks: Stock[] = response.data.map((asset: any) => ({
+          id: asset.id,
           symbol: asset.ticker,
           name: asset.name,
           currentPrice: asset.currentPrice,

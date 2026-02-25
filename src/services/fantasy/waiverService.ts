@@ -1,8 +1,5 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Asset, WaiverClaim } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
 
 export const WaiverService = {
     /**
@@ -22,8 +19,12 @@ export const WaiverService = {
 
     submitClaim: async (groupId: string, assetId: string, dropAssetId?: string): Promise<WaiverClaim> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.post(`/fantasy-groups/${groupId}/waivers`, {
-                userId: CURRENT_USER_ID,
+                userId,
                 assetId,
                 dropAssetId
             });

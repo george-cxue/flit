@@ -1,15 +1,15 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Group, GroupSettings } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-// Using phillipgao's user ID for now
-const CURRENT_USER_ID = 'cmkpyj219000010x8m00psw6m'; // phillipgao
 
 export const GroupService = {
     getGroups: async (): Promise<Group[]> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.get('/fantasy-groups', {
-                params: { userId: CURRENT_USER_ID }
+                params: { userId }
             });
             return response.data.groups || [];
         } catch (error) {
@@ -31,9 +31,13 @@ export const GroupService = {
 
     createGroup: async (name: string, settings: GroupSettings): Promise<Group> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.post('/fantasy-groups', {
                 name,
-                adminUserId: CURRENT_USER_ID,
+                adminUserId: userId,
                 settings
             });
             return response.data;
@@ -44,8 +48,12 @@ export const GroupService = {
 
     startCompetition: async (groupId: string): Promise<void> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             await apiClient.post(`/fantasy-groups/${groupId}/start`, {
-                userId: CURRENT_USER_ID
+                userId
             });
         } catch (error) {
             throw handleApiError(error);
@@ -54,9 +62,13 @@ export const GroupService = {
 
     joinByCode: async (joinCode: string): Promise<{ group: Group; membership: any }> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.post('/fantasy-groups/join-by-code', {
                 joinCode: joinCode.toUpperCase(),
-                userId: CURRENT_USER_ID
+                userId
             });
             return response.data;
         } catch (error) {
@@ -66,8 +78,12 @@ export const GroupService = {
 
     leaveGroup: async (groupId: string): Promise<{ message: string; groupDeleted: boolean }> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.delete(`/fantasy-groups/${groupId}/leave`, {
-                data: { userId: CURRENT_USER_ID }
+                data: { userId }
             });
             return response.data;
         } catch (error) {
