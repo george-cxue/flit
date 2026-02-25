@@ -11,6 +11,7 @@ export interface PortfolioSnapshot {
 }
 
 export interface StockHolding {
+  assetId?: string;
   symbol: string;
   name: string;
   shares: number;
@@ -37,6 +38,7 @@ export interface Portfolio {
 }
 
 export interface Stock {
+  id?: string;
   symbol: string;
   name: string;
   currentPrice: number;

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
-import { apiClient, setAuthTokenGetter } from '@/src/services/api';
+import { apiClient, setAuthTokenGetter, setCurrentUserIdGetter } from '@/src/services/api';
 import { PENDING_SIGNUP_KEY } from '@/src/constants/auth';
 
 interface User {
@@ -12,6 +12,9 @@ interface User {
   firstName?: string;
   lastName?: string;
   onboardingComplete: boolean;
+  financialIQScore?: number;
+  learningStreak?: number;
+  totalLearningDollars?: number;
 }
 
 interface AuthContextType {
@@ -47,6 +50,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     setAuthTokenGetter(getToken);
   }, [getToken]);
+
+  useEffect(() => {
+    setCurrentUserIdGetter(() => user?.id || null);
+  }, [user]);
 
   useEffect(() => {
     return () => {
@@ -106,8 +113,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       );
 
+      // After sync, fetch full user data including stats
+      const userId = response.data.user.id;
+      const userDataResponse = await apiClient.get(`/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (isMountedRef.current) {
-        setUser(response.data.user);
+        setUser(userDataResponse.data.user);
         setSyncError(null);
         syncedForUserRef.current = clerkId;
       }

@@ -61,12 +61,18 @@ export default function CreateGroupScreen() {
                 tradingEnabled,
             };
 
-            await GroupService.createGroup(groupName, settings);
-            router.back();
+            const newGroup = await GroupService.createGroup(groupName, settings);
+            
+            // Navigate directly to the new group's detail page
+            router.push(`/fantasy/group/${newGroup.id}`);
+            
+            // Show success message after navigation
+            setTimeout(() => {
+                Alert.alert('Success', `Group "${groupName}" created!`);
+            }, 500);
         } catch (error) {
             console.error('Failed to create group:', error);
             Alert.alert('Error', error instanceof Error && error.message ? error.message : 'Failed to create group');
-        } finally {
             setLoading(false);
         }
     };

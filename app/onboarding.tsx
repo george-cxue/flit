@@ -33,40 +33,25 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { completeOnboarding, profileName } = useOnboarding();
+  const { completeOnboarding } = useOnboarding();
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [name, setName] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
 
   const primaryColor = useThemeColor({}, 'primary' as any);
   const cardBg = useThemeColor({}, 'cardBackground' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  useEffect(() => {
-    if (profileName) {
-      setName(profileName);
-    }
-  }, [profileName]);
-
   const handleNext = async () => {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
-      setErrorMessage('');
     } else {
-      const trimmedName = name.trim();
-      if (!trimmedName) {
-        setErrorMessage('Please enter your name so we can personalize your experience.');
-        return;
-      }
-      await completeOnboarding(trimmedName);
+      await completeOnboarding();
       router.replace('/(tabs)/home');
     }
   };
 
   const handleSkip = async () => {
-    const trimmedName = name.trim() || 'Investor';
-    await completeOnboarding(trimmedName);
+    await completeOnboarding();
     router.replace('/(tabs)/home');
   };
 
@@ -166,36 +151,7 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        {currentStep === onboardingSteps.length - 1 && (
-          <View style={[styles.nameCard, { backgroundColor: cardBg, borderColor }]}>
-            <ThemedText type="defaultSemiBold" style={styles.nameLabel}>
-              What should we call you?
-            </ThemedText>
-            <TextInput
-              style={[
-                styles.nameInput,
-                {
-                  borderColor: errorMessage ? colors.danger : borderColor,
-                  color: colors.text,
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-                },
-              ]}
-              placeholder="Enter your first name"
-              placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.4)'}
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (errorMessage) setErrorMessage('');
-              }}
-              autoCapitalize="words"
-              returnKeyType="done"
-            />
-            <ThemedText style={styles.nameHint}>We&apos;ll show this on your home page and leagues.</ThemedText>
-            {errorMessage ? (
-              <ThemedText style={[styles.nameError, { color: colors.danger }]}>{errorMessage}</ThemedText>
-            ) : null}
-          </View>
-        )}
+
       </View>
 
       {/* Bottom Section */}

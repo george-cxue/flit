@@ -30,25 +30,20 @@ export default function JoinGroupScreen() {
         setLoading(true);
         try {
             const result = await GroupService.joinByCode(joinCode.trim());
-            Alert.alert(
-                'Success',
-                `You have joined ${result.group.name}!`,
-                [
-                    {
-                        text: 'View Group',
-                        onPress: () => {
-                            router.replace(`/fantasy/group/${result.group.id}`);
-                        }
-                    }
-                ]
-            );
+            
+            // Navigate directly to the group detail page
+            router.push(`/fantasy/group/${result.group.id}`);
+            
+            // Show success message after navigation
+            setTimeout(() => {
+                Alert.alert('Success', `You have joined ${result.group.name}!`);
+            }, 500);
         } catch (error: any) {
             let message = 'Failed to join group';
             if (error.message) {
                 message = error.message;
             }
             Alert.alert('Error', message);
-        } finally {
             setLoading(false);
         }
     };

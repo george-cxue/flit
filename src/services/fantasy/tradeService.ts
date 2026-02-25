@@ -1,14 +1,15 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Trade } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
 
 export const TradeService = {
     getTrades: async (groupId: string): Promise<Trade[]> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.get(`/fantasy-groups/${groupId}/trades`, {
-                params: { userId: CURRENT_USER_ID }
+                params: { userId }
             });
             return response.data.trades || [];
         } catch (error) {
@@ -23,8 +24,12 @@ export const TradeService = {
         requestedAssets: string[]
     ): Promise<Trade> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.post(`/fantasy-groups/${groupId}/trades`, {
-                proposerId: CURRENT_USER_ID,
+                proposerId: userId,
                 recipientId,
                 offeredAssetIds: offeredAssets,
                 requestedAssetIds: requestedAssets

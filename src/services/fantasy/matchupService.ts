@@ -1,14 +1,15 @@
-import { apiClient, handleApiError } from '../api';
+import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Matchup } from '@/src/types/fantasy';
-
-// TODO: Replace with actual user context/auth when implemented
-const CURRENT_USER_ID = 'user_1';
 
 export const MatchupService = {
     getCurrentMatchup: async (groupId: string): Promise<Matchup | undefined> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.get(`/fantasy-groups/${groupId}/matchup/current`, {
-                params: { userId: CURRENT_USER_ID }
+                params: { userId }
             });
             return response.data;
         } catch (error) {
@@ -21,8 +22,12 @@ export const MatchupService = {
 
     getMatchupByWeek: async (groupId: string, week: number): Promise<Matchup | undefined> => {
         try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
             const response = await apiClient.get(`/fantasy-groups/${groupId}/matchup/week/${week}`, {
-                params: { userId: CURRENT_USER_ID }
+                params: { userId }
             });
             return response.data;
         } catch (error) {

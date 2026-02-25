@@ -45,15 +45,12 @@ export function useOnboarding() {
 
   const completeOnboarding = async (name?: string) => {
     try {
-      const displayName = (name && name.trim()) || profileName || 'Investor';
-      await persistName(displayName);
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
       setHasCompletedOnboarding(true);
 
       if (userId) {
         await apiClient.put(`/users/${userId}`, {
           onboardingComplete: true,
-          firstName: displayName,
         });
         await syncUser();
       }
