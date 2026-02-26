@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserLessonState, LessonProgress } from '@/src/types/lesson';
 import { lessonService } from '@/src/services/lessonService';
+import { LessonApiService } from '@/src/services/lessonApiService';
 
 const LESSON_PROGRESS_KEY = '@flit_lesson_progress';
 const PORTFOLIO_BALANCE_KEY = '@flit_portfolio_balance';
@@ -22,6 +23,42 @@ export function useLessons() {
       ]);
       if (storedProgress) setState(JSON.parse(storedProgress));
       if (storedBalance) setPortfolioBalance(Number(storedBalance));
+
+      // Try to load from backend and merge (non-blocking)
+      try {
+        const backendProgress = await LessonApiService.getUserLessonProgress();
+        if (backendProgress && backendProgress.length > 0) {
+          // Convert backend format to our state format
+          const mergedState: UserLessonState = storedProgress ? JSON.parse(storedProgress) : {};
+          
+          backendProgress.forEach((userLesson: any) => {
+            const courseId = userLesson.lesson?.category || 'unknown';
+            const lessonId = userLesson.lessonId;
+            
+            if (!mergedState[courseId]) {
+              mergedState[courseId] = {};
+            }
+            
+            // Only add if not already in local state or if backend is newer
+            if (!mergedState[courseId][lessonId] || 
+                (userLesson.completedAt && userLesson.status === 'completed')) {
+              mergedState[courseId][lessonId] = {
+                lessonId,
+                completed: userLesson.status === 'completed',
+                score: userLesson.score || 0,
+                totalQuestions: userLesson.score ? Math.ceil(userLesson.score / 0.75) : 0,
+                completedAt: userLesson.completedAt,
+              };
+            }
+          });
+          
+          setState(mergedState);
+          await AsyncStorage.setItem(LESSON_PROGRESS_KEY, JSON.stringify(mergedState));
+        }
+      } catch (backendError) {
+        console.error('Failed to load lesson progress from backend:', backendError);
+        // Continue with local data
+      }
     } catch (error) {
       console.error('Error loading lesson data:', error);
     } finally {
@@ -36,6 +73,7 @@ export function useLessons() {
   /**
    * Called only when the user has passed (>= PASS_THRESHOLD).
    * Marks the lesson completed and awards learning dollars.
+   * Also syncs to backend.
    */
   const completeLesson = useCallback(
     async (courseId: string, lessonId: string, score: number, totalQuestions: number) => {
@@ -66,6 +104,27 @@ export function useLessons() {
         AsyncStorage.setItem(LESSON_PROGRESS_KEY, JSON.stringify(newState)),
         AsyncStorage.setItem(PORTFOLIO_BALANCE_KEY, String(newBalance)),
       ]);
+
+      // Sync to backend and return stats
+      try {
+        const result = await LessonApiService.syncLessonProgress([
+          {
+            lessonId,
+            courseId,
+            status: 'completed',
+            score,
+            totalQuestions,
+            completedAt: new Date().toISOString(),
+          },
+        ]);
+        
+        // Return the stats so they can be displayed
+        return result.stats;
+      } catch (error) {
+        console.error('Failed to sync lesson progress to backend:', error);
+        // Continue even if backend sync fails - data is still saved locally
+        return null;
+      }
     },
     [state, portfolioBalance]
   );

@@ -42,6 +42,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
   const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>({});
   const [loading, setLoading] = useState(true);
   const isMountedRef = useRef(true);
+  const hasSetInitialLeague = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -52,7 +53,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
 
   // Fetch portfolios from backend
   const fetchPortfolios = useCallback(async () => {
+    console.log('[PortfolioContext] fetchPortfolios called - userId:', userId);
     if (!userId) {
+      console.log('[PortfolioContext] No userId, skipping fetch');
       if (isMountedRef.current) {
         setPortfolios({});
         setLoading(false);
@@ -65,8 +68,10 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setLoading(true);
       }
 
+      console.log('[PortfolioContext] Fetching groups...');
       // Fetch all groups for the user
       const leagues = await GroupService.getGroups();
+      console.log('[PortfolioContext] Fetched', leagues.length, 'groups');
 
       if (leagues.length === 0) {
         if (isMountedRef.current) {
@@ -77,8 +82,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
       }
 
       // Set first group as selected if none selected
-      if (!selectedLeagueId && leagues.length > 0 && isMountedRef.current) {
+      if (!hasSetInitialLeague.current && leagues.length > 0 && isMountedRef.current) {
         setSelectedLeagueId(leagues[0].id);
+        hasSetInitialLeague.current = true;
       }
 
       // Fetch portfolio for each group
@@ -170,14 +176,21 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setLoading(false);
       }
     }
-  }, [userId, selectedLeagueId]);
+  }, [userId]);
 
-  // Initial fetch when auth is loaded and user is available
+  // Initial fetch when user ID is available
   useEffect(() => {
-    if (authLoaded) {
+    console.log('[PortfolioContext] Effect triggered - userId:', userId, 'authLoaded:', authLoaded);
+    if (userId) {
+      console.log('[PortfolioContext] Fetching portfolios for userId:', userId);
       fetchPortfolios();
+    } else if (authLoaded) {
+      // Auth is loaded but no user - clear portfolios
+      console.log('[PortfolioContext] Auth loaded but no userId, clearing portfolios');
+      setPortfolios({});
+      setLoading(false);
     }
-  }, [authLoaded, userId, fetchPortfolios]);
+  }, [userId, authLoaded, fetchPortfolios]);
 
   const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
     setPortfolios((prev) => {

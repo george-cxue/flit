@@ -43,6 +43,13 @@ export default function LessonPlayerScreen() {
 
   const { completeLesson, isLessonCompleted } = useLessons();
 
+  // State for Financial IQ stats
+  const [earnedStats, setEarnedStats] = useState<{
+    financialIQEarned: number;
+    financialIQScore: number;
+    learningStreak: number;
+  } | null>(null);
+
   const lesson = lessonService.getLessonById(id ?? '');
   const course = lesson ? lessonService.getCourseById(lesson.courseId) : undefined;
 
@@ -90,7 +97,8 @@ export default function LessonPlayerScreen() {
     if (phase === 'content') {
       if (questions.length === 0) {
         // No questions — auto-pass
-        await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
+        const stats = await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
+        if (stats) setEarnedStats(stats);
         setQuizResult({ score: 0, total: 0 });
         setPhase('complete');
       } else {
@@ -119,7 +127,8 @@ export default function LessonPlayerScreen() {
         setQuizResult({ score: finalScore, total });
 
         if (passed) {
-          await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
+          const stats = await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
+          if (stats) setEarnedStats(stats);
           setPhase('complete');
         } else {
           setPhase('failed');
@@ -274,6 +283,28 @@ export default function LessonPlayerScreen() {
                 +${lesson.reward.toLocaleString()}
               </ThemedText>
             </View>
+            {earnedStats && earnedStats.financialIQEarned > 0 && (
+              <View style={styles.resultRow}>
+                <ThemedText style={styles.resultLabel}>Financial IQ</ThemedText>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.resultValue, { color: successColor }]}
+                >
+                  +{earnedStats.financialIQEarned} pts ({earnedStats.financialIQScore} total)
+                </ThemedText>
+              </View>
+            )}
+            {earnedStats && earnedStats.learningStreak > 0 && (
+              <View style={styles.resultRow}>
+                <ThemedText style={styles.resultLabel}>Daily Streak</ThemedText>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.resultValue, { color: successColor }]}
+                >
+                  🔥 {earnedStats.learningStreak} day{earnedStats.learningStreak !== 1 ? 's' : ''}
+                </ThemedText>
+              </View>
+            )}
           </View>
 
           {course?.attribution ? (
