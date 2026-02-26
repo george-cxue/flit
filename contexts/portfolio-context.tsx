@@ -108,6 +108,41 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               // Use real data from backend
               history = historyData.history;
               baselines = historyData.baselines;
+              
+              // If we have limited data points (< 2), add a synthetic starting point
+              // This allows charts to display percent changes properly
+              if (history.length === 1) {
+                const startTimestamp = leagueStartDate.getTime();
+                const firstSnapshot = history[0];
+                
+                // Only add starting point if it's before the first snapshot
+                if (startTimestamp < firstSnapshot.timestamp) {
+                  history.unshift({
+                    timestamp: startTimestamp,
+                    value: startingBalance,
+                  });
+                  
+                  // Add corresponding baseline starting points
+                  if (baselines?.sp500 && baselines.sp500.length > 0) {
+                    baselines.sp500.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                  if (baselines?.nasdaq && baselines.nasdaq.length > 0) {
+                    baselines.nasdaq.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                  if (baselines?.dow && baselines.dow.length > 0) {
+                    baselines.dow.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                }
+              }
             } else {
               // Fallback to generated data if no history exists yet
               console.log(`[PortfolioContext] No history data for group ${group.id}, using fallback`);

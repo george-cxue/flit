@@ -55,12 +55,25 @@ export default function LessonsScreen() {
 
           {/* Portfolio Balance */}
           <View style={[styles.balanceCard, { backgroundColor: primaryColor }]}>
-            <ThemedText style={styles.balanceLabel}>Portfolio Balance</ThemedText>
+            <ThemedText style={styles.balanceLabel}>Learning Dollars</ThemedText>
             <ThemedText style={styles.balanceAmount}>
               ${portfolioBalance.toLocaleString()}
             </ThemedText>
             <ThemedText style={styles.balanceHint}>
-              Complete lessons to grow your portfolio
+              Complete lessons to grow your learning dollars
+            </ThemedText>
+          </View>
+
+          {/* Learning Dollars Explanation */}
+          <View style={[styles.infoCard, { backgroundColor: cardBg, borderColor }]}>
+            <ThemedText style={styles.infoTitle}>💡 What are Learning Dollars?</ThemedText>
+            <ThemedText style={styles.infoText}>
+              Learning Dollars determine your starting portfolio size when you join or create a group. The more lessons you complete, the bigger your starting balance!
+            </ThemedText>
+            <ThemedText style={[styles.infoText, { marginTop: 8 }]}>
+              • Monthly Tournament requires $10,000{'\n'}
+              • Custom groups can set any starting balance{'\n'}
+              • You must have enough Learning Dollars to join
             </ThemedText>
           </View>
         </View>
@@ -432,6 +445,23 @@ const styles = StyleSheet.create({
   balanceHint: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
+  },
+  // Info card for learning dollars explanation
+  infoCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 16,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    lineHeight: 20,
+    opacity: 0.8,
   },
   // Course selector
   sectionLabel: {

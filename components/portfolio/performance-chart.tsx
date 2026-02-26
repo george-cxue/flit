@@ -13,6 +13,8 @@ interface PerformanceChartProps {
 }
 
 const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame): PortfolioSnapshot[] => {
+  if (data.length === 0) return [];
+  
   const now = Date.now();
 
   if (timeFrame === 'ALL') {
@@ -22,7 +24,17 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
   if (timeFrame === 'YTD') {
     const currentYear = new Date().getFullYear();
     const yearStart = new Date(currentYear, 0, 1).getTime();
-    return data.filter((point) => point.timestamp >= yearStart);
+    const filtered = data.filter((point) => point.timestamp >= yearStart);
+    
+    // If filter removed all points or left only 1, include the point just before the cutoff
+    if (filtered.length < 2 && data.length >= 2) {
+      const beforeCutoff = data.filter(p => p.timestamp < yearStart);
+      if (beforeCutoff.length > 0) {
+        return [beforeCutoff[beforeCutoff.length - 1], ...filtered];
+      }
+    }
+    
+    return filtered.length > 0 ? filtered : data;
   }
 
   const cutoff = {
@@ -34,7 +46,20 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
     '5Y': now - 5 * 365 * 24 * 60 * 60 * 1000,
   }[timeFrame];
 
-  return data.filter((point) => point.timestamp >= cutoff!);
+  const filtered = data.filter((point) => point.timestamp >= cutoff!);
+  
+  // If filter removed all points or left only 1, include the point just before the cutoff
+  // This ensures we always have at least 2 points to show percentage change
+  if (filtered.length < 2 && data.length >= 2) {
+    const beforeCutoff = data.filter(p => p.timestamp < cutoff!);
+    if (beforeCutoff.length > 0) {
+      // Add the most recent point before the cutoff as the baseline
+      return [beforeCutoff[beforeCutoff.length - 1], ...filtered];
+    }
+  }
+  
+  // If we still have less than 2 points, return all data we have
+  return filtered.length > 0 ? filtered : data;
 };
 
 const normalizeData = (data: PortfolioSnapshot[]): PortfolioSnapshot[] => {
@@ -94,12 +119,12 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
       labels,
       datasets: [
         {
-          data: normalizedPortfolio.map(p => p.value),
+          data: normalizedPortfolio.length > 0 ? normalizedPortfolio.map(p => p.value) : [0],
           color: () => primaryColor,
           strokeWidth: 3,
         },
         {
-          data: normalizedSP500.map(p => p.value),
+          data: normalizedSP500.length > 0 ? normalizedSP500.map(p => p.value) : [0],
           color: () => '#888',
           strokeWidth: 2,
         },

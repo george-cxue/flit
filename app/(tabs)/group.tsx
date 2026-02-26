@@ -200,6 +200,10 @@ export default function FantasyHubScreen() {
           ) : (
             groups.map((group) => {
               const portfolio = getPortfolioByLeague(group.id);
+              const startingBalance = group.settings?.startingBalance || 10000;
+              const currentValue = portfolio?.totalValue || startingBalance;
+              const dollarChange = currentValue - startingBalance;
+              const percentChange = ((dollarChange / startingBalance) * 100);
               
               return (
                 <View
@@ -208,7 +212,7 @@ export default function FantasyHubScreen() {
                 >
                   {/* Status Badge - Top Right */}
                   <View style={[styles.statusBadge, { 
-                    backgroundColor: group.status === 'active' ? '#4CAF50' : '#FFC107',
+                    backgroundColor: group.status === 'completed' ? '#9E9E9E' : group.status === 'active' ? '#4CAF50' : '#FFC107',
                     position: 'absolute',
                     top: 16,
                     right: 16,
@@ -221,12 +225,19 @@ export default function FantasyHubScreen() {
                   <TouchableOpacity
                     onPress={() => handleGroupPress(group.id)}
                     activeOpacity={0.7}
+                    style={styles.groupInfoSection}
                   >
                     <View style={styles.groupCardHeader}>
-                      <ThemedText style={styles.groupName}>{group.name}</ThemedText>
-                      <ThemedText style={styles.groupDetails}>
-                        {group.members?.length || 0} Members • Week {group.currentWeek || 0}
-                      </ThemedText>
+                      <View style={styles.groupHeaderLeft}>
+                        <ThemedText style={styles.groupIcon}>👥</ThemedText>
+                        <View>
+                          <ThemedText style={styles.groupName}>{group.name}</ThemedText>
+                          <ThemedText style={styles.groupDetails}>
+                            {group.members?.length || 0} Members • Week {group.currentWeek || 0}
+                          </ThemedText>
+                        </View>
+                      </View>
+                      <ThemedText style={[styles.chevron, { opacity: 0.3 }]}>›</ThemedText>
                     </View>
                   </TouchableOpacity>
 
@@ -238,32 +249,33 @@ export default function FantasyHubScreen() {
                         router.push('/(tabs)/portfolio');
                       }}
                       activeOpacity={0.7}
-                      style={styles.portfolioSection}
+                      style={[styles.portfolioSection, { backgroundColor: 'rgba(0, 0, 0, 0.02)' }]}
                     >
-                      <View style={styles.portfolioValueRow}>
-                        <ThemedText style={styles.portfolioValueLabel}>Portfolio Value</ThemedText>
-                        <ThemedText style={styles.portfolioValue}>
-                          ${portfolio.totalValue.toFixed(2)}
-                        </ThemedText>
-                      </View>
-
-                      <View style={styles.portfolioStats}>
-                        <View style={styles.portfolioStat}>
-                          <ThemedText style={styles.statLabel}>Holdings</ThemedText>
-                          <ThemedText style={styles.statValue}>{portfolio.holdings.length}</ThemedText>
+                      <View style={styles.portfolioHeader}>
+                        <ThemedText style={styles.portfolioIcon}>💼</ThemedText>
+                        <View style={styles.portfolioContent}>
+                          <ThemedText style={styles.portfolioLabel}>My Portfolio</ThemedText>
+                          <View style={styles.portfolioValueContainer}>
+                            <ThemedText style={styles.portfolioValueLarge}>
+                              ${currentValue.toFixed(2)}
+                            </ThemedText>
+                            <View style={styles.portfolioChange}>
+                              <ThemedText style={[
+                                styles.portfolioChangeText,
+                                { color: dollarChange >= 0 ? '#4CAF50' : '#F44336' }
+                              ]}>
+                                {dollarChange >= 0 ? '+$' : '-$'}{Math.abs(dollarChange).toFixed(2)}
+                              </ThemedText>
+                              <ThemedText style={[
+                                styles.portfolioChangePercent,
+                                { color: percentChange >= 0 ? '#4CAF50' : '#F44336' }
+                              ]}>
+                                ({percentChange >= 0 ? '+' : ''}{percentChange.toFixed(2)}%)
+                              </ThemedText>
+                            </View>
+                          </View>
                         </View>
-                        <View style={styles.portfolioStat}>
-                          <ThemedText style={styles.statLabel}>Cash</ThemedText>
-                          <ThemedText style={[styles.statValue, { color: primaryColor }]}>
-                            ${portfolio.liquidFunds.toFixed(0)}
-                          </ThemedText>
-                        </View>
-                        <View style={styles.portfolioStat}>
-                          <ThemedText style={styles.statLabel}>Rewards</ThemedText>
-                          <ThemedText style={[styles.statValue, { color: '#10B981' }]}>
-                            ${portfolio.lessonRewards.toFixed(0)}
-                          </ThemedText>
-                        </View>
+                        <ThemedText style={[styles.chevron, { opacity: 0.3 }]}>›</ThemedText>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -369,10 +381,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  groupInfoSection: {
+    // No background - uses card background
+  },
   groupCardHeader: {
     padding: 16,
     paddingRight: 80, // Make room for the absolute positioned badge
-    paddingBottom: 12,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  groupIcon: {
+    fontSize: 28,
   },
   groupName: {
     fontSize: 18,
@@ -393,44 +420,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.6,
   },
+  chevron: {
+    fontSize: 32,
+    fontWeight: '300',
+  },
   portfolioSection: {
     padding: 16,
-    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.08)',
   },
-  portfolioValueRow: {
+  portfolioHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 12,
   },
-  portfolioValueLabel: {
-    fontSize: 13,
-    opacity: 0.6,
+  portfolioIcon: {
+    fontSize: 24,
+  },
+  portfolioContent: {
+    flex: 1,
+  },
+  portfolioLabel: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginBottom: 4,
     fontWeight: '500',
   },
-  portfolioValue: {
+  portfolioValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  portfolioValueLarge: {
     fontSize: 20,
     fontWeight: '700',
   },
-  portfolioStats: {
+  portfolioChange: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
-  },
-  portfolioStat: {
-    flex: 1,
     alignItems: 'center',
+    gap: 4,
   },
-  statLabel: {
-    fontSize: 11,
-    opacity: 0.6,
-    marginBottom: 4,
+  portfolioChangeText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  statValue: {
+  portfolioChangePercent: {
     fontSize: 14,
     fontWeight: '600',
   },

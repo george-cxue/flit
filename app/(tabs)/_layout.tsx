@@ -61,6 +61,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="portfolio"
         options={{
           title: 'Portfolio',
@@ -72,12 +79,6 @@ export default function TabLayout() {
         options={{
           title: 'Groups',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen
