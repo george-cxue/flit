@@ -104,8 +104,13 @@ export default function GroupDetailScreen() {
     const startDate = new Date(group.settings.startDate);
     const competitionStarted = now >= startDate;
 
-    // Calculate end date based on competition period
+    // Calculate end date based on competition period or use manually set endDate
     const getEndDate = () => {
+        // Check if endDate was manually set (e.g., by ending the competition early)
+        if (group.settings.endDate) {
+            return new Date(group.settings.endDate);
+        }
+
         const end = new Date(startDate);
         if (!group.settings.competitionPeriod) {
             // Default to 1 year if not specified
@@ -226,6 +231,65 @@ export default function GroupDetailScreen() {
         } catch (error) {
             console.error('Error leaving group:', error);
             const errorMessage = 'Failed to leave group. Please try again.';
+            if (Platform.OS === 'web') {
+                window.alert(errorMessage);
+            } else {
+                Alert.alert('Error', errorMessage);
+            }
+        }
+    };
+
+    const handleEndGroup = () => {
+        // Web-compatible confirmation
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(
+                'Are you sure you want to end this competition? This will immediately end the competition and cannot be undone.'
+            );
+            if (confirmed) {
+                performEndGroup();
+            }
+        } else {
+            // Native alert for iOS/Android
+            Alert.alert(
+                'End Competition',
+                'Are you sure you want to end this competition? This will immediately end the competition and cannot be undone.',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'End Competition',
+                        style: 'destructive',
+                        onPress: performEndGroup,
+                    },
+                ]
+            );
+        }
+    };
+
+    const performEndGroup = async () => {
+        try {
+            console.log('Ending group:', group.id);
+            const result = await GroupService.endGroup(group.id);
+            console.log('End group result:', result);
+
+            // Reload the group to show updated status
+            const updatedGroup = await GroupService.getGroupById(group.id);
+            if (updatedGroup) {
+                setGroup(updatedGroup);
+            }
+
+            // Show success message
+            const successMessage = 'The competition has been ended. Final results are now available.';
+            if (Platform.OS === 'web') {
+                window.alert(successMessage);
+            } else {
+                Alert.alert('Success', successMessage);
+            }
+        } catch (error) {
+            console.error('Error ending group:', error);
+            const errorMessage = 'Failed to end competition. Please try again.';
             if (Platform.OS === 'web') {
                 window.alert(errorMessage);
             } else {
@@ -420,6 +484,20 @@ export default function GroupDetailScreen() {
                         <SettingRow label="Trading" value={group.settings.tradingEnabled ? 'Enabled' : 'Disabled'} />
                     </View>
                 </View>
+
+                {/* Admin: End Group */}
+                {isAdmin && !competitionEnded && (
+                    <View style={styles.section}>
+                        <TouchableOpacity
+                            style={[styles.dangerButton, { borderColor: '#F44336' }]}
+                            onPress={handleEndGroup}
+                        >
+                            <ThemedText style={[styles.dangerButtonText, { color: '#F44336' }]}>
+                                End Competition
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Leave Group */}
                 <View style={styles.section}>

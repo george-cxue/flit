@@ -68,7 +68,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const clerkLastName = clerkUser?.lastName;
 
   const syncUser = useCallback(async () => {
+    console.log('[AuthContext] syncUser called - isSignedIn:', isSignedIn, 'clerkId:', clerkId);
     if (!isSignedIn || !clerkId || !clerkEmail) {
+      console.log('[AuthContext] Not signed in or missing clerkId/email, clearing user');
       if (isMountedRef.current) {
         setUser(null);
         setIsLoading(false);
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // After sync, fetch full user data including stats
       const userId = response.data.user.id;
+      console.log('[AuthContext] User synced, userId:', userId, 'Fetching full user data...');
       const userDataResponse = await apiClient.get(`/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -122,6 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (isMountedRef.current) {
+        console.log('[AuthContext] Full user data loaded:', userDataResponse.data.user.username);
         setUser(userDataResponse.data.user);
         setSyncError(null);
         syncedForUserRef.current = clerkId;

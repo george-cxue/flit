@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +14,7 @@ import { usePortfolio } from '@/contexts/portfolio-context';
 import { useLocalSearchParams } from 'expo-router';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function PortfolioScreen() {
   const { leagueId: paramLeagueId } = useLocalSearchParams();
@@ -30,7 +31,15 @@ export default function PortfolioScreen() {
     getCurrentPortfolio,
     portfolios,
     loading,
+    refreshPortfolios,
   } = usePortfolio();
+
+  // Refresh portfolios whenever this tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshPortfolios();
+    }, [refreshPortfolios])
+  );
 
   // Fetch groups
   useEffect(() => {
@@ -164,7 +173,7 @@ export default function PortfolioScreen() {
         <View style={[styles.chartCard, { backgroundColor: cardBackground }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
-            sp500History={MOCK_SP500.history}
+            sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}
             timeFrame={timeFrame}
           />
         </View>

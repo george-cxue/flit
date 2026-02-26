@@ -35,6 +35,11 @@ export interface Portfolio {
   allocation: AssetAllocation;
   holdings: StockHolding[];
   history: PortfolioSnapshot[];
+  baselines?: {
+    sp500: PortfolioSnapshot[];
+    nasdaq: PortfolioSnapshot[];
+    dow: PortfolioSnapshot[];
+  };
 }
 
 export interface Stock {

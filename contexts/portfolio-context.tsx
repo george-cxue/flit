@@ -42,6 +42,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
   const [portfolios, setPortfolios] = useState<Record<string, Portfolio>>({});
   const [loading, setLoading] = useState(true);
   const isMountedRef = useRef(true);
+  const hasSetInitialLeague = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -52,7 +53,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
 
   // Fetch portfolios from backend
   const fetchPortfolios = useCallback(async () => {
+    console.log('[PortfolioContext] fetchPortfolios called - userId:', userId);
     if (!userId) {
+      console.log('[PortfolioContext] No userId, skipping fetch');
       if (isMountedRef.current) {
         setPortfolios({});
         setLoading(false);
@@ -65,8 +68,10 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setLoading(true);
       }
 
+      console.log('[PortfolioContext] Fetching groups...');
       // Fetch all groups for the user
       const leagues = await GroupService.getGroups();
+      console.log('[PortfolioContext] Fetched', leagues.length, 'groups');
 
       if (leagues.length === 0) {
         if (isMountedRef.current) {
@@ -77,8 +82,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
       }
 
       // Set first group as selected if none selected
-      if (!selectedLeagueId && leagues.length > 0 && isMountedRef.current) {
+      if (!hasSetInitialLeague.current && leagues.length > 0 && isMountedRef.current) {
         setSelectedLeagueId(leagues[0].id);
+        hasSetInitialLeague.current = true;
       }
 
       // Fetch portfolio for each group
@@ -92,14 +98,73 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const startingBalance = group.settings.startingBalance || 10000;
           const leagueStartDate = new Date(group.settings.startDate || Date.now());
 
-          // Generate unique performance history for this portfolio
-          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-          const history = generatePortfolioHistory(
-            totalValue,
-            startingBalance,
-            leagueStartDate,
-            volatilityFactor
-          );
+          // Fetch real historical performance data from backend
+          let history = [];
+          let baselines = undefined;
+          try {
+            const historyData = await PortfolioService.getPortfolioHistory(group.id, '1Y');
+            
+            if (historyData.history && historyData.history.length > 0) {
+              // Use real data from backend
+              history = historyData.history;
+              baselines = historyData.baselines;
+              
+              // If we have limited data points (< 2), add a synthetic starting point
+              // This allows charts to display percent changes properly
+              if (history.length === 1) {
+                const startTimestamp = leagueStartDate.getTime();
+                const firstSnapshot = history[0];
+                
+                // Only add starting point if it's before the first snapshot
+                if (startTimestamp < firstSnapshot.timestamp) {
+                  history.unshift({
+                    timestamp: startTimestamp,
+                    value: startingBalance,
+                  });
+                  
+                  // Add corresponding baseline starting points
+                  if (baselines?.sp500 && baselines.sp500.length > 0) {
+                    baselines.sp500.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                  if (baselines?.nasdaq && baselines.nasdaq.length > 0) {
+                    baselines.nasdaq.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                  if (baselines?.dow && baselines.dow.length > 0) {
+                    baselines.dow.unshift({
+                      timestamp: startTimestamp,
+                      value: startingBalance,
+                    });
+                  }
+                }
+              }
+            } else {
+              // Fallback to generated data if no history exists yet
+              console.log(`[PortfolioContext] No history data for group ${group.id}, using fallback`);
+              const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
+              history = generatePortfolioHistory(
+                totalValue,
+                startingBalance,
+                leagueStartDate,
+                volatilityFactor
+              );
+            }
+          } catch (historyError) {
+            console.error(`Error fetching history for group ${group.id}:`, historyError);
+            // Fallback to generated data
+            const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
+            history = generatePortfolioHistory(
+              totalValue,
+              startingBalance,
+              leagueStartDate,
+              volatilityFactor
+            );
+          }
 
           const portfolio: Portfolio = {
             leagueId: group.id,
@@ -122,6 +187,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               changePercent: slot.gainLossPercent || 0,
             })) || [],
             history,
+            baselines,
           };
 
           return { leagueId: group.id, portfolio };
@@ -170,14 +236,21 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setLoading(false);
       }
     }
-  }, [userId, selectedLeagueId]);
+  }, [userId]);
 
-  // Initial fetch when auth is loaded and user is available
+  // Initial fetch when user ID is available
   useEffect(() => {
-    if (authLoaded) {
+    console.log('[PortfolioContext] Effect triggered - userId:', userId, 'authLoaded:', authLoaded);
+    if (userId) {
+      console.log('[PortfolioContext] Fetching portfolios for userId:', userId);
       fetchPortfolios();
+    } else if (authLoaded) {
+      // Auth is loaded but no user - clear portfolios
+      console.log('[PortfolioContext] Auth loaded but no userId, clearing portfolios');
+      setPortfolios({});
+      setLoading(false);
     }
-  }, [authLoaded, userId, fetchPortfolios]);
+  }, [userId, authLoaded, fetchPortfolios]);
 
   const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
     setPortfolios((prev) => {

@@ -1,5 +1,6 @@
 import { apiClient, handleApiError, getAuthenticatedUserId } from '../api';
 import { Portfolio } from '@/src/types/fantasy';
+import { PortfolioSnapshot } from '@/types/portfolio';
 
 export const PortfolioService = {
     getPortfolios: async (): Promise<Portfolio[]> => {
@@ -22,6 +23,71 @@ export const PortfolioService = {
                 return undefined;
             }
             throw handleApiError(error);
+        }
+    },
+
+    /**
+     * Get historical portfolio performance data
+     * Returns daily snapshots with market baseline comparisons
+     */
+    getPortfolioHistory: async (
+        groupId: string,
+        timeFrame?: string
+    ): Promise<{
+        history: PortfolioSnapshot[];
+        baselines: {
+            sp500: PortfolioSnapshot[];
+            nasdaq: PortfolioSnapshot[];
+            dow: PortfolioSnapshot[];
+        };
+    }> => {
+        try {
+            const params: any = {};
+            if (timeFrame) {
+                params.timeFrame = timeFrame;
+            }
+
+            const response = await apiClient.get(`/fantasy-portfolio/${groupId}/history`, { params });
+            
+            // Transform backend response to frontend format
+            const history: PortfolioSnapshot[] = response.data.history.map((snapshot: any) => ({
+                timestamp: new Date(snapshot.date).getTime(),
+                value: snapshot.totalValue,
+            }));
+
+            const baselines = {
+                sp500: response.data.baselines.sp500
+                    .filter((b: any) => b.value !== null)
+                    .map((b: any) => ({
+                        timestamp: new Date(b.date).getTime(),
+                        value: b.value,
+                    })),
+                nasdaq: response.data.baselines.nasdaq
+                    .filter((b: any) => b.value !== null)
+                    .map((b: any) => ({
+                        timestamp: new Date(b.date).getTime(),
+                        value: b.value,
+                    })),
+                dow: response.data.baselines.dow
+                    .filter((b: any) => b.value !== null)
+                    .map((b: any) => ({
+                        timestamp: new Date(b.date).getTime(),
+                        value: b.value,
+                    })),
+            };
+
+            return { history, baselines };
+        } catch (error) {
+            console.error('Error fetching portfolio history:', error);
+            // Return empty arrays if fetch fails
+            return {
+                history: [],
+                baselines: {
+                    sp500: [],
+                    nasdaq: [],
+                    dow: [],
+                },
+            };
         }
     },
 

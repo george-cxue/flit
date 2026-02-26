@@ -45,6 +45,10 @@ export interface Group {
   status: 'pending' | 'active' | 'completed';
   currentWeek: number;
   joinCode?: string;
+  type?: string; // Regular group type or 'tournament'
+  memberCount?: number;
+  description?: string;
+  isUserMember?: boolean;
 }
 
 export interface PortfolioSlot {

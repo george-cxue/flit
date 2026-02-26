@@ -21,6 +21,11 @@ const MAPPING = {
   'book.fill': 'book',
   'chart.pie.fill': 'pie-chart',
   'trophy.fill': 'emoji-events',
+  'magnifyingglass': 'search',
+  'xmark.circle.fill': 'cancel',
+  'arrow.right': 'arrow-forward',
+  'plus.circle.fill': 'add-circle',
+  'star.fill': 'star',
 } as IconMapping;
 
 /**

@@ -14,6 +14,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import { PASS_THRESHOLD } from '@/src/types/lesson';
+import { useAuthContext } from '@/contexts/auth-context';
 import type {
   ContentBlock,
   LessonQuestion,
@@ -29,6 +30,7 @@ type Phase = 'content' | 'question' | 'failed' | 'complete';
 const PASS_PCT = Math.round(PASS_THRESHOLD * 100); // 75
 
 export default function LessonPlayerScreen() {
+  const { user, syncUser } = useAuthContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -41,7 +43,14 @@ export default function LessonPlayerScreen() {
   const borderColor = useThemeColor({}, 'border' as any);
   const warningColor = useThemeColor({}, 'warning' as any);
 
-  const { completeLesson, isLessonCompleted } = useLessons();
+  const { completeLesson, isLessonCompleted } = useLessons(user?.id || null);
+
+  // State for Financial IQ stats
+  const [earnedStats, setEarnedStats] = useState<{
+    financialIQEarned: number;
+    financialIQScore: number;
+    learningStreak: number;
+  } | null>(null);
 
   const lesson = lessonService.getLessonById(id ?? '');
   const course = lesson ? lessonService.getCourseById(lesson.courseId) : undefined;
@@ -90,7 +99,10 @@ export default function LessonPlayerScreen() {
     if (phase === 'content') {
       if (questions.length === 0) {
         // No questions — auto-pass
-        await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
+        const stats = await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
+        if (stats) setEarnedStats(stats);
+        // Refresh user data to get updated Financial IQ and streak
+        await syncUser();
         setQuizResult({ score: 0, total: 0 });
         setPhase('complete');
       } else {
@@ -119,14 +131,17 @@ export default function LessonPlayerScreen() {
         setQuizResult({ score: finalScore, total });
 
         if (passed) {
-          await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
+          const stats = await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
+          if (stats) setEarnedStats(stats);
+          // Refresh user data to get updated Financial IQ and streak
+          await syncUser();
           setPhase('complete');
         } else {
           setPhase('failed');
         }
       }
     }
-  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount]);
+  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, syncUser]);
 
   const handleRetry = useCallback(() => {
     setPhase('question');
@@ -274,6 +289,28 @@ export default function LessonPlayerScreen() {
                 +${lesson.reward.toLocaleString()}
               </ThemedText>
             </View>
+            {earnedStats && earnedStats.financialIQEarned > 0 && (
+              <View style={styles.resultRow}>
+                <ThemedText style={styles.resultLabel}>Financial IQ</ThemedText>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.resultValue, { color: successColor }]}
+                >
+                  +{earnedStats.financialIQEarned} pts ({earnedStats.financialIQScore} total)
+                </ThemedText>
+              </View>
+            )}
+            {earnedStats && earnedStats.learningStreak > 0 && (
+              <View style={styles.resultRow}>
+                <ThemedText style={styles.resultLabel}>Daily Streak</ThemedText>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.resultValue, { color: successColor }]}
+                >
+                  🔥 {earnedStats.learningStreak} day{earnedStats.learningStreak !== 1 ? 's' : ''}
+                </ThemedText>
+              </View>
+            )}
           </View>
 
           {course?.attribution ? (

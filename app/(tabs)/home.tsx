@@ -9,24 +9,28 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuth } from '@clerk/clerk-expo';
+import { useAuthContext } from '@/contexts/auth-context';
 import { ProfileButton } from '@/components/profile-button';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user, syncUser } = useAuthContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
-  const { portfolios } = usePortfolio();
-  const { isLessonCompleted, reload, resetProgress } = useLessons();
+  const { portfolios, refreshPortfolios } = usePortfolio();
+  const { isLessonCompleted, reload, resetProgress } = useLessons(user?.id || null);
 
-  // Reload lesson state whenever this tab gains focus
+  // Reload lesson state, portfolios, and user data whenever this tab gains focus
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [reload])
+      refreshPortfolios();
+      syncUser();
+    }, [reload, refreshPortfolios, syncUser])
   );
 
   // Call ALL hooks before any conditional returns
@@ -96,14 +100,16 @@ export default function HomeScreen() {
         {/* Financial IQ Score Card */}
         <View style={[styles.iqCard, { backgroundColor: primaryColor }]}>
           <ThemedText style={styles.iqLabel}>Your Financial IQ</ThemedText>
-          <ThemedText style={styles.iqScore}>847</ThemedText>
+          <ThemedText style={styles.iqScore}>{user?.financialIQScore || 500}</ThemedText>
           <View style={styles.iqBadge}>
-            <ThemedText style={styles.iqRank}>Advanced Investor</ThemedText>
+            <ThemedText style={styles.iqRank}>
+              {(user?.financialIQScore || 500) >= 800 ? 'Advanced Investor' : (user?.financialIQScore || 500) >= 600 ? 'Intermediate' : 'Beginner'}
+            </ThemedText>
           </View>
           <View style={styles.progressBarContainer}>
-            <View style={[styles.progressBar, { width: '84.7%' }]} />
+            <View style={[styles.progressBar, { width: `${Math.min(100, ((user?.financialIQScore || 500) / 1500) * 100)}%` }]} />
           </View>
-          <ThemedText style={styles.iqProgress}>153 points to Master</ThemedText>
+          <ThemedText style={styles.iqProgress}>{1500 - (user?.financialIQScore || 500)} points to Master</ThemedText>
         </View>
 
         {/* Daily Streak */}
@@ -116,7 +122,7 @@ export default function HomeScreen() {
               <ThemedText style={styles.streakSubtitle}>Keep it going! 🔥</ThemedText>
             </View>
             <View style={styles.streakBadge}>
-              <ThemedText style={[styles.streakNumber, { color: colors.warning }]}>12</ThemedText>
+              <ThemedText style={[styles.streakNumber, { color: colors.warning }]}>{user?.learningStreak || 0}</ThemedText>
               <ThemedText style={styles.streakDays}>days</ThemedText>
             </View>
           </View>
