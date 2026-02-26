@@ -173,7 +173,7 @@ export default function PortfolioScreen() {
         <View style={[styles.chartCard, { backgroundColor: cardBackground }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
-            sp500History={MOCK_SP500.history}
+            sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}
             timeFrame={timeFrame}
           />
         </View>

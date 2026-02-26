@@ -14,6 +14,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import { PASS_THRESHOLD } from '@/src/types/lesson';
+import { useAuthContext } from '@/contexts/auth-context';
 import type {
   ContentBlock,
   LessonQuestion,
@@ -29,6 +30,7 @@ type Phase = 'content' | 'question' | 'failed' | 'complete';
 const PASS_PCT = Math.round(PASS_THRESHOLD * 100); // 75
 
 export default function LessonPlayerScreen() {
+  const { user, syncUser } = useAuthContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -41,7 +43,7 @@ export default function LessonPlayerScreen() {
   const borderColor = useThemeColor({}, 'border' as any);
   const warningColor = useThemeColor({}, 'warning' as any);
 
-  const { completeLesson, isLessonCompleted } = useLessons();
+  const { completeLesson, isLessonCompleted } = useLessons(user?.id || null);
 
   // State for Financial IQ stats
   const [earnedStats, setEarnedStats] = useState<{
@@ -99,6 +101,8 @@ export default function LessonPlayerScreen() {
         // No questions — auto-pass
         const stats = await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
         if (stats) setEarnedStats(stats);
+        // Refresh user data to get updated Financial IQ and streak
+        await syncUser();
         setQuizResult({ score: 0, total: 0 });
         setPhase('complete');
       } else {
@@ -129,13 +133,15 @@ export default function LessonPlayerScreen() {
         if (passed) {
           const stats = await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
           if (stats) setEarnedStats(stats);
+          // Refresh user data to get updated Financial IQ and streak
+          await syncUser();
           setPhase('complete');
         } else {
           setPhase('failed');
         }
       }
     }
-  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount]);
+  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, syncUser]);
 
   const handleRetry = useCallback(() => {
     setPhase('question');

@@ -16,20 +16,21 @@ import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { user } = useAuthContext();
+  const { user, syncUser } = useAuthContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
-  const { isLessonCompleted, reload, resetProgress } = useLessons();
+  const { isLessonCompleted, reload, resetProgress } = useLessons(user?.id || null);
 
-  // Reload lesson state and portfolios whenever this tab gains focus
+  // Reload lesson state, portfolios, and user data whenever this tab gains focus
   useFocusEffect(
     useCallback(() => {
       reload();
       refreshPortfolios();
-    }, [reload, refreshPortfolios])
+      syncUser();
+    }, [reload, refreshPortfolios, syncUser])
   );
 
   // Call ALL hooks before any conditional returns

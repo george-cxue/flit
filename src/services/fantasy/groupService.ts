@@ -90,4 +90,47 @@ export const GroupService = {
             throw handleApiError(error);
         }
     },
+
+    endGroup: async (groupId: string): Promise<{ message: string; endDate: string }> => {
+        try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/end`, {
+                userId
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // Tournament methods
+    getActiveTournament: async (): Promise<Group | null> => {
+        try {
+            const userId = getAuthenticatedUserId();
+            const response = await apiClient.get('/fantasy-groups/tournaments/active', {
+                params: { userId }
+            });
+            return response.data.tournament || null;
+        } catch (error) {
+            console.error('Error fetching tournament:', error);
+            return null;
+        }
+    },
+
+    joinTournament: async (tournamentId: string): Promise<void> => {
+        try {
+            const userId = getAuthenticatedUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+            await apiClient.post(`/fantasy-groups/tournaments/${tournamentId}/join`, {
+                userId
+            });
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 };

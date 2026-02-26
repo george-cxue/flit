@@ -4,18 +4,28 @@ import { UserLessonState, LessonProgress } from '@/src/types/lesson';
 import { lessonService } from '@/src/services/lessonService';
 import { LessonApiService } from '@/src/services/lessonApiService';
 
-const LESSON_PROGRESS_KEY = '@flit_lesson_progress';
-const PORTFOLIO_BALANCE_KEY = '@flit_portfolio_balance';
+const getLessonProgressKey = (userId: string | null) => 
+  userId ? `@flit_lesson_progress_${userId}` : '@flit_lesson_progress';
+const getPortfolioBalanceKey = (userId: string | null) => 
+  userId ? `@flit_portfolio_balance_${userId}` : '@flit_portfolio_balance';
 export const PORTFOLIO_BASE = 1000;
 
-export function useLessons() {
+export function useLessons(userId: string | null = null) {
   const [state, setState] = useState<UserLessonState>({});
   const [portfolioBalance, setPortfolioBalance] = useState(PORTFOLIO_BASE);
   const [isLoading, setIsLoading] = useState(true);
 
+  const LESSON_PROGRESS_KEY = getLessonProgressKey(userId);
+  const PORTFOLIO_BALANCE_KEY = getPortfolioBalanceKey(userId);
+
   // Stable reload function — safe to call from useFocusEffect on any screen.
-  // setState/setLearningDollars are stable React identities, so deps array is empty.
   const reload = useCallback(async () => {
+    // Don't load if no userId
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [storedProgress, storedBalance] = await Promise.all([
         AsyncStorage.getItem(LESSON_PROGRESS_KEY),
@@ -64,11 +74,19 @@ export function useLessons() {
     } finally {
       setIsLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, LESSON_PROGRESS_KEY, PORTFOLIO_BALANCE_KEY]);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Clear state when user logs out
+  useEffect(() => {
+    if (!userId) {
+      setState({});
+      setPortfolioBalance(PORTFOLIO_BASE);
+    }
+  }, [userId]);
 
   /**
    * Called only when the user has passed (>= PASS_THRESHOLD).
@@ -126,7 +144,7 @@ export function useLessons() {
         return null;
       }
     },
-    [state, portfolioBalance]
+    [state, portfolioBalance, LESSON_PROGRESS_KEY, PORTFOLIO_BALANCE_KEY]
   );
 
   const getLessonProgress = useCallback(

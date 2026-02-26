@@ -98,14 +98,38 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const startingBalance = group.settings.startingBalance || 10000;
           const leagueStartDate = new Date(group.settings.startDate || Date.now());
 
-          // Generate unique performance history for this portfolio
-          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-          const history = generatePortfolioHistory(
-            totalValue,
-            startingBalance,
-            leagueStartDate,
-            volatilityFactor
-          );
+          // Fetch real historical performance data from backend
+          let history = [];
+          let baselines = undefined;
+          try {
+            const historyData = await PortfolioService.getPortfolioHistory(group.id, '1Y');
+            
+            if (historyData.history && historyData.history.length > 0) {
+              // Use real data from backend
+              history = historyData.history;
+              baselines = historyData.baselines;
+            } else {
+              // Fallback to generated data if no history exists yet
+              console.log(`[PortfolioContext] No history data for group ${group.id}, using fallback`);
+              const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
+              history = generatePortfolioHistory(
+                totalValue,
+                startingBalance,
+                leagueStartDate,
+                volatilityFactor
+              );
+            }
+          } catch (historyError) {
+            console.error(`Error fetching history for group ${group.id}:`, historyError);
+            // Fallback to generated data
+            const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
+            history = generatePortfolioHistory(
+              totalValue,
+              startingBalance,
+              leagueStartDate,
+              volatilityFactor
+            );
+          }
 
           const portfolio: Portfolio = {
             leagueId: group.id,
@@ -128,6 +152,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               changePercent: slot.gainLossPercent || 0,
             })) || [],
             history,
+            baselines,
           };
 
           return { leagueId: group.id, portfolio };

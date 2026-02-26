@@ -9,8 +9,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export default function LessonsScreen() {
+  const { user } = useAuthContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const router = useRouter();
@@ -20,7 +22,7 @@ export default function LessonsScreen() {
   const successColor = useThemeColor({}, 'success' as any);
   const borderColor = useThemeColor({}, 'border' as any);
 
-  const { isLessonCompleted, getCourseCompletionCount, portfolioBalance, reload } = useLessons();
+  const { isLessonCompleted, getCourseCompletionCount, portfolioBalance, reload } = useLessons(user?.id || null);
 
   // Re-read AsyncStorage whenever this tab comes back into focus
   // so completion state from the lesson player is immediately reflected.
