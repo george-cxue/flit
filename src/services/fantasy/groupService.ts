@@ -10,7 +10,9 @@ export const GroupService = {
                 // Return empty list so callers can retry on focus without surfacing noisy errors.
                 return [];
             }
-            const response = await apiClient.get('/fantasy-groups');
+            const response = await apiClient.get('/fantasy-groups', {
+                params: { userId },
+            });
             return response.data.groups || [];
         } catch (error) {
             if ((error as any)?.response?.status === 401) {
