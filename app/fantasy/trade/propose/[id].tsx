@@ -1,21 +1,18 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { TradeService } from '@/src/services/fantasy/tradeService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+
+const c = Colors.light;
 
 export default function ProposeTradeScreen() {
     const { id } = useLocalSearchParams(); // Group ID
     const router = useRouter();
     const [recipientId, setRecipientId] = useState('');
     const [loading, setLoading] = useState(false);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const textColor = useThemeColor({}, 'text' as any);
 
     const handlePropose = async () => {
         if (!recipientId) {
@@ -45,23 +42,23 @@ export default function ProposeTradeScreen() {
             <View style={styles.content}>
                 <ThemedText type="title" style={styles.title}>Propose Trade</ThemedText>
 
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.card}>
                     <ThemedText style={styles.label}>Trading Partner (User ID)</ThemedText>
                     <TextInput
-                        style={[styles.input, { borderColor, color: textColor }]}
+                        style={styles.input}
                         placeholder="e.g. user_2"
-                        placeholderTextColor="#888"
+                        placeholderTextColor={c.onSurfaceVariant}
                         value={recipientId}
                         onChangeText={setRecipientId}
                     />
                 </View>
 
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.card}>
                     <ThemedText style={styles.placeholder}>Asset selection coming soon...</ThemedText>
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.button, { backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 }]}
+                    style={[styles.button, { opacity: loading ? 0.7 : 1 }]}
                     onPress={handlePropose}
                     disabled={loading}
                 >
@@ -75,42 +72,47 @@ export default function ProposeTradeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     content: {
-        padding: 20,
+        padding: Spacing.lg,
     },
     title: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     card: {
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        marginBottom: 24,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     label: {
-        marginBottom: 8,
-        fontWeight: '600',
+        marginBottom: Spacing.sm,
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onSurfaceVariant,
     },
     input: {
         height: 44,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
+        color: c.onSurface,
     },
     placeholder: {
         fontStyle: 'italic',
-        opacity: 0.6,
+        color: c.onSurfaceVariant,
         textAlign: 'center',
     },
     button: {
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: c.primary,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
         alignItems: 'center',
     },
     buttonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
 });

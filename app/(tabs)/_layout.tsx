@@ -1,18 +1,16 @@
 import { Tabs, Redirect } from 'expo-router';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors, Typography } from '@/constants/theme';
 import { useAuthContext } from '@/contexts/auth-context';
 import { ProfileButton } from '@/components/profile-button';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { isLoaded, isSignedIn, user, syncError } = useAuthContext();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors.light;
 
   if (!isLoaded) {
     return null;
@@ -24,10 +22,10 @@ export default function TabLayout() {
 
   if (syncError && !user) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Account Setup Failed</Text>
-        <Text style={[styles.errorMessage, { color: colors.icon }]}>{syncError}</Text>
-        <Text style={[styles.errorHint, { color: colors.icon }]}>
+      <View style={[styles.errorContainer, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.errorTitle, { color: colors.onSurface }]}>Account Setup Failed</Text>
+        <Text style={[styles.errorMessage, { color: colors.onSurfaceVariant }]}>{syncError}</Text>
+        <Text style={[styles.errorHint, { color: colors.onSurfaceVariant }]}>
           Sign out and try again with a different username.
         </Text>
         <ProfileButton />
@@ -42,9 +40,19 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          backgroundColor: colors.surfaceContainerLowest,
+          borderTopWidth: 0,
+          elevation: 0,
+        },
+        tabBarLabelStyle: {
+          fontFamily: Typography['label-md'].fontFamily,
+          fontSize: Typography['label-md'].fontSize,
+        },
       }}>
       <Tabs.Screen
         name="home"
@@ -99,18 +107,20 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontFamily: Typography['title-lg'].fontFamily,
+    fontSize: Typography['title-lg'].fontSize,
     marginBottom: 12,
     textAlign: 'center',
   },
   errorMessage: {
-    fontSize: 16,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
     textAlign: 'center',
     marginBottom: 8,
   },
   errorHint: {
-    fontSize: 14,
+    fontFamily: Typography['body-md'].fontFamily,
+    fontSize: Typography['body-md'].fontSize,
     textAlign: 'center',
     marginBottom: 24,
     opacity: 0.8,

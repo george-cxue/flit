@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, TextInput } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/hooks/use-onboarding';
+
+const c = Colors.light;
 
 const onboardingSteps = [
   {
@@ -30,18 +29,12 @@ const onboardingSteps = [
 ];
 
 export default function OnboardingScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
   const router = useRouter();
   const { completeOnboarding, profileName } = useOnboarding();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
-  const primaryColor = useThemeColor({}, 'primary' as any);
-  const cardBg = useThemeColor({}, 'cardBackground' as any);
-  const borderColor = useThemeColor({}, 'border' as any);
 
   useEffect(() => {
     if (profileName) {
@@ -73,11 +66,11 @@ export default function OnboardingScreen() {
   const step = onboardingSteps[currentStep];
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       {/* Skip Button */}
       {currentStep < onboardingSteps.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <ThemedText style={styles.skipText}>Skip</ThemedText>
+          <ThemedText type="body-lg" style={styles.skipText}>Skip</ThemedText>
         </TouchableOpacity>
       )}
 
@@ -85,8 +78,8 @@ export default function OnboardingScreen() {
       <View style={styles.content}>
         {/* Logo/Brand */}
         <View style={styles.logoContainer}>
-          <View style={[styles.logoCircle, { backgroundColor: primaryColor }]}>
-            <ThemedText style={styles.logoText}>flit</ThemedText>
+          <View style={styles.logoCircle}>
+            <ThemedText type="headline-md" style={styles.logoText}>flit</ThemedText>
           </View>
         </View>
 
@@ -97,49 +90,49 @@ export default function OnboardingScreen() {
 
         {/* Text Content */}
         <View style={styles.textContent}>
-          <ThemedText type="title" style={styles.title}>
+          <ThemedText type="headline-lg" style={styles.title}>
             {step.title}
           </ThemedText>
-          <ThemedText style={styles.subtitle}>{step.subtitle}</ThemedText>
-          <ThemedText style={styles.description}>{step.description}</ThemedText>
+          <ThemedText type="body-lg" style={styles.subtitle}>{step.subtitle}</ThemedText>
+          <ThemedText type="body-md" style={styles.description}>{step.description}</ThemedText>
         </View>
 
         {/* Features Cards */}
         {currentStep === 0 && (
           <View style={styles.featuresContainer}>
-            <View style={[styles.featureCard, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.featureCard}>
               <ThemedText style={styles.featureIcon}>⚡</ThemedText>
-              <ThemedText style={styles.featureText}>5-min lessons</ThemedText>
+              <ThemedText type="label-lg" style={styles.featureText}>5-min lessons</ThemedText>
             </View>
-            <View style={[styles.featureCard, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.featureCard}>
               <ThemedText style={styles.featureIcon}>🎯</ThemedText>
-              <ThemedText style={styles.featureText}>Real strategies</ThemedText>
+              <ThemedText type="label-lg" style={styles.featureText}>Real strategies</ThemedText>
             </View>
-            <View style={[styles.featureCard, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.featureCard}>
               <ThemedText style={styles.featureIcon}>🔒</ThemedText>
-              <ThemedText style={styles.featureText}>Risk-free</ThemedText>
+              <ThemedText type="label-lg" style={styles.featureText}>Risk-free</ThemedText>
             </View>
           </View>
         )}
 
         {currentStep === 1 && (
-          <View style={[styles.exampleCard, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.exampleCard}>
             <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>Complete lesson</ThemedText>
-              <ThemedText style={[styles.exampleValue, { color: colors.success }]}>
+              <ThemedText type="body-md" style={styles.exampleLabel}>Complete lesson</ThemedText>
+              <ThemedText type="label-lg" style={{ color: c.success }}>
                 +$500
               </ThemedText>
             </View>
             <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>Pass quiz</ThemedText>
-              <ThemedText style={[styles.exampleValue, { color: colors.success }]}>
+              <ThemedText type="body-md" style={styles.exampleLabel}>Pass quiz</ThemedText>
+              <ThemedText type="label-lg" style={{ color: c.success }}>
                 +$200
               </ThemedText>
             </View>
-            <View style={styles.exampleDivider} />
+            <View style={styles.floatingDivider} />
             <View style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabelBold}>Total earnings</ThemedText>
-              <ThemedText style={[styles.exampleValueBold, { color: primaryColor }]}>
+              <ThemedText type="title-md" style={styles.exampleLabelBold}>Total earnings</ThemedText>
+              <ThemedText type="title-lg" style={{ color: c.primary }}>
                 $700
               </ThemedText>
             </View>
@@ -147,41 +140,37 @@ export default function OnboardingScreen() {
         )}
 
         {currentStep === 2 && (
-          <View style={[styles.leaguePreview, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.leaguePreview}>
             <View style={styles.rankRow}>
               <ThemedText style={styles.rankEmoji}>🥇</ThemedText>
-              <ThemedText style={styles.rankName}>Sarah</ThemedText>
-              <ThemedText style={styles.rankScore}>923</ThemedText>
+              <ThemedText type="title-md" style={styles.rankName}>Sarah</ThemedText>
+              <ThemedText type="title-md" style={styles.rankScore}>923</ThemedText>
             </View>
             <View style={styles.rankRow}>
               <ThemedText style={styles.rankEmoji}>🥈</ThemedText>
-              <ThemedText style={styles.rankName}>Marcus</ThemedText>
-              <ThemedText style={styles.rankScore}>891</ThemedText>
+              <ThemedText type="title-md" style={styles.rankName}>Marcus</ThemedText>
+              <ThemedText type="title-md" style={styles.rankScore}>891</ThemedText>
             </View>
-            <View style={[styles.rankRow, { backgroundColor: primaryColor + '20' }]}>
+            <View style={[styles.rankRow, { backgroundColor: c.primary + '20' }]}>
               <ThemedText style={styles.rankEmoji}>🥉</ThemedText>
-              <ThemedText style={styles.rankName}>You</ThemedText>
-              <ThemedText style={[styles.rankScore, { color: primaryColor }]}>847</ThemedText>
+              <ThemedText type="title-md" style={styles.rankName}>You</ThemedText>
+              <ThemedText type="title-md" style={[styles.rankScore, { color: c.primary }]}>847</ThemedText>
             </View>
           </View>
         )}
 
         {currentStep === onboardingSteps.length - 1 && (
-          <View style={[styles.nameCard, { backgroundColor: cardBg, borderColor }]}>
-            <ThemedText type="defaultSemiBold" style={styles.nameLabel}>
+          <View style={styles.nameCard}>
+            <ThemedText type="title-md" style={styles.nameLabel}>
               What should we call you?
             </ThemedText>
             <TextInput
               style={[
                 styles.nameInput,
-                {
-                  borderColor: errorMessage ? colors.danger : borderColor,
-                  color: colors.text,
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-                },
+                errorMessage ? { backgroundColor: c.danger + '10' } : undefined,
               ]}
               placeholder="Enter your first name"
-              placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.4)'}
+              placeholderTextColor={c.onSurfaceVariant}
               value={name}
               onChangeText={(text) => {
                 setName(text);
@@ -190,9 +179,9 @@ export default function OnboardingScreen() {
               autoCapitalize="words"
               returnKeyType="done"
             />
-            <ThemedText style={styles.nameHint}>We&apos;ll show this on your home page and leagues.</ThemedText>
+            <ThemedText type="label-md" style={styles.nameHint}>We&apos;ll show this on your home page and leagues.</ThemedText>
             {errorMessage ? (
-              <ThemedText style={[styles.nameError, { color: colors.danger }]}>{errorMessage}</ThemedText>
+              <ThemedText type="label-md" style={styles.nameError}>{errorMessage}</ThemedText>
             ) : null}
           </View>
         )}
@@ -208,8 +197,8 @@ export default function OnboardingScreen() {
               style={[
                 styles.dot,
                 {
-                  backgroundColor: index === currentStep ? primaryColor : borderColor,
-                  width: index === currentStep ? 24 : 8,
+                  backgroundColor: index === currentStep ? c.primary : c.surfaceContainerHigh,
+                  width: index === currentStep ? Spacing.lg : Spacing.sm,
                 },
               ]}
             />
@@ -218,37 +207,37 @@ export default function OnboardingScreen() {
 
         {/* Action Button */}
         <TouchableOpacity
-          style={[styles.nextButton, { backgroundColor: primaryColor }]}
+          style={styles.nextButton}
           onPress={handleNext}
         >
-          <ThemedText style={styles.nextButtonText}>
+          <ThemedText type="title-md" style={styles.nextButtonText}>
             {currentStep === onboardingSteps.length - 1 ? "Let's Start!" : 'Next'}
           </ThemedText>
         </TouchableOpacity>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: c.surface,
   },
   skipButton: {
     position: 'absolute',
     top: 60,
     right: 20,
     zIndex: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   skipText: {
-    fontSize: 16,
-    opacity: 0.6,
+    color: c.onSurfaceVariant,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: Spacing.xl,
     paddingTop: 80,
     alignItems: 'center',
   },
@@ -261,173 +250,159 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: c.primary,
   },
   logoText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: 'bold',
+    color: c.onPrimary,
   },
   iconContainer: {
-    marginBottom: 32,
+    marginBottom: Spacing.xl,
   },
   icon: {
     fontSize: 120,
   },
   textContent: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: Spacing.xl,
   },
   title: {
-    fontSize: 32,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
+    color: c.onSurface,
   },
   subtitle: {
-    fontSize: 18,
     textAlign: 'center',
-    opacity: 0.8,
-    marginBottom: 16,
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.md,
   },
   description: {
-    fontSize: 16,
     textAlign: 'center',
-    opacity: 0.6,
-    lineHeight: 24,
+    color: c.onSurfaceVariant,
   },
   featuresContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
   },
   featureCard: {
     flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
     alignItems: 'center',
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   featureIcon: {
     fontSize: 32,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   featureText: {
-    fontSize: 13,
-    fontWeight: '600',
     textAlign: 'center',
+    color: c.onSurface,
   },
   exampleCard: {
     width: '100%',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    marginTop: 8,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    marginTop: Spacing.sm,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   exampleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   exampleLabel: {
-    fontSize: 15,
-    opacity: 0.7,
-  },
-  exampleValue: {
-    fontSize: 15,
-    fontWeight: '600',
+    color: c.onSurfaceVariant,
   },
   exampleLabelBold: {
-    fontSize: 16,
-    fontWeight: '600',
+    color: c.onSurface,
   },
-  exampleValueBold: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  exampleDivider: {
+  floatingDivider: {
     height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    marginVertical: 8,
+    backgroundColor: c.surfaceContainerHigh,
+    marginHorizontal: '10%',
+    marginVertical: Spacing.sm,
   },
   leaguePreview: {
     width: '100%',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    marginTop: 8,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   nameCard: {
     width: '100%',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    marginTop: 16,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    marginTop: Spacing.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   nameLabel: {
-    marginBottom: 12,
-    fontSize: 16,
+    marginBottom: Spacing.md,
+    color: c.onSurface,
   },
   nameInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    borderRadius: Radii.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    backgroundColor: c.surfaceContainerHigh,
+    color: c.onSurface,
   },
   nameHint: {
-    marginTop: 8,
-    fontSize: 13,
-    opacity: 0.6,
+    marginTop: Spacing.sm,
+    color: c.onSurfaceVariant,
   },
   nameError: {
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: '600',
+    marginTop: Spacing.sm,
+    color: c.danger,
   },
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: Spacing.md,
+    borderRadius: Radii.sm,
+    marginBottom: Spacing.sm,
   },
   rankEmoji: {
     fontSize: 24,
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   rankName: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
+    color: c.onSurface,
   },
   rankScore: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: c.onSurface,
   },
   bottom: {
-    paddingHorizontal: 32,
-    paddingBottom: 48,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xxl,
   },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 24,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   dot: {
-    height: 8,
-    borderRadius: 4,
-    transition: 'width 0.3s',
+    height: Spacing.sm,
+    borderRadius: Spacing.xs,
   },
   nextButton: {
-    borderRadius: 16,
+    borderRadius: Radii.lg,
     paddingVertical: 18,
     alignItems: 'center',
+    backgroundColor: c.primary,
   },
   nextButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
 });

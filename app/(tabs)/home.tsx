@@ -1,10 +1,9 @@
 import { useCallback } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors, Typography, Radii, AmbientShadow, Spacing } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
@@ -17,14 +16,12 @@ import { lessonService } from '@/src/services/lessonService';
 export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
+  const c = Colors.light;
   const { resetOnboarding, profileName } = useOnboarding();
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
   const { isLessonCompleted, reload, resetProgress } = useLessons(user?.id || null);
 
-  // Reload lesson state, portfolios, and user data whenever this tab gains focus
   useFocusEffect(
     useCallback(() => {
       reload();
@@ -33,17 +30,10 @@ export default function HomeScreen() {
     }, [reload, refreshPortfolios, syncUser])
   );
 
-  // Call ALL hooks before any conditional returns
-  const cardBg = useThemeColor({}, 'cardBackground' as any);
-  const primaryColor = useThemeColor({}, 'primary' as any);
-  const successColor = useThemeColor({}, 'success' as any);
-  const borderColor = useThemeColor({}, 'border' as any);
-
-  // Redirect to sign-in if not authenticated
   if (!isLoaded) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={c.primary} />
       </ThemedView>
     );
   }
@@ -52,7 +42,6 @@ export default function HomeScreen() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
-  // Portfolio data from context
   const firstPortfolio = Object.values(portfolios)[0];
   const totalValue = firstPortfolio?.totalValue || 0;
   const liquidFunds = firstPortfolio?.liquidFunds || 0;
@@ -60,7 +49,6 @@ export default function HomeScreen() {
   const stocksPercent = totalValue > 0 ? Math.round((holdingsValue / totalValue) * 100) : 0;
   const savingsPercent = totalValue > 0 ? Math.round((liquidFunds / totalValue) * 100) : 0;
 
-  // First incomplete lesson for the Today's Lesson card
   const allLessons = lessonService.getAllLessons();
   const todaysLesson = allLessons.find((l) => !isLessonCompleted(l.courseId, l.id)) ?? allLessons[0];
 
@@ -84,10 +72,10 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerText}>
-              <ThemedText type="title" style={styles.greeting}>
+              <ThemedText type="headline-lg" style={styles.greeting}>
                 {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
               </ThemedText>
-              <ThemedText style={styles.subtitle}>
+              <ThemedText type="body-md" style={styles.subtitle}>
                 {profileName?.trim()
                   ? "Let's keep growing your money skills."
                   : 'Ready to level up your financial skills?'}
@@ -97,45 +85,50 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Financial IQ Score Card */}
-        <View style={[styles.iqCard, { backgroundColor: primaryColor }]}>
-          <ThemedText style={styles.iqLabel}>Your Financial IQ</ThemedText>
+        {/* Financial IQ Score Card — Hero gradient */}
+        <LinearGradient
+          colors={[c.primary, c.primaryContainer]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.iqCard}
+        >
+          <ThemedText type="label-lg" style={styles.iqLabel}>Your Financial IQ</ThemedText>
           <ThemedText style={styles.iqScore}>{user?.financialIQScore || 500}</ThemedText>
           <View style={styles.iqBadge}>
-            <ThemedText style={styles.iqRank}>
+            <ThemedText type="label-lg" style={styles.iqRank}>
               {(user?.financialIQScore || 500) >= 800 ? 'Advanced Investor' : (user?.financialIQScore || 500) >= 600 ? 'Intermediate' : 'Beginner'}
             </ThemedText>
           </View>
           <View style={styles.progressBarContainer}>
             <View style={[styles.progressBar, { width: `${Math.min(100, ((user?.financialIQScore || 500) / 1500) * 100)}%` }]} />
           </View>
-          <ThemedText style={styles.iqProgress}>{1500 - (user?.financialIQScore || 500)} points to Master</ThemedText>
-        </View>
+          <ThemedText type="body-md" style={styles.iqProgress}>{1500 - (user?.financialIQScore || 500)} points to Master</ThemedText>
+        </LinearGradient>
 
         {/* Daily Streak */}
-        <View style={[styles.streakCard, { backgroundColor: cardBg, borderColor }]}>
+        <View style={[styles.streakCard, { backgroundColor: c.surfaceContainerLowest }]}>
           <View style={styles.streakHeader}>
             <View>
-              <ThemedText type="defaultSemiBold" style={styles.streakTitle}>
+              <ThemedText type="title-md" style={styles.streakTitle}>
                 Daily Streak
               </ThemedText>
-              <ThemedText style={styles.streakSubtitle}>Keep it going! 🔥</ThemedText>
+              <ThemedText type="body-md" style={styles.streakSubtitle}>Keep it going!</ThemedText>
             </View>
             <View style={styles.streakBadge}>
-              <ThemedText style={[styles.streakNumber, { color: colors.warning }]}>{user?.learningStreak || 0}</ThemedText>
-              <ThemedText style={styles.streakDays}>days</ThemedText>
+              <ThemedText style={[styles.streakNumber, { color: c.warning }]}>{user?.learningStreak || 0}</ThemedText>
+              <ThemedText type="label-md" style={styles.streakDays}>days</ThemedText>
             </View>
           </View>
         </View>
 
         {/* Portfolio Overview */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+        <View style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}>
           <View style={styles.cardHeader}>
-            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+            <ThemedText type="title-md" style={styles.cardTitle}>
               Portfolio Balance
             </ThemedText>
             <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}>
-              <ThemedText style={[styles.viewAll, { color: primaryColor }]}>View All →</ThemedText>
+              <ThemedText type="label-lg" style={[styles.viewAll, { color: c.primary }]}>View All</ThemedText>
             </TouchableOpacity>
           </View>
 
@@ -143,21 +136,21 @@ export default function HomeScreen() {
             ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </ThemedText>
           <View style={styles.portfolioChange}>
-            <ThemedText style={styles.changeLabel}>
+            <ThemedText type="body-md" style={styles.changeLabel}>
               {firstPortfolio ? `${firstPortfolio.holdings.length} holdings` : 'No portfolios yet'}
             </ThemedText>
           </View>
 
           <View style={styles.portfolioBreakdown}>
             <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-              <ThemedText style={styles.breakdownLabel}>Holdings</ThemedText>
-              <ThemedText style={styles.breakdownValue}>{stocksPercent}%</ThemedText>
+              <View style={[styles.dot, { backgroundColor: c.primary }]} />
+              <ThemedText type="body-md" style={styles.breakdownLabel}>Holdings</ThemedText>
+              <ThemedText type="label-lg" style={styles.breakdownValue}>{stocksPercent}%</ThemedText>
             </View>
             <View style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: colors.success }]} />
-              <ThemedText style={styles.breakdownLabel}>Liquid Funds</ThemedText>
-              <ThemedText style={styles.breakdownValue}>{savingsPercent}%</ThemedText>
+              <View style={[styles.dot, { backgroundColor: c.success }]} />
+              <ThemedText type="body-md" style={styles.breakdownLabel}>Liquid Funds</ThemedText>
+              <ThemedText type="label-lg" style={styles.breakdownValue}>{savingsPercent}%</ThemedText>
             </View>
           </View>
         </View>
@@ -165,34 +158,34 @@ export default function HomeScreen() {
         {/* Today's Lesson */}
         {todaysLesson && (
           <TouchableOpacity
-            style={[
-              styles.lessonCard,
-              { backgroundColor: cardBg, borderColor, borderLeftColor: primaryColor },
-            ]}
+            style={[styles.lessonCard, { backgroundColor: c.surfaceContainerLowest }]}
             onPress={() =>
               router.push({ pathname: '/lesson/[id]', params: { id: todaysLesson.id } })
             }
           >
-            <View style={styles.lessonHeader}>
-              <ThemedText type="defaultSemiBold" style={styles.lessonTitle}>
-                Today&apos;s Lesson
-              </ThemedText>
-              <View style={styles.lessonBadge}>
-                <ThemedText style={[styles.lessonBadgeText, { color: primaryColor }]}>
-                  +${todaysLesson.reward}
+            <View style={styles.lessonAccent} />
+            <View style={styles.lessonContent}>
+              <View style={styles.lessonHeader}>
+                <ThemedText type="label-lg" style={styles.lessonTitle}>
+                  Today&apos;s Lesson
                 </ThemedText>
+                <View style={styles.lessonBadge}>
+                  <ThemedText type="label-md" style={[styles.lessonBadgeText, { color: c.primary }]}>
+                    +${todaysLesson.reward}
+                  </ThemedText>
+                </View>
               </View>
-            </View>
 
-            <ThemedText style={styles.lessonName}>{todaysLesson.title}</ThemedText>
-            <ThemedText style={styles.lessonDescription}>{todaysLesson.description}</ThemedText>
+              <ThemedText type="title-lg" style={styles.lessonName}>{todaysLesson.title}</ThemedText>
+              <ThemedText type="body-md" style={styles.lessonDescription}>{todaysLesson.description}</ThemedText>
 
-            <View style={styles.lessonMeta}>
-              <ThemedText style={styles.lessonDuration}>
-                {todaysLesson.estimatedMinutes} min
-              </ThemedText>
-              <ThemedText style={styles.lessonSeparator}>•</ThemedText>
-              <ThemedText style={styles.lessonLevel}>{todaysLesson.difficulty}</ThemedText>
+              <View style={styles.lessonMeta}>
+                <ThemedText type="label-md" style={styles.lessonDuration}>
+                  {todaysLesson.estimatedMinutes} min
+                </ThemedText>
+                <ThemedText type="label-md" style={styles.lessonSeparator}>-</ThemedText>
+                <ThemedText type="label-md" style={styles.lessonLevel}>{todaysLesson.difficulty}</ThemedText>
+              </View>
             </View>
           </TouchableOpacity>
         )}
@@ -200,36 +193,35 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            style={[styles.actionButton, { backgroundColor: c.surfaceContainerLowest }]}
             onPress={() => router.push('/(tabs)/lesson')}
           >
             <ThemedText style={styles.actionIcon}>📚</ThemedText>
-            <ThemedText style={styles.actionLabel}>Browse Lessons</ThemedText>
+            <ThemedText type="label-lg" style={styles.actionLabel}>Browse Lessons</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: cardBg, borderColor }]}
+            style={[styles.actionButton, { backgroundColor: c.surfaceContainerLowest }]}
             onPress={() => router.push('/(tabs)/group')}
           >
             <ThemedText style={styles.actionIcon}>🏆</ThemedText>
-            <ThemedText style={styles.actionLabel}>View Groups</ThemedText>
+            <ThemedText type="label-lg" style={styles.actionLabel}>View Groups</ThemedText>
           </TouchableOpacity>
         </View>
 
-        {/* Debug: Reset Onboarding */}
+        {/* Debug buttons */}
         <TouchableOpacity
-          style={[styles.debugButton, { backgroundColor: cardBg, borderColor }]}
+          style={[styles.debugButton, { backgroundColor: c.surfaceContainerLow }]}
           onPress={handleResetOnboarding}
         >
-          <ThemedText style={styles.debugButtonText}>🔄 Reset Onboarding (Debug)</ThemedText>
+          <ThemedText type="label-md" style={styles.debugButtonText}>Reset Onboarding (Debug)</ThemedText>
         </TouchableOpacity>
 
-        {/* Debug: Reset Lesson Progress */}
         <TouchableOpacity
-          style={[styles.debugButton, { backgroundColor: cardBg, borderColor }]}
+          style={[styles.debugButton, { backgroundColor: c.surfaceContainerLow }]}
           onPress={handleResetProgress}
         >
-          <ThemedText style={styles.debugButtonText}>🗑️ Reset Lesson Progress (Debug)</ThemedText>
+          <ThemedText type="label-md" style={styles.debugButtonText}>Reset Lesson Progress (Debug)</ThemedText>
         </TouchableOpacity>
 
         <View style={styles.bottomPadding} />
@@ -241,65 +233,113 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 20 },
+  scrollContent: { padding: Spacing.lg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { marginBottom: 24 },
+
+  header: { marginBottom: Spacing.lg },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerText: { flex: 1, marginRight: 12 },
-  greeting: { fontSize: 28, marginBottom: 4 },
-  subtitle: { opacity: 0.7, fontSize: 16 },
-  iqCard: { borderRadius: 20, padding: 24, marginBottom: 16, alignItems: 'center' },
-  iqLabel: { color: '#FFFFFF', opacity: 0.9, fontSize: 14, marginBottom: 8 },
-  iqScore: { color: '#FFFFFF', fontSize: 64, fontWeight: 'bold', marginBottom: 12 },
-  iqBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 16,
+  headerText: { flex: 1, marginRight: Spacing.md },
+  greeting: { marginBottom: 4 },
+  subtitle: { color: Colors.light.onSurfaceVariant },
+
+  // Hero IQ card with gradient
+  iqCard: {
+    borderRadius: Radii.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    alignItems: 'center',
   },
-  iqRank: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  iqLabel: { color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.sm },
+  iqScore: {
+    color: '#FFFFFF',
+    fontSize: 64,
+    fontFamily: Typography['display-lg'].fontFamily,
+    marginBottom: 12,
+  },
+  iqBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radii.full,
+    marginBottom: Spacing.md,
+  },
+  iqRank: { color: '#FFFFFF' },
   progressBarContainer: {
     width: '100%',
     height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
-    marginBottom: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: Radii.full,
+    marginBottom: Spacing.sm,
     overflow: 'hidden',
   },
-  progressBar: { height: '100%', backgroundColor: '#FFFFFF', borderRadius: 3 },
-  iqProgress: { color: '#FFFFFF', opacity: 0.9, fontSize: 13 },
-  streakCard: { borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1 },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radii.full,
+  },
+  iqProgress: { color: 'rgba(255,255,255,0.85)' },
+
+  // Streak card — no border, tonal bg
+  streakCard: {
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...AmbientShadow,
+  },
   streakHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  streakTitle: { fontSize: 16, marginBottom: 4 },
-  streakSubtitle: { opacity: 0.6, fontSize: 14 },
+  streakTitle: { marginBottom: 4 },
+  streakSubtitle: { color: Colors.light.onSurfaceVariant },
   streakBadge: { alignItems: 'center' },
-  streakNumber: { fontSize: 32, fontWeight: 'bold' },
-  streakDays: { opacity: 0.6, fontSize: 12 },
-  card: { borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1 },
+  streakNumber: {
+    fontSize: 32,
+    fontFamily: Typography['headline-lg'].fontFamily,
+  },
+  streakDays: { color: Colors.light.onSurfaceVariant },
+
+  // Portfolio card — no border
+  card: {
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...AmbientShadow,
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
-  cardTitle: { fontSize: 16 },
-  viewAll: { fontSize: 14, fontWeight: '600' },
-  portfolioBalance: { fontSize: 36, fontWeight: 'bold', marginBottom: 8 },
-  portfolioChange: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  changeText: { fontSize: 16, fontWeight: '600' },
-  changeLabel: { opacity: 0.6, fontSize: 14 },
+  cardTitle: {},
+  viewAll: {},
+  portfolioBalance: {
+    fontSize: 36,
+    fontFamily: Typography['display-md'].fontFamily,
+    color: Colors.light.onSurface,
+    marginBottom: Spacing.sm,
+  },
+  portfolioChange: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
+  changeLabel: { color: Colors.light.onSurfaceVariant },
   portfolioBreakdown: { gap: 12 },
   breakdownItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dot: { width: 12, height: 12, borderRadius: 6 },
-  breakdownLabel: { flex: 1, fontSize: 14 },
-  breakdownValue: { fontSize: 14, fontWeight: '600' },
+  breakdownLabel: { flex: 1, color: Colors.light.onSurfaceVariant },
+  breakdownValue: {},
+
+  // Lesson card — no border, accent strip instead of borderLeft
   lessonCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderLeftWidth: 4,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    ...AmbientShadow,
+  },
+  lessonAccent: {
+    width: 4,
+    backgroundColor: Colors.light.primary,
+  },
+  lessonContent: {
+    flex: 1,
+    padding: Spacing.lg,
   },
   lessonHeader: {
     flexDirection: 'row',
@@ -307,32 +347,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  lessonTitle: { fontSize: 14, opacity: 0.7 },
+  lessonTitle: { color: Colors.light.onSurfaceVariant },
   lessonBadge: {
-    backgroundColor: 'rgba(65, 105, 225, 0.1)',
+    backgroundColor: 'rgba(0, 75, 228, 0.08)',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: Radii.full,
   },
-  lessonBadgeText: { fontSize: 13, fontWeight: '700' },
-  lessonName: { fontSize: 18, fontWeight: '600', marginBottom: 6 },
-  lessonDescription: { fontSize: 14, opacity: 0.7, marginBottom: 12 },
-  lessonMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  lessonDuration: { fontSize: 13, opacity: 0.6 },
-  lessonSeparator: { opacity: 0.4 },
-  lessonLevel: { fontSize: 13, opacity: 0.6 },
-  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  actionButton: { flex: 1, borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1 },
-  actionIcon: { fontSize: 32, marginBottom: 8 },
-  actionLabel: { fontSize: 14, fontWeight: '600' },
+  lessonBadgeText: {},
+  lessonName: { marginBottom: 6 },
+  lessonDescription: { color: Colors.light.onSurfaceVariant, marginBottom: 12 },
+  lessonMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  lessonDuration: { color: Colors.light.onSurfaceVariant },
+  lessonSeparator: { color: Colors.light.onSurfaceVariant },
+  lessonLevel: { color: Colors.light.onSurfaceVariant },
+
+  // Quick actions — no border
+  quickActions: { flexDirection: 'row', gap: 12, marginBottom: Spacing.md },
+  actionButton: {
+    flex: 1,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    ...AmbientShadow,
+  },
+  actionIcon: { fontSize: 32, marginBottom: Spacing.sm },
+  actionLabel: {},
+
+  // Debug
   debugButton: {
-    marginTop: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    marginTop: Spacing.md,
+    borderRadius: Radii.md,
     paddingVertical: 12,
     alignItems: 'center',
     opacity: 0.5,
   },
-  debugButtonText: { fontSize: 13, opacity: 0.7 },
+  debugButtonText: { color: Colors.light.onSurfaceVariant },
+
   bottomPadding: { height: 20 },
 });

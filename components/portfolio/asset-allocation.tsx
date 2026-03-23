@@ -4,6 +4,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { AssetAllocation } from '@/types/portfolio';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+
+const c = Colors.light;
 
 interface AssetAllocationProps {
   allocation: AssetAllocation;
@@ -30,7 +33,7 @@ const ASSET_INFO: AssetInfo[] = [
     risk: 'Low',
     liquidity: 'High',
     diversification: 'Low',
-    icon: '💰',
+    icon: '\u{1F4B0}',
     color: '#10b981',
   },
   {
@@ -40,7 +43,7 @@ const ASSET_INFO: AssetInfo[] = [
     risk: 'Low',
     liquidity: 'Medium',
     diversification: 'Medium',
-    icon: '📊',
+    icon: '\u{1F4CA}',
     color: '#3b82f6',
   },
   {
@@ -50,7 +53,7 @@ const ASSET_INFO: AssetInfo[] = [
     risk: 'Medium',
     liquidity: 'Medium',
     diversification: 'High',
-    icon: '📈',
+    icon: '\u{1F4C8}',
     color: '#8b5cf6',
   },
 ];
@@ -62,8 +65,6 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
 
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBackground = useThemeColor({}, 'cardBackground');
 
   const totalAllocated = allocation.savings + allocation.bonds + allocation.indexFunds;
 
@@ -82,11 +83,11 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
   const getRiskColor = (level: string) => {
     switch (level) {
       case 'Low':
-        return '#10b981';
+        return c.success;
       case 'Medium':
-        return '#f59e0b';
+        return c.warning;
       case 'High':
-        return '#ef4444';
+        return c.danger;
       default:
         return textColor;
     }
@@ -109,7 +110,7 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
           return (
             <TouchableOpacity
               key={asset.key}
-              style={[styles.assetCard, { backgroundColor: cardBackground }]}
+              style={styles.assetCard}
               onPress={() => {
                 setSelectedAsset(asset);
                 setShowModal(true);
@@ -136,7 +137,7 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
         onRequestClose={() => setShowModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <ThemedView style={[styles.modalContent, { backgroundColor }]}>
+          <ThemedView style={styles.modalContent}>
             <ScrollView>
               {selectedAsset && (
                 <>
@@ -182,7 +183,7 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
                         onChangeText={setAmount}
                         keyboardType="decimal-pad"
                         placeholder="0.00"
-                        placeholderTextColor="#888"
+                        placeholderTextColor={c.onSurfaceVariant}
                       />
                     </View>
                     <ThemedText style={styles.inputHint}>
@@ -209,63 +210,71 @@ export function AssetAllocationComponent({ allocation, liquidFunds, onAllocate }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: Spacing.md,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   title: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 24,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.7,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
   },
   allocationGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: Spacing.sm + 4,
   },
   assetCard: {
     flex: 1,
     minWidth: '45%',
-    padding: 16,
-    borderRadius: 12,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   assetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   assetIcon: {
     fontSize: 32,
   },
   riskBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radii.sm,
   },
   riskText: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 10,
-    fontWeight: '600',
-    color: '#fff',
+    color: c.onPrimary,
   },
   assetName: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    lineHeight: 20,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   assetValue: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 28,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   assetPercentage: {
-    fontSize: 12,
-    opacity: 0.6,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
   },
   modalOverlay: {
     flex: 1,
@@ -273,95 +282,99 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: Radii.lg,
+    borderTopRightRadius: Radii.lg,
+    padding: Spacing.lg,
     maxHeight: '80%',
+    backgroundColor: c.surfaceContainerLow,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   modalTitle: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 22,
-    fontWeight: '700',
+    lineHeight: 28,
+    color: c.onSurface,
   },
   closeButton: {
     fontSize: 24,
-    opacity: 0.6,
+    color: c.onSurfaceVariant,
   },
   description: {
-    fontSize: 14,
-    lineHeight: 20,
-    opacity: 0.8,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
     marginBottom: 20,
   },
   characteristicsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    gap: Spacing.sm + 4,
+    marginBottom: Spacing.lg,
   },
   characteristic: {
     flex: 1,
     alignItems: 'center',
   },
   characteristicLabel: {
-    fontSize: 12,
-    opacity: 0.7,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
     marginBottom: 6,
   },
   characteristicBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing.sm + 4,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: Radii.sm + 4,
   },
   characteristicValue: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
+    color: c.onPrimary,
   },
   inputSection: {
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
   inputLabel: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    lineHeight: 20,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
   },
   currencySymbol: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '600',
-    marginRight: 8,
+    color: c.onSurface,
+    marginRight: Spacing.sm,
   },
   input: {
     flex: 1,
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '600',
   },
   inputHint: {
-    fontSize: 12,
-    opacity: 0.6,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
     marginTop: 6,
   },
   allocateButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   allocateButtonText: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    color: c.onPrimary,
   },
 });

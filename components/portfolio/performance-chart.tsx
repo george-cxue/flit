@@ -5,6 +5,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { PortfolioSnapshot, TimeFrame } from '@/types/portfolio';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+
+const c = Colors.light;
 
 interface PerformanceChartProps {
   portfolioHistory: PortfolioSnapshot[];
@@ -14,7 +17,7 @@ interface PerformanceChartProps {
 
 const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame): PortfolioSnapshot[] => {
   if (data.length === 0) return [];
-  
+
   const now = Date.now();
 
   if (timeFrame === 'ALL') {
@@ -25,7 +28,7 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
     const currentYear = new Date().getFullYear();
     const yearStart = new Date(currentYear, 0, 1).getTime();
     const filtered = data.filter((point) => point.timestamp >= yearStart);
-    
+
     // If filter removed all points or left only 1, include the point just before the cutoff
     if (filtered.length < 2 && data.length >= 2) {
       const beforeCutoff = data.filter(p => p.timestamp < yearStart);
@@ -33,7 +36,7 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
         return [beforeCutoff[beforeCutoff.length - 1], ...filtered];
       }
     }
-    
+
     return filtered.length > 0 ? filtered : data;
   }
 
@@ -47,7 +50,7 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
   }[timeFrame];
 
   const filtered = data.filter((point) => point.timestamp >= cutoff!);
-  
+
   // If filter removed all points or left only 1, include the point just before the cutoff
   // This ensures we always have at least 2 points to show percentage change
   if (filtered.length < 2 && data.length >= 2) {
@@ -57,7 +60,7 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
       return [beforeCutoff[beforeCutoff.length - 1], ...filtered];
     }
   }
-  
+
   // If we still have less than 2 points, return all data we have
   return filtered.length > 0 ? filtered : data;
 };
@@ -91,7 +94,6 @@ const sampleData = (data: PortfolioSnapshot[], maxPoints: number = 10): Portfoli
 export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: PerformanceChartProps) {
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({}, 'border');
 
   const chartData = useMemo(() => {
     const filteredPortfolio = filterDataByTimeFrame(portfolioHistory, timeFrame);
@@ -125,7 +127,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
         },
         {
           data: normalizedSP500.length > 0 ? normalizedSP500.map(p => p.value) : [0],
-          color: () => '#888',
+          color: () => c.onSurfaceVariant,
           strokeWidth: 2,
         },
       ],
@@ -160,7 +162,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
             <ThemedText
               style={[
                 styles.performanceValue,
-                { color: performanceChange.portfolio >= 0 ? '#10b981' : '#ef4444' },
+                { color: performanceChange.portfolio >= 0 ? c.success : c.danger },
               ]}
             >
               {performanceChange.portfolio >= 0 ? '+' : ''}
@@ -172,7 +174,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
             <ThemedText
               style={[
                 styles.performanceValue,
-                { color: performanceChange.sp500 >= 0 ? '#10b981' : '#ef4444' },
+                { color: performanceChange.sp500 >= 0 ? c.success : c.danger },
               ]}
             >
               {performanceChange.sp500 >= 0 ? '+' : ''}
@@ -195,7 +197,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
             color: () => textColor,
             labelColor: () => textColor,
             style: {
-              borderRadius: 16,
+              borderRadius: Radii.md,
             },
             propsForDots: {
               r: '4',
@@ -203,7 +205,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
             },
             propsForBackgroundLines: {
               strokeDasharray: '',
-              stroke: borderColor,
+              stroke: c.surfaceContainerHigh,
               strokeWidth: 1,
             },
           }}
@@ -225,7 +227,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
           <ThemedText style={styles.legendText}>Your Portfolio</ThemedText>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#888' }]} />
+          <View style={[styles.legendDot, { backgroundColor: c.onSurfaceVariant }]} />
           <ThemedText style={styles.legendText}>S&P 500</ThemedText>
         </View>
       </View>
@@ -235,42 +237,45 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 12,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   performanceRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: 16,
+    gap: Spacing.md,
   },
   performanceItem: {
     flex: 1,
     alignItems: 'center',
   },
   performanceLabel: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 4,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.xs,
   },
   performanceValue: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 20,
-    fontWeight: '700',
+    lineHeight: 28,
   },
   chartContainer: {
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: Spacing.sm,
   },
   chart: {
-    borderRadius: 16,
+    borderRadius: Radii.md,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 24,
-    marginTop: 8,
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
   },
   legendItem: {
     flexDirection: 'row',
@@ -280,10 +285,10 @@ const styles = StyleSheet.create({
   legendDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: Radii.full,
   },
   legendText: {
-    fontSize: 12,
-    opacity: 0.8,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
   },
 });
