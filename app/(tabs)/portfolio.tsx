@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
@@ -18,6 +19,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuthContext } from '@/contexts/auth-context';
 
 export default function PortfolioScreen() {
+  const insets = useSafeAreaInsets();
   const { leagueId: paramLeagueId } = useLocalSearchParams();
   const [groups, setGroups] = React.useState<Group[]>([]);
   const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
@@ -99,7 +101,7 @@ export default function PortfolioScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <ThemedView style={styles.content}>
         {/* Group Selector */}
         <View style={[styles.leagueSelector, { backgroundColor: c.surfaceContainerLowest }]}>
@@ -221,6 +223,7 @@ export default function PortfolioScreen() {
         {/* Stock Search */}
         <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <StockSearch
+            groupId={selectedLeagueId}
             liquidFunds={currentPortfolio.liquidFunds}
             onBuyStock={handleBuyStock}
           />
@@ -281,6 +284,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   valueAmount: {
+    lineHeight: 44,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     fontSize: 36,
     fontFamily: Typography['display-md'].fontFamily,
     color: Colors.light.onSurface,

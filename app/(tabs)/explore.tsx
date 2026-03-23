@@ -9,6 +9,7 @@ import {
   Linking,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Typography, Radii, Spacing, AmbientShadow } from '@/constants/theme';
@@ -41,6 +42,7 @@ interface NewsArticle {
 type SortOption = 'symbol' | 'price' | 'change' | 'changePercent';
 
 export default function ExploreScreen() {
+  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn, userId } = useAuthContext();
   const c = Colors.light;
 
@@ -228,7 +230,7 @@ export default function ExploreScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Spacing.lg + insets.top }]}>
           <ThemedText type="headline-lg">Explore</ThemedText>
         </View>
 
@@ -481,7 +483,7 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  header: { padding: Spacing.lg, paddingTop: 60 },
+  header: { padding: Spacing.lg },
 
   // Sections — no border, tonal bg + ambient shadow
   section: {

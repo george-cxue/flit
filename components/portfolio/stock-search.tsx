@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -10,11 +10,12 @@ import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/th
 const c = Colors.light;
 
 interface StockSearchProps {
+  groupId: string;
   liquidFunds: number;
   onBuyStock: (stock: Stock, shares: number) => Promise<void>;
 }
 
-export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
+export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [shares, setShares] = useState('1');
@@ -26,40 +27,36 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
 
-  // Fetch stocks from API when search query changes
+  // Fetch stocks from group-specific assets API (only shows assets purchasable in this group)
   useEffect(() => {
     const fetchStocks = async () => {
-      if (!searchQuery.trim()) {
+      if (!searchQuery.trim() || !groupId) {
         setStocks([]);
         return;
       }
 
       setLoading(true);
       try {
-        const response = await apiClient.get('/assets', {
-          params: {
-            search: searchQuery,
-            type: 'Stock',
-            isActive: true,
-          },
+        const response = await apiClient.get(`/fantasy-groups/${groupId}/assets`, {
+          params: { search: searchQuery, type: 'Stock' },
         });
 
-        // Map API response to Stock type
-        const mappedStocks: Stock[] = response.data.map((asset: any) => ({
+        const assets = response.data?.assets ?? response.data ?? [];
+        const mappedStocks: Stock[] = (Array.isArray(assets) ? assets : []).map((asset: any) => ({
           id: asset.id,
-          symbol: asset.ticker,
+          symbol: asset.ticker ?? asset.symbol,
           name: asset.name,
-          currentPrice: asset.currentPrice,
-          previousClose: asset.previousClose,
-          changePercent: asset.previousClose > 0
+          currentPrice: asset.currentPrice ?? 0,
+          previousClose: asset.previousClose ?? asset.currentPrice ?? 0,
+          changePercent: asset.changePercent ?? (asset.previousClose > 0
             ? ((asset.currentPrice - asset.previousClose) / asset.previousClose) * 100
-            : 0,
+            : 0),
           sector: asset.sector || 'Unknown',
           marketCap: asset.marketCap,
           tier: asset.tier,
         }));
 
-        setStocks(mappedStocks.slice(0, 10)); // Limit to 10 results
+        setStocks(mappedStocks.slice(0, 10));
       } catch (error) {
         console.error('Error fetching stocks:', error);
         setStocks([]);
@@ -68,9 +65,9 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
       }
     };
 
-    const debounceTimer = setTimeout(fetchStocks, 300); // Debounce search
+    const debounceTimer = setTimeout(fetchStocks, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+  }, [searchQuery, groupId]);
 
   const filteredStocks = stocks;
 
@@ -80,23 +77,37 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   }, [selectedStock, shares]);
 
   const handleBuyStock = async () => {
-    if (selectedStock && shares) {
-      const numShares = parseInt(shares);
-      if (numShares > 0 && totalCost <= liquidFunds) {
-        try {
-          setPurchasing(true);
-          await onBuyStock(selectedStock, numShares);
-          setShares('1');
-          setShowModal(false);
-          setSelectedStock(null);
-          setSearchQuery('');
-        } catch (error) {
-          console.error('Failed to purchase stock:', error);
-          alert('Failed to purchase stock. Please try again.');
-        } finally {
-          setPurchasing(false);
-        }
-      }
+    if (!selectedStock) return;
+
+    const numShares = parseInt(shares || '0', 10);
+    if (numShares <= 0 || isNaN(numShares)) {
+      alert('Please enter a valid number of shares (at least 1).');
+      return;
+    }
+    if (totalCost > liquidFunds) {
+      alert('Insufficient funds for this purchase.');
+      return;
+    }
+    if (!selectedStock.id) {
+      alert('This stock cannot be purchased. Try searching again.');
+      return;
+    }
+
+    try {
+      setPurchasing(true);
+      await onBuyStock(selectedStock, numShares);
+      setShares('1');
+      setShowModal(false);
+      setSelectedStock(null);
+      setSearchQuery('');
+    } catch (error) {
+      console.error('Failed to purchase stock:', error);
+      const msg = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error
+        || (error as { message?: string })?.message
+        || 'Failed to purchase stock. Please try again.';
+      alert(msg);
+    } finally {
+      setPurchasing(false);
     }
   };
 
@@ -129,10 +140,9 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
 
       {!loading && filteredStocks.length > 0 && (
         <View style={styles.resultsContainer}>
-          <FlatList
-            data={filteredStocks}
-            keyExtractor={(item) => item.symbol}
-            renderItem={({ item }) => (
+          {filteredStocks.map((item, index) => (
+            <React.Fragment key={item.symbol}>
+              {index > 0 && <View style={styles.separator} />}
               <TouchableOpacity
                 style={styles.stockItem}
                 onPress={() => {
@@ -160,9 +170,8 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                   </ThemedText>
                 </View>
               </TouchableOpacity>
-            )}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-          />
+            </React.Fragment>
+          ))}
         </View>
       )}
 

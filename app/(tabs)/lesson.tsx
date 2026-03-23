@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +12,7 @@ import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
 import { useAuthContext } from '@/contexts/auth-context';
 
 export default function LessonsScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuthContext();
   const c = Colors.light;
   const router = useRouter();
@@ -35,7 +37,7 @@ export default function LessonsScreen() {
     <ThemedView style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -376,7 +378,7 @@ function UnitSection({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  scrollContent: { padding: Spacing.lg, paddingTop: 60 },
+  scrollContent: { padding: Spacing.lg },
   header: { marginBottom: Spacing.lg },
   title: { marginBottom: Spacing.md },
 
@@ -394,6 +396,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 40,
     fontFamily: Typography['display-md'].fontFamily,
+    lineHeight: 48,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     marginBottom: 4,
   },
   balanceHint: {

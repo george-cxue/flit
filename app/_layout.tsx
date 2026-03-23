@@ -8,6 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ClerkProvider, ClerkLoaded } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 
@@ -56,25 +57,27 @@ export default function RootLayout() {
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
-        <ThemeProvider value={DefaultTheme}>
-          <AuthProvider>
-            <PortfolioProvider>
-              <Stack>
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: "modal", title: "Modal" }}
-                />
-                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                <Stack.Screen name="profile" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="fantasy" options={{ headerShown: false }} />
-                <Stack.Screen name="lesson" options={{ headerShown: false }} />
-              </Stack>
-              <StatusBar style="auto" />
-            </PortfolioProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <SafeAreaProvider>
+          <ThemeProvider value={DefaultTheme}>
+            <AuthProvider>
+              <PortfolioProvider>
+                <Stack>
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: "modal", title: "Modal" }}
+                  />
+                  <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                  <Stack.Screen name="profile" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="fantasy" options={{ headerShown: false }} />
+                  <Stack.Screen name="lesson" options={{ headerShown: false }} />
+                </Stack>
+                <StatusBar style="auto" />
+              </PortfolioProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
       </ClerkLoaded>
     </ClerkProvider>
   );

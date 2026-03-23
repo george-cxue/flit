@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +15,7 @@ import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
   const c = Colors.light;
@@ -65,7 +67,7 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -254,6 +256,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 64,
     fontFamily: Typography['display-lg'].fontFamily,
+    lineHeight: 76,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     marginBottom: 12,
   },
   iqBadge: {
@@ -314,6 +318,8 @@ const styles = StyleSheet.create({
   portfolioBalance: {
     fontSize: 36,
     fontFamily: Typography['display-md'].fontFamily,
+    lineHeight: 44,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     color: Colors.light.onSurface,
     marginBottom: Spacing.sm,
   },
