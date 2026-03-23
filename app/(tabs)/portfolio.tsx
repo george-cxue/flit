@@ -65,6 +65,7 @@ export default function PortfolioScreen() {
     }
   }, [paramLeagueId]);
 
+  const c = Colors.light;
   const currentPortfolio = getCurrentPortfolio();
 
   if (loading) {
