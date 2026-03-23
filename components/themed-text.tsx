@@ -1,11 +1,27 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Typography } from '@/constants/theme';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?:
+    | 'default'
+    | 'title'
+    | 'defaultSemiBold'
+    | 'subtitle'
+    | 'link'
+    | 'display-lg'
+    | 'display-md'
+    | 'headline-lg'
+    | 'headline-md'
+    | 'title-lg'
+    | 'title-md'
+    | 'body-lg'
+    | 'body-md'
+    | 'label-lg'
+    | 'label-md';
 };
 
 export function ThemedText({
@@ -15,17 +31,13 @@ export function ThemedText({
   type = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'onSurface');
 
   return (
     <Text
       style={[
         { color },
-        type === 'default' ? styles.default : undefined,
-        type === 'title' ? styles.title : undefined,
-        type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
-        type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
+        styles[type] ?? styles.default,
         style,
       ]}
       {...rest}
@@ -34,27 +46,83 @@ export function ThemedText({
 }
 
 const styles = StyleSheet.create({
+  // Legacy types mapped to new typography
   default: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    lineHeight: Typography['body-lg'].lineHeight,
   },
   defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: Typography['title-md'].fontFamily,
+    fontSize: Typography['title-md'].fontSize,
+    lineHeight: Typography['title-md'].lineHeight,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
+    fontFamily: Typography['headline-lg'].fontFamily,
+    fontSize: Typography['headline-lg'].fontSize,
+    lineHeight: Typography['headline-lg'].lineHeight,
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: Typography['title-lg'].fontFamily,
+    fontSize: Typography['title-lg'].fontSize,
+    lineHeight: Typography['title-lg'].lineHeight,
   },
   link: {
-    lineHeight: 30,
+    fontFamily: Typography['body-lg'].fontFamily,
     fontSize: 16,
-    color: '#0a7ea4',
+    lineHeight: 30,
+    color: '#004be4',
+  },
+
+  // New typography scale
+  'display-lg': {
+    fontFamily: Typography['display-lg'].fontFamily,
+    fontSize: Typography['display-lg'].fontSize,
+    lineHeight: Typography['display-lg'].lineHeight,
+  },
+  'display-md': {
+    fontFamily: Typography['display-md'].fontFamily,
+    fontSize: Typography['display-md'].fontSize,
+    lineHeight: Typography['display-md'].lineHeight,
+  },
+  'headline-lg': {
+    fontFamily: Typography['headline-lg'].fontFamily,
+    fontSize: Typography['headline-lg'].fontSize,
+    lineHeight: Typography['headline-lg'].lineHeight,
+  },
+  'headline-md': {
+    fontFamily: Typography['headline-md'].fontFamily,
+    fontSize: Typography['headline-md'].fontSize,
+    lineHeight: Typography['headline-md'].lineHeight,
+  },
+  'title-lg': {
+    fontFamily: Typography['title-lg'].fontFamily,
+    fontSize: Typography['title-lg'].fontSize,
+    lineHeight: Typography['title-lg'].lineHeight,
+  },
+  'title-md': {
+    fontFamily: Typography['title-md'].fontFamily,
+    fontSize: Typography['title-md'].fontSize,
+    lineHeight: Typography['title-md'].lineHeight,
+  },
+  'body-lg': {
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    lineHeight: Typography['body-lg'].lineHeight,
+  },
+  'body-md': {
+    fontFamily: Typography['body-md'].fontFamily,
+    fontSize: Typography['body-md'].fontSize,
+    lineHeight: Typography['body-md'].lineHeight,
+  },
+  'label-lg': {
+    fontFamily: Typography['label-lg'].fontFamily,
+    fontSize: Typography['label-lg'].fontSize,
+    lineHeight: Typography['label-lg'].lineHeight,
+  },
+  'label-md': {
+    fontFamily: Typography['label-md'].fontFamily,
+    fontSize: Typography['label-md'].fontSize,
+    lineHeight: Typography['label-md'].lineHeight,
   },
 });

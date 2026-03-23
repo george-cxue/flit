@@ -1,18 +1,16 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { AssetType, GroupSettings } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
 
+const c = Colors.light;
+
 export default function CreateGroupScreen() {
     const router = useRouter();
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const textColor = useThemeColor({}, 'text' as any);
 
     // Required Settings
     const [groupName, setGroupName] = useState('');
@@ -62,10 +60,10 @@ export default function CreateGroupScreen() {
             };
 
             const newGroup = await GroupService.createGroup(groupName, settings);
-            
+
             // Navigate directly to the new group's detail page
             router.push(`/fantasy/group/${newGroup.id}`);
-            
+
             // Show success message after navigation
             setTimeout(() => {
                 Alert.alert('Success', `Group "${groupName}" created!`);
@@ -85,14 +83,15 @@ export default function CreateGroupScreen() {
         <TouchableOpacity
             style={[
                 styles.optionButton,
-                { borderColor },
-                isSelected && { backgroundColor: primaryColor, borderColor: primaryColor }
+                { backgroundColor: c.secondaryContainer },
+                isSelected && { backgroundColor: c.primary }
             ]}
             onPress={onPress}
         >
             <ThemedText style={[
                 styles.optionText,
-                isSelected && { color: '#FFF' }
+                { color: c.onSurface },
+                isSelected && { color: c.onPrimary }
             ]}>{label}</ThemedText>
         </TouchableOpacity>
     );
@@ -111,9 +110,9 @@ export default function CreateGroupScreen() {
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Group Name</ThemedText>
                         <TextInput
-                            style={[styles.input, { backgroundColor: cardBg, borderColor, color: textColor }]}
+                            style={styles.input}
                             placeholder="e.g. Wall Street Warriors"
-                            placeholderTextColor="#888"
+                            placeholderTextColor={c.onSurfaceVariant}
                             value={groupName}
                             onChangeText={setGroupName}
                         />
@@ -155,7 +154,7 @@ export default function CreateGroupScreen() {
                                 </View>
                             ))}
                         </View>
-                        <View style={[styles.optionsRow, { marginTop: 8 }]}>
+                        <View style={[styles.optionsRow, { marginTop: Spacing.sm }]}>
                             {[
                                 { value: '3_months', label: '3 Months' },
                                 { value: '6_months', label: '6 Months' },
@@ -170,7 +169,7 @@ export default function CreateGroupScreen() {
 
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Start Date</ThemedText>
-                        <View style={[styles.input, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
+                        <View style={styles.dateDisplay}>
                             <ThemedText>{new Date(startDate).toLocaleString()}</ThemedText>
                         </View>
                         <ThemedText style={styles.helperText}>Competition begins tomorrow (Mock)</ThemedText>
@@ -190,29 +189,38 @@ export default function CreateGroupScreen() {
 
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Asset Classes</ThemedText>
-                        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-                            {(['Stock', 'ETF', 'Commodity', 'REIT'] as AssetType[]).map((type) => (
-                                <View key={type} style={[styles.switchRow, { borderBottomColor: borderColor }]}>
-                                    <ThemedText>{type}</ThemedText>
-                                    <Switch
-                                        value={enabledAssetClasses.includes(type)}
-                                        onValueChange={() => toggleAssetClass(type)}
-                                        trackColor={{ false: '#767577', true: primaryColor }}
-                                    />
-                                </View>
+                        <View style={styles.card}>
+                            {(['Stock', 'ETF', 'Commodity', 'REIT'] as AssetType[]).map((type, index) => (
+                                <React.Fragment key={type}>
+                                    <View style={styles.switchRow}>
+                                        <ThemedText>{type}</ThemedText>
+                                        <Switch
+                                            value={enabledAssetClasses.includes(type)}
+                                            onValueChange={() => toggleAssetClass(type)}
+                                            trackColor={{ false: c.surfaceContainerHigh, true: c.primary }}
+                                        />
+                                    </View>
+                                    {index < 3 && (
+                                        <View style={styles.floatingDivider} />
+                                    )}
+                                </React.Fragment>
                             ))}
                         </View>
                     </View>
                 </View>
 
                 {/* ADVANCED SETTINGS TOGGLE */}
-                <TouchableOpacity
-                    style={[styles.advancedToggle, { borderTopColor: borderColor, borderBottomColor: borderColor }]}
-                    onPress={() => setShowAdvanced(!showAdvanced)}
-                >
-                    <ThemedText type="defaultSemiBold">Advanced Settings</ThemedText>
-                    <ThemedText>{showAdvanced ? '▲' : '▼'}</ThemedText>
-                </TouchableOpacity>
+                <View style={styles.advancedToggleWrapper}>
+                    <View style={styles.floatingDivider} />
+                    <TouchableOpacity
+                        style={styles.advancedToggle}
+                        onPress={() => setShowAdvanced(!showAdvanced)}
+                    >
+                        <ThemedText type="defaultSemiBold">Advanced Settings</ThemedText>
+                        <ThemedText>{showAdvanced ? '▲' : '▼'}</ThemedText>
+                    </TouchableOpacity>
+                    <View style={styles.floatingDivider} />
+                </View>
 
                 {/* ADVANCED SETTINGS SECTION */}
                 {showAdvanced && (
@@ -220,7 +228,7 @@ export default function CreateGroupScreen() {
                         <View style={styles.formGroup}>
                             <ThemedText style={styles.label}>Min Asset Price ($)</ThemedText>
                             <TextInput
-                                style={[styles.input, { backgroundColor: cardBg, borderColor, color: textColor }]}
+                                style={styles.input}
                                 value={minAssetPrice}
                                 onChangeText={setMinAssetPrice}
                                 keyboardType="numeric"
@@ -236,7 +244,7 @@ export default function CreateGroupScreen() {
                             <Switch
                                 value={tradingEnabled}
                                 onValueChange={setTradingEnabled}
-                                trackColor={{ false: '#767577', true: primaryColor }}
+                                trackColor={{ false: c.surfaceContainerHigh, true: c.primary }}
                             />
                         </View>
 
@@ -248,14 +256,14 @@ export default function CreateGroupScreen() {
                             <Switch
                                 value={allowShortSelling}
                                 onValueChange={setAllowShortSelling}
-                                trackColor={{ false: '#767577', true: primaryColor }}
+                                trackColor={{ false: c.surfaceContainerHigh, true: c.primary }}
                             />
                         </View>
                     </View>
                 )}
 
                 <TouchableOpacity
-                    style={[styles.createButton, { backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 }]}
+                    style={[styles.createButton, { opacity: loading ? 0.7 : 1 }]}
                     onPress={handleCreate}
                     disabled={loading}
                 >
@@ -272,60 +280,58 @@ export default function CreateGroupScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
         paddingBottom: 60,
     },
     header: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     section: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     sectionTitle: {
-        marginBottom: 16,
-        fontSize: 18,
-        fontWeight: 'bold',
+        marginBottom: Spacing.md,
     },
     formGroup: {
-        marginBottom: 20,
+        marginBottom: Spacing.lg,
     },
     label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        opacity: 0.8,
+        ...Typography['label-lg'],
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.sm,
     },
     input: {
         height: 48,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
         fontSize: 16,
+        color: c.onSurface,
     },
     optionsRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: Spacing.sm,
     },
     optionButton: {
         paddingVertical: 10,
-        borderWidth: 1,
-        borderRadius: 8,
+        borderRadius: Radii.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
     optionText: {
-        fontSize: 12,
-        fontWeight: '600',
+        ...Typography['label-md'],
     },
     card: {
-        borderRadius: 12,
-        borderWidth: 1,
+        borderRadius: Radii.md,
+        backgroundColor: c.surfaceContainerLowest,
         overflow: 'hidden',
+        ...SubtleShadow,
     },
     switchRow: {
         flexDirection: 'row',
@@ -334,48 +340,60 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 12,
     },
+    floatingDivider: {
+        height: 1,
+        backgroundColor: c.surfaceContainerHigh,
+        marginHorizontal: '10%',
+    },
     helperText: {
-        fontSize: 12,
-        opacity: 0.6,
-        marginTop: 4,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginTop: Spacing.xs,
+    },
+    advancedToggleWrapper: {
+        marginBottom: Spacing.lg,
     },
     advancedToggle: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        marginBottom: 24,
+        paddingVertical: Spacing.md,
     },
     createButton: {
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: c.primary,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
         alignItems: 'center',
-        marginTop: 12,
+        marginTop: Spacing.md,
     },
     createButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         height: 48,
-        borderWidth: 1,
-        borderColor: 'rgba(128,128,128,0.2)',
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
+    },
+    dateDisplay: {
+        height: 48,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
+        justifyContent: 'center',
     },
     stepper: {
         flexDirection: 'row',
-        gap: 16,
+        gap: Spacing.md,
     },
     stepperBtn: {
         fontSize: 20,
-        fontWeight: 'bold',
-        paddingHorizontal: 8,
+        fontFamily: 'Inter_600SemiBold',
+        paddingHorizontal: Spacing.sm,
     },
 });

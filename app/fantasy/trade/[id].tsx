@@ -1,21 +1,19 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { TradeService } from '@/src/services/fantasy/tradeService';
 import { Trade } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+const c = Colors.light;
+
 export default function TradeScreen() {
     const { id } = useLocalSearchParams(); // Group ID
     const router = useRouter();
     const [trades, setTrades] = useState<Trade[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
 
     useEffect(() => {
         const fetchTrades = async () => {
@@ -25,7 +23,6 @@ export default function TradeScreen() {
                     setTrades(data);
                 }
             } catch (error) {
-                // Optionally, you could set an error state here to display an error message
                 console.error('Failed to fetch trades:', error);
             } finally {
                 setLoading(false);
@@ -37,7 +34,7 @@ export default function TradeScreen() {
     if (loading) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -48,7 +45,7 @@ export default function TradeScreen() {
                 <View style={styles.header}>
                     <ThemedText type="title">Trade Center</ThemedText>
                     <TouchableOpacity
-                        style={[styles.createButton, { backgroundColor: primaryColor }]}
+                        style={styles.createButton}
                         onPress={() => router.push(`/fantasy/trade/propose/${id}`)}
                     >
                         <ThemedText style={styles.createButtonText}>+ New Trade</ThemedText>
@@ -56,13 +53,13 @@ export default function TradeScreen() {
                 </View>
 
                 {trades.length === 0 ? (
-                    <View style={[styles.emptyState, { backgroundColor: cardBg, borderColor }]}>
+                    <View style={styles.emptyState}>
                         <ThemedText style={styles.emptyText}>No active trades.</ThemedText>
                         <ThemedText style={styles.emptySubtext}>Propose a trade to get started!</ThemedText>
                     </View>
                 ) : (
                     trades.map((trade) => (
-                        <View key={trade.id} style={[styles.tradeCard, { backgroundColor: cardBg, borderColor }]}>
+                        <View key={trade.id} style={styles.tradeCard}>
                             <View style={styles.tradeHeader}>
                                 <ThemedText style={styles.tradeId}>Trade #{trade.id.slice(-4)}</ThemedText>
                                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(trade.status) }]}>
@@ -89,16 +86,17 @@ export default function TradeScreen() {
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'accepted': return '#4CAF50';
-        case 'rejected': return '#FF4444';
-        case 'pending': return '#FFC107';
-        default: return '#999';
+        case 'accepted': return c.success;
+        case 'rejected': return c.danger;
+        case 'pending': return c.warning;
+        default: return c.onSurfaceVariant;
     }
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -108,71 +106,72 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     createButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
+        backgroundColor: c.primary,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: Radii.lg,
     },
     createButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
+        color: c.onPrimary,
+        fontFamily: 'Inter_600SemiBold',
     },
     emptyState: {
         padding: 40,
         alignItems: 'center',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderStyle: 'dashed',
+        borderRadius: Radii.md,
+        backgroundColor: c.surfaceContainerLow,
     },
     emptyText: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
+        marginBottom: Spacing.sm,
     },
     emptySubtext: {
-        opacity: 0.6,
+        color: c.onSurfaceVariant,
     },
     tradeCard: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 16,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.md,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     tradeHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     tradeId: {
-        fontWeight: '600',
-        opacity: 0.7,
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onSurfaceVariant,
     },
     statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: Radii.sm,
     },
     statusText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     tradeDetails: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     label: {
-        fontSize: 12,
-        opacity: 0.6,
-        marginBottom: 4,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.xs,
     },
 });

@@ -1,17 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
+const c = Colors.light;
+
 export default function JoinGroupScreen() {
     const router = useRouter();
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const textColor = useThemeColor({}, 'text' as any);
 
     const [joinCode, setJoinCode] = useState('');
     const [loading, setLoading] = useState(false);
@@ -30,10 +28,10 @@ export default function JoinGroupScreen() {
         setLoading(true);
         try {
             const result = await GroupService.joinByCode(joinCode.trim());
-            
+
             // Navigate directly to the group detail page
             router.push(`/fantasy/group/${result.group.id}`);
-            
+
             // Show success message after navigation
             setTimeout(() => {
                 Alert.alert('Success', `You have joined ${result.group.name}!`);
@@ -58,12 +56,12 @@ export default function JoinGroupScreen() {
                     </ThemedText>
                 </View>
 
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.card}>
                     <ThemedText style={styles.label}>Group Join Code</ThemedText>
                     <TextInput
-                        style={[styles.input, { backgroundColor: cardBg, borderColor, color: textColor }]}
+                        style={styles.input}
                         placeholder="e.g. ABC123"
-                        placeholderTextColor="#888"
+                        placeholderTextColor={c.onSurfaceVariant}
                         value={joinCode}
                         onChangeText={(text) => setJoinCode(text.toUpperCase())}
                         maxLength={6}
@@ -76,7 +74,7 @@ export default function JoinGroupScreen() {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.joinButton, { backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 }]}
+                    style={[styles.joinButton, { opacity: loading ? 0.7 : 1 }]}
                     onPress={handleJoin}
                     disabled={loading}
                 >
@@ -86,13 +84,13 @@ export default function JoinGroupScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.divider}>
-                    <View style={[styles.dividerLine, { backgroundColor: borderColor }]} />
+                    <View style={styles.dividerLine} />
                     <ThemedText style={styles.dividerText}>OR</ThemedText>
-                    <View style={[styles.dividerLine, { backgroundColor: borderColor }]} />
+                    <View style={styles.dividerLine} />
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.createButton, { borderColor }]}
+                    style={styles.createButton}
                     onPress={() => router.push('/fantasy/create-group')}
                 >
                     <ThemedText style={styles.createButtonText}>Create New Group</ThemedText>
@@ -105,82 +103,87 @@ export default function JoinGroupScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
         paddingBottom: 60,
     },
     header: {
-        marginBottom: 32,
+        marginBottom: Spacing.xl,
     },
     subtitle: {
-        marginTop: 8,
-        fontSize: 14,
-        opacity: 0.7,
+        marginTop: Spacing.sm,
+        ...Typography['body-md'],
+        color: c.onSurfaceVariant,
     },
     card: {
-        padding: 20,
-        borderRadius: 16,
-        marginBottom: 24,
-        borderWidth: 1,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        opacity: 0.8,
+        ...Typography['label-lg'],
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.sm,
     },
     input: {
         height: 56,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 16,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
         fontSize: 24,
-        fontWeight: 'bold',
+        fontFamily: 'Inter_600SemiBold',
         letterSpacing: 4,
         textAlign: 'center',
+        color: c.onSurface,
     },
     helperText: {
-        fontSize: 12,
-        opacity: 0.6,
-        marginTop: 8,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginTop: Spacing.sm,
     },
     joinButton: {
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: c.primary,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     joinButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     divider: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     dividerLine: {
         flex: 1,
         height: 1,
+        backgroundColor: c.surfaceContainerHigh,
     },
     dividerText: {
-        marginHorizontal: 16,
-        fontSize: 12,
-        opacity: 0.5,
+        marginHorizontal: Spacing.md,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
     },
     createButton: {
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: c.secondaryContainer,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
         alignItems: 'center',
-        borderWidth: 1,
     },
     createButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onSecondaryContainer,
     },
 });

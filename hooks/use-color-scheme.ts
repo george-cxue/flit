@@ -1,1 +1,4 @@
-export { useColorScheme } from 'react-native';
+// Light mode only — "The Architectural Mentor" design system
+export function useColorScheme() {
+  return 'light' as const;
+}

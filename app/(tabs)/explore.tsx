@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  FlatList,
   Linking,
   RefreshControl,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Typography, Radii, Spacing, AmbientShadow } from '@/constants/theme';
 import { WatchlistService } from '@/src/services/watchlistService';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useFocusEffect } from '@react-navigation/native';
@@ -43,29 +42,24 @@ type SortOption = 'symbol' | 'price' | 'change' | 'changePercent';
 
 export default function ExploreScreen() {
   const { isLoaded, isSignedIn, userId } = useAuthContext();
-  
+  const c = Colors.light;
+
   const [newsSymbol, setNewsSymbol] = useState('');
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loadingNews, setLoadingNews] = useState(false);
   const [newsSearchResults, setNewsSearchResults] = useState<any[]>([]);
-  
+
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchingStocks, setSearchingStocks] = useState(false);
-  
+
   const [sortBy, setSortBy] = useState<SortOption>('symbol');
   const [sortAscending, setSortAscending] = useState(true);
 
-  const primaryColor = useThemeColor({}, 'tint');
-  const cardBg = useThemeColor({}, 'cardBackground');
-  const borderColor = useThemeColor({}, 'border');
-  const textColor = useThemeColor({}, 'text');
-
-  // Fetch watchlist on mount and when screen gains focus - only if authenticated with backend userId
   useFocusEffect(
     useCallback(() => {
       if (isLoaded && isSignedIn && userId) {
@@ -97,10 +91,9 @@ export default function ExploreScreen() {
 
   const searchNews = async () => {
     if (!newsSymbol.trim()) return;
-
     try {
       setLoadingNews(true);
-      setNewsSearchResults([]); // Clear search results when searching
+      setNewsSearchResults([]);
       const articles = await WatchlistService.getStockNews(newsSymbol.trim());
       setNews(articles);
     } catch (error) {
@@ -113,13 +106,11 @@ export default function ExploreScreen() {
 
   const searchNewsSymbols = async (query: string) => {
     setNewsSymbol(query);
-    
     if (!query.trim()) {
       setNewsSearchResults([]);
-      setNews([]); // Also clear news articles when search is cleared
+      setNews([]);
       return;
     }
-
     try {
       const results = await WatchlistService.searchStocks(query);
       setNewsSearchResults(results);
@@ -132,7 +123,6 @@ export default function ExploreScreen() {
   const selectNewsSymbol = async (symbol: string, description: string) => {
     setNewsSymbol(symbol);
     setNewsSearchResults([]);
-    // Automatically fetch news for selected symbol
     try {
       setLoadingNews(true);
       const articles = await WatchlistService.getStockNews(symbol);
@@ -147,12 +137,10 @@ export default function ExploreScreen() {
 
   const searchStocks = async (query: string) => {
     setSearchQuery(query);
-    
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
-
     try {
       setSearchingStocks(true);
       const results = await WatchlistService.searchStocks(query);
@@ -199,41 +187,28 @@ export default function ExploreScreen() {
   const getSortedWatchlist = () => {
     const sorted = [...watchlist].sort((a, b) => {
       let comparison = 0;
-      
       switch (sortBy) {
-        case 'symbol':
-          comparison = a.symbol.localeCompare(b.symbol);
-          break;
-        case 'price':
-          comparison = a.currentPrice - b.currentPrice;
-          break;
-        case 'change':
-          comparison = a.change - b.change;
-          break;
-        case 'changePercent':
-          comparison = a.changePercent - b.changePercent;
-          break;
+        case 'symbol': comparison = a.symbol.localeCompare(b.symbol); break;
+        case 'price': comparison = a.currentPrice - b.currentPrice; break;
+        case 'change': comparison = a.change - b.change; break;
+        case 'changePercent': comparison = a.changePercent - b.changePercent; break;
       }
-      
       return sortAscending ? comparison : -comparison;
     });
-    
     return sorted;
   };
 
-  // Show loading state while authentication is initializing
   if (!isLoaded || (isSignedIn && !userId)) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.centerLoadingContainer}>
-          <ActivityIndicator size="large" color={primaryColor} />
-          <ThemedText style={{ marginTop: 12 }}>Loading...</ThemedText>
+          <ActivityIndicator size="large" color={c.primary} />
+          <ThemedText type="body-md" style={{ marginTop: 12 }}>Loading...</ThemedText>
         </View>
       </ThemedView>
     );
   }
 
-  // Show message if not signed in
   if (!isSignedIn) {
     return (
       <ThemedView style={styles.container}>
@@ -249,32 +224,32 @@ export default function ExploreScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primaryColor} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
         }
       >
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText type="title">Explore</ThemedText>
+          <ThemedText type="headline-lg">Explore</ThemedText>
         </View>
 
         {/* News Search Section */}
-        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Stock News</ThemedText>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
+          <ThemedText type="title-lg" style={styles.sectionTitle}>Stock News</ThemedText>
           <View style={styles.searchContainer}>
             <View style={styles.searchIconWrapper}>
-              <IconSymbol name="magnifyingglass" size={18} color="#999" />
+              <IconSymbol name="magnifyingglass" size={18} color={c.onSurfaceVariant} />
             </View>
             <TextInput
-              style={[styles.searchInputWithIcon, { backgroundColor: cardBg, borderColor, color: textColor }]}
+              style={[styles.searchInputWithIcon, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
               placeholder="Enter stock symbol (e.g., AAPL)"
-              placeholderTextColor="#999"
+              placeholderTextColor={c.onSurfaceVariant}
               value={newsSymbol}
               onChangeText={searchNewsSymbols}
               autoCapitalize="characters"
               onSubmitEditing={searchNews}
             />
             <TouchableOpacity
-              style={[styles.searchButton, { backgroundColor: primaryColor }]}
+              style={[styles.searchButton, { backgroundColor: c.primary }]}
               onPress={searchNews}
             >
               <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
@@ -283,21 +258,24 @@ export default function ExploreScreen() {
 
           {/* News Symbol Search Results */}
           {newsSearchResults.length > 0 && (
-            <View style={[styles.searchResultsContainer, { borderColor, backgroundColor: cardBg }]}>
+            <View style={[styles.searchResultsContainer, { backgroundColor: c.surfaceContainerLowest }]}>
               <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                {newsSearchResults.map((result) => (
+                {newsSearchResults.map((result, idx) => (
                   <TouchableOpacity
                     key={result.symbol}
-                    style={[styles.searchResultItem, { borderBottomColor: borderColor }]}
+                    style={styles.searchResultItem}
                     onPress={() => selectNewsSymbol(result.symbol, result.description)}
                   >
-                    <View>
-                      <ThemedText style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
-                      <ThemedText style={styles.searchResultName} numberOfLines={1}>
-                        {result.description}
-                      </ThemedText>
+                    {idx > 0 && <View style={styles.floatingDivider} />}
+                    <View style={styles.searchResultInner}>
+                      <View>
+                        <ThemedText type="title-md" style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
+                        <ThemedText type="label-md" style={styles.searchResultName} numberOfLines={1}>
+                          {result.description}
+                        </ThemedText>
+                      </View>
+                      <IconSymbol name="arrow.right" size={20} color={c.primary} />
                     </View>
-                    <IconSymbol name="arrow.right" size={20} color={primaryColor} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -306,7 +284,7 @@ export default function ExploreScreen() {
 
           {loadingNews && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator color={primaryColor} />
+              <ActivityIndicator color={c.primary} />
             </View>
           )}
 
@@ -315,15 +293,15 @@ export default function ExploreScreen() {
               {news.slice(0, 5).map((article) => (
                 <TouchableOpacity
                   key={article.id}
-                  style={[styles.newsCard, { borderColor }]}
+                  style={[styles.newsCard, { backgroundColor: c.surfaceContainerLow }]}
                   onPress={() => Linking.openURL(article.url)}
                 >
                   <View style={styles.newsContent}>
-                    <ThemedText style={styles.newsHeadline} numberOfLines={2}>
+                    <ThemedText type="title-md" style={styles.newsHeadline} numberOfLines={2}>
                       {article.headline}
                     </ThemedText>
-                    <ThemedText style={styles.newsSource}>
-                      {article.source || 'Unknown'}{' • '}{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown date'}
+                    <ThemedText type="label-md" style={styles.newsSource}>
+                      {article.source || 'Unknown'}{' \u2022 '}{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown date'}
                     </ThemedText>
                   </View>
                 </TouchableOpacity>
@@ -332,15 +310,15 @@ export default function ExploreScreen() {
           )}
 
           {!loadingNews && newsSymbol && news.length === 0 && (
-            <ThemedText style={styles.noResults}>No news articles found</ThemedText>
+            <ThemedText type="body-md" style={styles.noResults}>No news articles found</ThemedText>
           )}
         </View>
 
         {/* Watchlist Section */}
-        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <View style={styles.watchlistHeader}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>My Watchlist</ThemedText>
-            <ThemedText style={styles.watchlistCount}>
+            <ThemedText type="title-lg" style={styles.sectionTitle}>My Watchlist</ThemedText>
+            <ThemedText type="label-md" style={styles.watchlistCount}>
               {watchlist.length} {watchlist.length === 1 ? 'stock' : 'stocks'}
             </ThemedText>
           </View>
@@ -348,19 +326,19 @@ export default function ExploreScreen() {
           {/* Add to Watchlist Search */}
           <View style={styles.searchContainer}>
             <View style={styles.searchIconWrapper}>
-              <IconSymbol name="magnifyingglass" size={18} color="#999" />
+              <IconSymbol name="magnifyingglass" size={18} color={c.onSurfaceVariant} />
             </View>
             <TextInput
-              style={[styles.searchInputWithIcon, { backgroundColor: cardBg, borderColor, color: textColor }]}
+              style={[styles.searchInputWithIcon, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
               placeholder="Search stocks to add..."
-              placeholderTextColor="#999"
+              placeholderTextColor={c.onSurfaceVariant}
               value={searchQuery}
               onChangeText={searchStocks}
               autoCapitalize="characters"
               onSubmitEditing={() => searchStocks(searchQuery)}
             />
             <TouchableOpacity
-              style={[styles.searchButton, { backgroundColor: primaryColor }]}
+              style={[styles.searchButton, { backgroundColor: c.primary }]}
               onPress={() => searchStocks(searchQuery)}
             >
               <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
@@ -369,21 +347,24 @@ export default function ExploreScreen() {
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <View style={[styles.searchResultsContainer, { borderColor, backgroundColor: cardBg }]}>
+            <View style={[styles.searchResultsContainer, { backgroundColor: c.surfaceContainerLowest }]}>
               <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                {searchResults.map((result) => (
+                {searchResults.map((result, idx) => (
                   <TouchableOpacity
                     key={result.symbol}
-                    style={[styles.searchResultItem, { borderBottomColor: borderColor }]}
+                    style={styles.searchResultItem}
                     onPress={() => addToWatchlist(result.symbol)}
                   >
-                    <View>
-                      <ThemedText style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
-                      <ThemedText style={styles.searchResultName} numberOfLines={1}>
-                        {result.description}
-                      </ThemedText>
+                    {idx > 0 && <View style={styles.floatingDivider} />}
+                    <View style={styles.searchResultInner}>
+                      <View>
+                        <ThemedText type="title-md" style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
+                        <ThemedText type="label-md" style={styles.searchResultName} numberOfLines={1}>
+                          {result.description}
+                        </ThemedText>
+                      </View>
+                      <IconSymbol name="plus.circle.fill" size={24} color={c.primary} />
                     </View>
-                    <IconSymbol name="plus.circle.fill" size={24} color={primaryColor} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -393,7 +374,7 @@ export default function ExploreScreen() {
           {/* Sort Options */}
           {watchlist.length > 0 && (
             <View style={styles.sortContainer}>
-              <ThemedText style={styles.sortLabel}>Sort by:</ThemedText>
+              <ThemedText type="label-md" style={styles.sortLabel}>Sort by:</ThemedText>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortButtons}>
                 {[
                   { key: 'symbol' as SortOption, label: 'Symbol' },
@@ -405,12 +386,14 @@ export default function ExploreScreen() {
                     key={option.key}
                     style={[
                       styles.sortButton,
-                      { borderColor },
-                      sortBy === option.key && { backgroundColor: primaryColor, borderColor: primaryColor },
+                      {
+                        backgroundColor: sortBy === option.key ? c.primary : c.surfaceContainerHigh,
+                      },
                     ]}
                     onPress={() => handleSort(option.key)}
                   >
                     <ThemedText
+                      type="label-md"
                       style={[
                         styles.sortButtonText,
                         sortBy === option.key && styles.sortButtonTextActive,
@@ -427,13 +410,13 @@ export default function ExploreScreen() {
           {/* Watchlist */}
           {loadingWatchlist && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator color={primaryColor} />
+              <ActivityIndicator color={c.primary} />
             </View>
           )}
 
           {!loadingWatchlist && watchlist.length === 0 && (
             <View style={styles.emptyState}>
-              <IconSymbol name="star" size={48} color="#999" />
+              <IconSymbol name="star.fill" size={48} color="#999" />
               <ThemedText style={styles.emptyText}>Your watchlist is empty</ThemedText>
               <ThemedText style={styles.emptyHint}>Search for stocks above to add them</ThemedText>
             </View>
@@ -441,45 +424,50 @@ export default function ExploreScreen() {
 
           {!loadingWatchlist && watchlist.length > 0 && (
             <View style={styles.watchlistContainer}>
-              {getSortedWatchlist().map((item) => (
-                <View key={item.id} style={[styles.watchlistItem, { borderBottomColor: borderColor }]}>
-                  <View style={styles.watchlistItemLeft}>
-                    <View>
-                      <ThemedText style={styles.watchlistSymbol}>{item.symbol}</ThemedText>
-                      <ThemedText style={styles.watchlistName} numberOfLines={1}>
-                        {item.name}
-                      </ThemedText>
+              {getSortedWatchlist().map((item, idx) => (
+                <View key={item.id}>
+                  {idx > 0 && <View style={styles.floatingDivider} />}
+                  <View style={styles.watchlistItem}>
+                    <View style={styles.watchlistItemLeft}>
+                      <View>
+                        <ThemedText type="title-md" style={styles.watchlistSymbol}>{item.symbol}</ThemedText>
+                        <ThemedText type="label-md" style={styles.watchlistName} numberOfLines={1}>
+                          {item.name}
+                        </ThemedText>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.watchlistItemRight}>
-                    <ThemedText style={styles.watchlistPrice}>
-                      ${(item.currentPrice || 0).toFixed(2)}
-                    </ThemedText>
-                    <View style={styles.watchlistChange}>
-                      <ThemedText
-                        style={[
-                          styles.watchlistChangeText,
-                          { color: (item.change || 0) >= 0 ? '#4CAF50' : '#F44336' },
-                        ]}
-                      >
-                        {((item.change || 0) >= 0 ? '+$' : '-$') + Math.abs(item.change || 0).toFixed(2)}
+                    <View style={styles.watchlistItemRight}>
+                      <ThemedText type="title-md" style={styles.watchlistPrice}>
+                        ${(item.currentPrice || 0).toFixed(2)}
                       </ThemedText>
-                      <ThemedText
-                        style={[
-                          styles.watchlistChangePercent,
-                          { color: (item.changePercent || 0) >= 0 ? '#4CAF50' : '#F44336' },
-                        ]}
-                      >
-                        ({((item.changePercent || 0) >= 0 ? '+' : '') + (item.changePercent || 0).toFixed(2)}%)
-                      </ThemedText>
+                      <View style={styles.watchlistChange}>
+                        <ThemedText
+                          type="label-md"
+                          style={[
+                            styles.watchlistChangeText,
+                            { color: (item.change || 0) >= 0 ? c.success : c.danger },
+                          ]}
+                        >
+                          {((item.change || 0) >= 0 ? '+$' : '-$') + Math.abs(item.change || 0).toFixed(2)}
+                        </ThemedText>
+                        <ThemedText
+                          type="label-md"
+                          style={[
+                            styles.watchlistChangePercent,
+                            { color: (item.changePercent || 0) >= 0 ? c.success : c.danger },
+                          ]}
+                        >
+                          ({((item.changePercent || 0) >= 0 ? '+' : '') + (item.changePercent || 0).toFixed(2)}%)
+                        </ThemedText>
+                      </View>
                     </View>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeFromWatchlist(item.id)}
+                    >
+                      <IconSymbol name="xmark.circle.fill" size={24} color={c.danger} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeFromWatchlist(item.id)}
-                  >
-                    <IconSymbol name="xmark.circle.fill" size={24} color="#F44336" />
-                  </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -491,48 +479,36 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    padding: 20,
-    paddingTop: 60,
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  header: { padding: Spacing.lg, paddingTop: 60 },
+
+  // Sections — no border, tonal bg + ambient shadow
   section: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    ...AmbientShadow,
   },
-  sectionTitle: {
-    marginBottom: 12,
-  },
+  sectionTitle: { marginBottom: 12 },
+
+  // Search — filled input style
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   searchInputWithIcon: {
     flex: 1,
     height: 44,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: Radii.md,
     paddingLeft: 40,
     paddingRight: 12,
-    fontSize: 16,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    // No borderWidth
   },
   searchIconWrapper: {
     position: 'absolute',
@@ -544,127 +520,93 @@ const styles = StyleSheet.create({
   searchButton: {
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: Radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchLoader: {
-    position: 'absolute',
-    right: 12,
+
+  loadingContainer: { padding: Spacing.lg, alignItems: 'center' },
+
+  // Search results — ambient shadow instead of border
+  searchResultsContainer: {
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    maxHeight: 200,
+    ...AmbientShadow,
   },
-  loadingContainer: {
-    padding: 20,
+  searchResultItem: {
+    paddingHorizontal: 12,
+  },
+  searchResultInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
   },
-  newsContainer: {
-    gap: 12,
+  searchResultSymbol: {},
+  searchResultName: {
+    color: Colors.light.onSurfaceVariant,
+    marginTop: 2,
   },
+
+  // Floating divider
+  floatingDivider: {
+    height: 1,
+    backgroundColor: Colors.light.surfaceContainerHigh,
+    marginHorizontal: '10%',
+  },
+
+  // News cards — no border, tonal bg
+  newsContainer: { gap: 12 },
   newsCard: {
     padding: 12,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: Radii.sm,
+    // No borderWidth
   },
-  newsContent: {
-    gap: 8,
-  },
-  newsHeadline: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  newsSource: {
-    fontSize: 12,
-    opacity: 0.6,
-  },
+  newsContent: { gap: Spacing.sm },
+  newsHeadline: { lineHeight: 20 },
+  newsSource: { color: Colors.light.onSurfaceVariant },
   noResults: {
     textAlign: 'center',
-    opacity: 0.6,
-    paddingVertical: 16,
+    color: Colors.light.onSurfaceVariant,
+    paddingVertical: Spacing.md,
   },
+
+  // Watchlist header
   watchlistHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  watchlistCount: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  searchResultsContainer: {
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    maxHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-  },
-  searchResultSymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  searchResultName: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 2,
-  },
-  sortContainer: {
-    marginBottom: 16,
-  },
-  sortLabel: {
-    fontSize: 14,
-    opacity: 0.6,
-    marginBottom: 8,
-  },
-  sortButtons: {
-    flexDirection: 'row',
-  },
+  watchlistCount: { color: Colors.light.onSurfaceVariant },
+
+  // Sort pills — no border, pill radius
+  sortContainer: { marginBottom: Spacing.md },
+  sortLabel: { color: Colors.light.onSurfaceVariant, marginBottom: Spacing.sm },
+  sortButtons: { flexDirection: 'row' },
   sortButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginRight: 8,
+    borderRadius: Radii.full,
+    marginRight: Spacing.sm,
+    // No borderWidth
   },
-  sortButtonText: {
-    fontSize: 12,
-  },
-  sortButtonTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-  },
-  emptyHint: {
-    fontSize: 14,
-    opacity: 0.6,
-    marginTop: 4,
-  },
-  watchlistContainer: {
-    gap: 0,
-  },
+  sortButtonText: { color: Colors.light.onSurface },
+  sortButtonTextActive: { color: '#FFFFFF' },
+
+  // Empty state
+  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+  emptyText: { marginTop: 12 },
+  emptyHint: { color: Colors.light.onSurfaceVariant, marginTop: 4 },
+
+  // Watchlist items — floating dividers instead of borderBottom
+  watchlistContainer: { gap: 0 },
   watchlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    // No borderBottomWidth
   },
   watchlistItemLeft: {
     flex: 1,
@@ -672,39 +614,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  watchlistSymbol: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  watchlistName: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 2,
-  },
-  watchlistItemRight: {
-    alignItems: 'flex-end',
-    marginRight: 12,
-  },
-  watchlistPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  watchlistChange: {
-    flexDirection: 'row',
-    gap: 4,
-    marginTop: 2,
-  },
-  watchlistChangeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  watchlistChangePercent: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  removeButton: {
-    padding: 4,
-  },
+  watchlistSymbol: {},
+  watchlistName: { color: Colors.light.onSurfaceVariant, marginTop: 2 },
+  watchlistItemRight: { alignItems: 'flex-end', marginRight: 12 },
+  watchlistPrice: {},
+  watchlistChange: { flexDirection: 'row', gap: 4, marginTop: 2 },
+  watchlistChangeText: {},
+  watchlistChangePercent: {},
+  removeButton: { padding: 4 },
+
   centerLoadingContainer: {
     flex: 1,
     justifyContent: 'center',

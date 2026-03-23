@@ -1,11 +1,13 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow, AmbientShadow } from '@/constants/theme';
 import { PortfolioService } from '@/src/services/fantasy/portfolioService';
 import { Portfolio, PortfolioSlot } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+const c = Colors.light;
 
 export default function PortfolioScreen() {
     const { id, userId, readonly } = useLocalSearchParams(); // Group ID, optional userId, readonly flag
@@ -13,12 +15,6 @@ export default function PortfolioScreen() {
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const successColor = '#4CAF50';
-    const dangerColor = '#FF4444';
 
     const isReadOnly = readonly === 'true';
 
@@ -75,7 +71,7 @@ export default function PortfolioScreen() {
     if (loading) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -93,8 +89,7 @@ export default function PortfolioScreen() {
             key={slot.id}
             style={[
                 styles.slotCard,
-                { backgroundColor: cardBg, borderColor },
-                selectedSlot === slot.id && { borderColor: primaryColor, borderWidth: 2 }
+                selectedSlot === slot.id && { backgroundColor: c.surfaceContainerLow }
             ]}
             onPress={() => !isReadOnly && handleSlotPress(slot)}
             disabled={isReadOnly}
@@ -111,12 +106,13 @@ export default function PortfolioScreen() {
                     <ThemedText style={styles.value}>${slot.totalValue.toFixed(2)}</ThemedText>
                     <ThemedText style={[
                         styles.gainLoss,
-                        { color: slot.gainLossPercent >= 0 ? successColor : dangerColor }
+                        { color: slot.gainLossPercent >= 0 ? c.success : c.danger }
                     ]}>
                         {slot.gainLossPercent >= 0 ? '+' : ''}{slot.gainLossPercent.toFixed(2)}%
                     </ThemedText>
                 </View>
             </View>
+            <View style={styles.slotDivider} />
             <View style={styles.slotDetails}>
                 <View style={styles.detailRow}>
                     <ThemedText style={styles.detailLabel}>Shares:</ThemedText>
@@ -138,7 +134,7 @@ export default function PortfolioScreen() {
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 {/* Header Stats */}
-                <View style={[styles.headerCard, { backgroundColor: primaryColor }]}>
+                <View style={styles.headerCard}>
                     <View style={styles.portfolioHeader}>
                         <ThemedText style={styles.portfolioName}>{portfolio.name}</ThemedText>
                         {isReadOnly && (
@@ -172,10 +168,10 @@ export default function PortfolioScreen() {
             </ScrollView>
 
             {!isReadOnly && selectedSlot && (
-                <View style={[styles.actionBar, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
+                <View style={styles.actionBar}>
                     <ThemedText>Select another slot to swap</ThemedText>
                     <TouchableOpacity onPress={() => setSelectedSlot(null)}>
-                        <ThemedText style={{ color: dangerColor }}>Cancel</ThemedText>
+                        <ThemedText style={{ color: c.danger }}>Cancel</ThemedText>
                     </TouchableOpacity>
                 </View>
             )}
@@ -186,6 +182,7 @@ export default function PortfolioScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -195,36 +192,38 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
         paddingBottom: 80,
     },
     headerCard: {
-        padding: 20,
-        borderRadius: 16,
-        marginBottom: 24,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.primary,
+        ...AmbientShadow,
     },
     portfolioHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: Spacing.md,
     },
     portfolioName: {
-        color: '#FFFFFF',
+        color: c.onPrimary,
         fontSize: 24,
-        fontWeight: 'bold',
+        fontFamily: 'Manrope_700Bold',
         flex: 1,
     },
     readOnlyBadge: {
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: Radii.sm,
     },
     readOnlyText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     statsRow: {
         flexDirection: 'row',
@@ -232,37 +231,38 @@ const styles = StyleSheet.create({
     },
     statLabel: {
         color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
-        marginBottom: 4,
+        ...Typography['label-md'],
+        marginBottom: Spacing.xs,
     },
     statValue: {
-        color: '#FFFFFF',
+        color: c.onPrimary,
         fontSize: 20,
-        fontWeight: 'bold',
+        fontFamily: 'Manrope_700Bold',
     },
     section: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     sectionTitle: {
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     emptyText: {
-        fontSize: 14,
-        opacity: 0.5,
+        ...Typography['body-md'],
+        color: c.onSurfaceVariant,
         fontStyle: 'italic',
         textAlign: 'center',
-        paddingVertical: 16,
+        paddingVertical: Spacing.md,
     },
     slotCard: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 12,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.md,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     slotHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     slotHeaderLeft: {
         flex: 1,
@@ -271,54 +271,55 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     ticker: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 4,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
+        marginBottom: Spacing.xs,
     },
     value: {
-        fontSize: 18,
-        fontWeight: '700',
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     gainLoss: {
-        fontSize: 14,
-        fontWeight: '600',
+        ...Typography['body-md'],
+        fontFamily: 'Inter_600SemiBold',
         marginTop: 2,
     },
     assetName: {
+        ...Typography['body-md'],
         fontSize: 13,
-        opacity: 0.7,
+        color: c.onSurfaceVariant,
+    },
+    slotDivider: {
+        height: 1,
+        backgroundColor: c.surfaceContainerHigh,
+        marginHorizontal: '10%',
     },
     slotDetails: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(128, 128, 128, 0.2)',
+        paddingTop: Spacing.md,
     },
     detailRow: {
         flex: 1,
         alignItems: 'center',
     },
     detailLabel: {
+        ...Typography['label-md'],
         fontSize: 11,
-        opacity: 0.6,
-        marginBottom: 4,
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.xs,
     },
     detailValue: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    slotSub: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        ...Typography['body-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     actionBar: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 16,
-        borderTopWidth: 1,
+        padding: Spacing.md,
+        backgroundColor: c.surfaceContainerLow,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',

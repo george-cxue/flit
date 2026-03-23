@@ -26,9 +26,9 @@ export const getAuthenticatedUserId = (): string | null => {
 
 // Determine the API base URL based on the environment
 const getApiUrl = (): string => {
-  // Explicit override - use when testing on physical device with Expo Go + deployed backend
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const explicitApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (explicitApiUrl) {
+    return explicitApiUrl.endsWith('/api') ? explicitApiUrl : `${explicitApiUrl}/api`;
   }
 
   // Check if we're in development mode

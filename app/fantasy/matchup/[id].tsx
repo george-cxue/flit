@@ -1,22 +1,18 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { MatchupService } from '@/src/services/fantasy/matchupService';
 import { Matchup } from '@/src/types/fantasy';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
+const c = Colors.light;
+
 export default function MatchupScreen() {
     const { id } = useLocalSearchParams(); // Group ID
     const [matchup, setMatchup] = useState<Matchup | undefined>(undefined);
     const [loading, setLoading] = useState(true);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const successColor = '#4CAF50';
-    const dangerColor = '#FF4444';
 
     useEffect(() => {
         const fetchMatchup = async () => {
@@ -27,7 +23,6 @@ export default function MatchupScreen() {
                 }
             } catch (error) {
                 console.error('Failed to fetch matchup:', error);
-                // Optionally, set an error state here to display a message to the user
             } finally {
                 setLoading(false);
             }
@@ -38,7 +33,7 @@ export default function MatchupScreen() {
     if (loading) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -62,12 +57,12 @@ export default function MatchupScreen() {
                     <ThemedText style={styles.subtitle}>Head-to-Head</ThemedText>
                 </View>
 
-                <View style={[styles.matchupCard, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.matchupCard}>
                     {/* User A (You) */}
                     <View style={styles.teamContainer}>
                         <ThemedText style={styles.avatar}>{matchup.userAAvatar}</ThemedText>
                         <ThemedText style={styles.teamName}>{matchup.userAPortfolioName}</ThemedText>
-                        <ThemedText style={[styles.score, { color: isUserAWinning ? successColor : undefined }]}>
+                        <ThemedText style={[styles.score, isUserAWinning && { color: c.success }]}>
                             {matchup.scoreA.toFixed(2)}%
                         </ThemedText>
                         {isUserAWinning && <ThemedText style={styles.winningIndicator}>Winning</ThemedText>}
@@ -81,7 +76,7 @@ export default function MatchupScreen() {
                     <View style={styles.teamContainer}>
                         <ThemedText style={styles.avatar}>{matchup.userBAvatar}</ThemedText>
                         <ThemedText style={styles.teamName}>{matchup.userBPortfolioName}</ThemedText>
-                        <ThemedText style={[styles.score, { color: isUserBWinning ? successColor : undefined }]}>
+                        <ThemedText style={[styles.score, isUserBWinning && { color: c.success }]}>
                             {matchup.scoreB.toFixed(2)}%
                         </ThemedText>
                         {isUserBWinning && <ThemedText style={styles.winningIndicator}>Winning</ThemedText>}
@@ -91,7 +86,7 @@ export default function MatchupScreen() {
                 {/* Detailed Stats (Placeholder) */}
                 <View style={styles.section}>
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Matchup Details</ThemedText>
-                    <View style={[styles.detailsCard, { backgroundColor: cardBg, borderColor }]}>
+                    <View style={styles.detailsCard}>
                         <ThemedText style={styles.placeholderText}>
                             Detailed asset performance breakdown coming soon.
                         </ThemedText>
@@ -106,6 +101,7 @@ export default function MatchupScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -115,28 +111,29 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     title: {
         fontSize: 24,
-        marginBottom: 4,
+        marginBottom: Spacing.xs,
     },
     subtitle: {
-        fontSize: 16,
-        opacity: 0.7,
+        ...Typography['title-md'],
+        color: c.onSurfaceVariant,
     },
     matchupCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        marginBottom: 24,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     teamContainer: {
         flex: 1,
@@ -144,47 +141,48 @@ const styles = StyleSheet.create({
     },
     avatar: {
         fontSize: 32,
-        marginBottom: 8,
+        marginBottom: Spacing.sm,
     },
     teamName: {
-        fontSize: 14,
-        fontWeight: '600',
+        ...Typography['body-md'],
+        fontFamily: 'Inter_600SemiBold',
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: Spacing.sm,
         height: 40, // Fixed height for alignment
     },
     score: {
         fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 4,
+        fontFamily: 'Manrope_700Bold',
+        marginBottom: Spacing.xs,
     },
     winningIndicator: {
-        fontSize: 12,
-        color: '#4CAF50',
-        fontWeight: 'bold',
+        ...Typography['label-md'],
+        color: c.success,
+        fontFamily: 'Inter_600SemiBold',
     },
     vsContainer: {
-        paddingHorizontal: 12,
+        paddingHorizontal: Spacing.md,
     },
     vsText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        opacity: 0.5,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onSurfaceVariant,
     },
     section: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     sectionTitle: {
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     detailsCard: {
-        padding: 20,
-        borderRadius: 12,
-        borderWidth: 1,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
         alignItems: 'center',
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     placeholderText: {
-        opacity: 0.6,
+        color: c.onSurfaceVariant,
         fontStyle: 'italic',
     },
 });

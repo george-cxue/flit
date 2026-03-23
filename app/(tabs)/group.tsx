@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Typography, Radii, Spacing, AmbientShadow } from '@/constants/theme';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePortfolio } from '@/contexts/portfolio-context';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export default function FantasyHubScreen() {
   const router = useRouter();
@@ -17,22 +18,22 @@ export default function FantasyHubScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [joiningTournament, setJoiningTournament] = useState(false);
 
-  const primaryColor = useThemeColor({}, 'primary' as any);
-  const cardBg = useThemeColor({}, 'cardBackground' as any);
-  const borderColor = useThemeColor({}, 'border' as any);
-
+  const c = Colors.light;
   const { getPortfolioByLeague, setSelectedLeagueId, refreshPortfolios } = usePortfolio();
+  const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
 
   const fetchGroups = async () => {
+    if (!authLoaded || !isSignedIn || !userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const data = await GroupService.getGroups();
       setGroups(data);
-
-      // Fetch tournament
       const tournamentData = await GroupService.getActiveTournament();
       setTournament(tournamentData);
-
-      // Refresh portfolios from backend
       await refreshPortfolios();
     } catch (error) {
       console.error('Failed to fetch groups:', error);
@@ -42,11 +43,10 @@ export default function FantasyHubScreen() {
     }
   };
 
-  // Refetch groups every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-    }, [])
+    }, [authLoaded, isSignedIn, userId])
   );
 
   const onRefresh = () => {
@@ -68,11 +68,9 @@ export default function FantasyHubScreen() {
 
   const handleJoinTournament = async () => {
     if (!tournament || joiningTournament) return;
-    
     setJoiningTournament(true);
     try {
       await GroupService.joinTournament(tournament.id);
-      // Refresh to get updated tournament data
       await fetchGroups();
     } catch (error: any) {
       console.error('Failed to join tournament:', error);
@@ -85,7 +83,7 @@ export default function FantasyHubScreen() {
   if (loading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={primaryColor} />
+        <ActivityIndicator size="large" color={c.primary} />
       </ThemedView>
     );
   }
@@ -95,67 +93,69 @@ export default function FantasyHubScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
       >
         <View style={styles.header}>
-          <ThemedText type="title" style={styles.title}>Social</ThemedText>
-          <ThemedText style={styles.subtitle}>Compete with friends, risk-free.</ThemedText>
+          <ThemedText type="headline-lg" style={styles.title}>Social</ThemedText>
+          <ThemedText type="body-md" style={styles.subtitle}>Compete with friends, risk-free.</ThemedText>
         </View>
 
         {/* Monthly Tournament */}
         {tournament && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <ThemedText type="subtitle">🏆 Monthly Tournament</ThemedText>
+              <ThemedText type="title-lg">Monthly Tournament</ThemedText>
             </View>
-            
-            <View style={[styles.tournamentCard, { backgroundColor: cardBg, borderColor: primaryColor }]}>
-              {/* Tournament Header */}
+
+            <View style={[styles.tournamentCard, { backgroundColor: c.surfaceContainerLowest }]}>
               <View style={styles.tournamentHeader}>
                 <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.tournamentName}>{tournament.name}</ThemedText>
-                  <ThemedText style={styles.tournamentDescription}>
-                    {tournament.description || 'Open to everyone • No join code required'}
+                  <ThemedText type="title-lg" style={styles.tournamentName}>{tournament.name}</ThemedText>
+                  <ThemedText type="body-md" style={styles.tournamentDescription}>
+                    {tournament.description || 'Open to everyone \u2022 No join code required'}
                   </ThemedText>
                 </View>
-                <View style={[styles.tournamentBadge, { backgroundColor: primaryColor }]}>
-                  <ThemedText style={styles.tournamentBadgeText}>LIVE</ThemedText>
+                <View style={[styles.tournamentBadge, { backgroundColor: c.primary }]}>
+                  <ThemedText type="label-md" style={styles.tournamentBadgeText}>LIVE</ThemedText>
                 </View>
               </View>
 
-              {/* Tournament Stats */}
-              <View style={styles.tournamentStats}>
-                <View style={styles.tournamentStat}>
-                  <ThemedText style={styles.tournamentStatValue}>{tournament.memberCount || 0}</ThemedText>
-                  <ThemedText style={styles.tournamentStatLabel}>Participants</ThemedText>
+              {/* Stats — floating dividers instead of borders */}
+              <View style={styles.tournamentStatsWrapper}>
+                <View style={styles.floatingDivider} />
+                <View style={styles.tournamentStats}>
+                  <View style={styles.tournamentStat}>
+                    <ThemedText type="title-lg" style={styles.tournamentStatValue}>{tournament.memberCount || 0}</ThemedText>
+                    <ThemedText type="label-md" style={styles.tournamentStatLabel}>Participants</ThemedText>
+                  </View>
+                  <View style={styles.tournamentStat}>
+                    <ThemedText type="title-lg" style={styles.tournamentStatValue}>Top 10</ThemedText>
+                    <ThemedText type="label-md" style={styles.tournamentStatLabel}>Win Rewards</ThemedText>
+                  </View>
+                  <View style={styles.tournamentStat}>
+                    <ThemedText type="title-lg" style={[styles.tournamentStatValue, { color: c.primary }]}>
+                      {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()}d
+                    </ThemedText>
+                    <ThemedText type="label-md" style={styles.tournamentStatLabel}>Remaining</ThemedText>
+                  </View>
                 </View>
-                <View style={styles.tournamentStat}>
-                  <ThemedText style={styles.tournamentStatValue}>Top 10</ThemedText>
-                  <ThemedText style={styles.tournamentStatLabel}>Win Rewards</ThemedText>
-                </View>
-                <View style={styles.tournamentStat}>
-                  <ThemedText style={[styles.tournamentStatValue, { color: primaryColor }]}>
-                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()}d
-                  </ThemedText>
-                  <ThemedText style={styles.tournamentStatLabel}>Remaining</ThemedText>
-                </View>
+                <View style={styles.floatingDivider} />
               </View>
 
-              {/* Action Button */}
               {tournament.isUserMember ? (
                 <TouchableOpacity
-                  style={[styles.tournamentButton, { backgroundColor: primaryColor }]}
+                  style={[styles.tournamentButton, { backgroundColor: c.primary }]}
                   onPress={() => handleGroupPress(tournament.id)}
                 >
-                  <ThemedText style={styles.tournamentButtonText}>View Leaderboard</ThemedText>
+                  <ThemedText type="title-md" style={styles.tournamentButtonText}>View Leaderboard</ThemedText>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  style={[styles.tournamentButton, { backgroundColor: primaryColor }]}
+                  style={[styles.tournamentButton, { backgroundColor: c.primary }]}
                   onPress={handleJoinTournament}
                   disabled={joiningTournament}
                 >
-                  <ThemedText style={styles.tournamentButtonText}>
+                  <ThemedText type="title-md" style={styles.tournamentButtonText}>
                     {joiningTournament ? 'Joining...' : 'Join Tournament'}
                   </ThemedText>
                 </TouchableOpacity>
@@ -167,33 +167,33 @@ export default function FantasyHubScreen() {
         {/* Active Groups */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Your Groups</ThemedText>
+            <ThemedText type="title-lg">Your Groups</ThemedText>
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={handleJoinGroup}>
-                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Join Group</ThemedText>
+                <ThemedText type="label-lg" style={[styles.createLink, { color: c.primary }]}>Join Group</ThemedText>
               </TouchableOpacity>
-              <ThemedText style={styles.dividerDot}>•</ThemedText>
+              <ThemedText type="label-md" style={styles.dividerDot}>{'\u2022'}</ThemedText>
               <TouchableOpacity onPress={handleCreateGroup}>
-                <ThemedText style={[styles.createLink, { color: primaryColor }]}>Create New</ThemedText>
+                <ThemedText type="label-lg" style={[styles.createLink, { color: c.primary }]}>Create New</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
 
           {groups.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: cardBg, borderColor }]}>
-              <ThemedText style={styles.emptyStateText}>You haven't joined any groups yet.</ThemedText>
+            <View style={[styles.emptyState, { backgroundColor: c.surfaceContainerLow }]}>
+              <ThemedText type="body-lg" style={styles.emptyStateText}>You haven&apos;t joined any groups yet.</ThemedText>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: primaryColor }]}
+                  style={[styles.primaryButton, { backgroundColor: c.primary }]}
                   onPress={handleCreateGroup}
                 >
-                  <ThemedText style={styles.primaryButtonText}>Create Group</ThemedText>
+                  <ThemedText type="title-md" style={styles.primaryButtonText}>Create Group</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: primaryColor }]}
+                  style={[styles.secondaryButton, { backgroundColor: c.secondaryContainer }]}
                   onPress={handleJoinGroup}
                 >
-                  <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>Join Group</ThemedText>
+                  <ThemedText type="title-md" style={[styles.secondaryButtonText, { color: c.onSecondaryContainer }]}>Join Group</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -204,44 +204,43 @@ export default function FantasyHubScreen() {
               const currentValue = portfolio?.totalValue || startingBalance;
               const dollarChange = currentValue - startingBalance;
               const percentChange = ((dollarChange / startingBalance) * 100);
-              
+
               return (
                 <View
                   key={group.id}
-                  style={[styles.groupCard, { backgroundColor: cardBg, borderColor }]}
+                  style={[styles.groupCard, { backgroundColor: c.surfaceContainerLowest }]}
                 >
-                  {/* Status Badge - Top Right */}
-                  <View style={[styles.statusBadge, { 
-                    backgroundColor: group.status === 'completed' ? '#9E9E9E' : group.status === 'active' ? '#4CAF50' : '#FFC107',
+                  {/* Status Badge */}
+                  <View style={[styles.statusBadge, {
+                    backgroundColor: group.status === 'completed' ? c.onSurfaceVariant : group.status === 'active' ? c.success : c.warning,
                     position: 'absolute',
                     top: 16,
                     right: 16,
                     zIndex: 1,
                   }]}>
-                    <ThemedText style={styles.statusText}>{group.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
+                    <ThemedText type="label-md" style={styles.statusText}>{group.status?.toUpperCase() || 'PRE-DRAFT'}</ThemedText>
                   </View>
 
-                  {/* Group Info Section - Click to view group details */}
+                  {/* Group Info */}
                   <TouchableOpacity
                     onPress={() => handleGroupPress(group.id)}
                     activeOpacity={0.7}
-                    style={styles.groupInfoSection}
                   >
                     <View style={styles.groupCardHeader}>
                       <View style={styles.groupHeaderLeft}>
                         <ThemedText style={styles.groupIcon}>👥</ThemedText>
                         <View>
-                          <ThemedText style={styles.groupName}>{group.name}</ThemedText>
-                          <ThemedText style={styles.groupDetails}>
-                            {group.members?.length || 0} Members • Week {group.currentWeek || 0}
+                          <ThemedText type="title-md" style={styles.groupName}>{group.name}</ThemedText>
+                          <ThemedText type="label-md" style={styles.groupDetails}>
+                            {group.members?.length || 0} Members {'\u2022'} Week {group.currentWeek || 0}
                           </ThemedText>
                         </View>
                       </View>
-                      <ThemedText style={[styles.chevron, { opacity: 0.3 }]}>›</ThemedText>
+                      <ThemedText style={styles.chevron}>›</ThemedText>
                     </View>
                   </TouchableOpacity>
 
-                  {/* Portfolio Section - Click to view/edit portfolio */}
+                  {/* Portfolio Section — floating divider instead of borderTop */}
                   {portfolio && (
                     <TouchableOpacity
                       onPress={() => {
@@ -249,33 +248,34 @@ export default function FantasyHubScreen() {
                         router.push('/(tabs)/portfolio');
                       }}
                       activeOpacity={0.7}
-                      style={[styles.portfolioSection, { backgroundColor: 'rgba(0, 0, 0, 0.02)' }]}
+                      style={styles.portfolioSection}
                     >
+                      <View style={styles.floatingDivider} />
                       <View style={styles.portfolioHeader}>
                         <ThemedText style={styles.portfolioIcon}>💼</ThemedText>
                         <View style={styles.portfolioContent}>
-                          <ThemedText style={styles.portfolioLabel}>My Portfolio</ThemedText>
+                          <ThemedText type="label-md" style={styles.portfolioLabel}>My Portfolio</ThemedText>
                           <View style={styles.portfolioValueContainer}>
-                            <ThemedText style={styles.portfolioValueLarge}>
+                            <ThemedText type="title-lg" style={styles.portfolioValueLarge}>
                               ${currentValue.toFixed(2)}
                             </ThemedText>
                             <View style={styles.portfolioChange}>
-                              <ThemedText style={[
+                              <ThemedText type="label-lg" style={[
                                 styles.portfolioChangeText,
-                                { color: dollarChange >= 0 ? '#4CAF50' : '#F44336' }
+                                { color: dollarChange >= 0 ? c.success : c.danger }
                               ]}>
                                 {dollarChange >= 0 ? '+$' : '-$'}{Math.abs(dollarChange).toFixed(2)}
                               </ThemedText>
-                              <ThemedText style={[
+                              <ThemedText type="label-md" style={[
                                 styles.portfolioChangePercent,
-                                { color: percentChange >= 0 ? '#4CAF50' : '#F44336' }
+                                { color: percentChange >= 0 ? c.success : c.danger }
                               ]}>
                                 ({percentChange >= 0 ? '+' : ''}{percentChange.toFixed(2)}%)
                               </ThemedText>
                             </View>
                           </View>
                         </View>
-                        <ThemedText style={[styles.chevron, { opacity: 0.3 }]}>›</ThemedText>
+                        <ThemedText style={styles.chevron}>›</ThemedText>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -284,110 +284,73 @@ export default function FantasyHubScreen() {
             })
           )}
         </View>
-
       </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 32,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  section: {
-    marginBottom: 24,
-  },
+  container: { flex: 1 },
+  centered: { justifyContent: 'center', alignItems: 'center' },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: Spacing.lg, paddingBottom: 40 },
+
+  header: { marginBottom: Spacing.lg },
+  title: { marginBottom: 4 },
+  subtitle: { color: Colors.light.onSurfaceVariant },
+
+  section: { marginBottom: Spacing.lg },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: {
-    marginBottom: 12,
-  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
-  dividerDot: {
-    fontSize: 14,
-    opacity: 0.5,
-  },
-  createLink: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  dividerDot: { color: Colors.light.onSurfaceVariant },
+  createLink: {},
+
+  // Empty state — tonal bg, no dashed border
   emptyState: {
-    padding: 24,
-    borderRadius: 16,
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
+    // No borderWidth, no borderStyle: 'dashed'
   },
   emptyStateText: {
-    marginBottom: 16,
-    opacity: 0.7,
+    marginBottom: Spacing.md,
+    color: Colors.light.onSurfaceVariant,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  buttonRow: { flexDirection: 'row', gap: 12 },
   primaryButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: Radii.lg,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
+  primaryButtonText: { color: '#FFFFFF' },
   secondaryButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: Radii.lg,
+    // No borderWidth
   },
-  secondaryButtonText: {
-    fontWeight: '600',
-  },
+  secondaryButtonText: {},
+
+  // Group cards — no border, ambient shadow
   groupCard: {
-    borderRadius: 12,
+    borderRadius: Radii.md,
     marginBottom: 12,
-    borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
-  },
-  groupInfoSection: {
-    // No background - uses card background
+    ...AmbientShadow,
   },
   groupCardHeader: {
-    padding: 16,
-    paddingRight: 80, // Make room for the absolute positioned badge
-    paddingBottom: 16,
+    padding: Spacing.md,
+    paddingRight: 80,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -398,144 +361,102 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  groupIcon: {
-    fontSize: 28,
-  },
-  groupName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
+  groupIcon: { fontSize: 28 },
+  groupName: { marginBottom: 4 },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: Radii.sm,
   },
   statusText: {
     color: '#FFFFFF',
+    fontFamily: Typography['label-md'].fontFamily,
     fontSize: 10,
-    fontWeight: 'bold',
   },
-  groupDetails: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  chevron: {
-    fontSize: 32,
-    fontWeight: '300',
-  },
+  groupDetails: { color: Colors.light.onSurfaceVariant },
+  chevron: { fontSize: 32, color: Colors.light.onSurfaceVariant, opacity: 0.4 },
+
+  // Portfolio section — floating divider
   portfolioSection: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  floatingDivider: {
+    height: 1,
+    backgroundColor: Colors.light.surfaceContainerHigh,
+    marginHorizontal: '10%',
+    marginBottom: Spacing.md,
   },
   portfolioHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  portfolioIcon: {
-    fontSize: 24,
-  },
-  portfolioContent: {
-    flex: 1,
-  },
+  portfolioIcon: { fontSize: 24 },
+  portfolioContent: { flex: 1 },
   portfolioLabel: {
-    fontSize: 12,
-    opacity: 0.5,
+    color: Colors.light.onSurfaceVariant,
     marginBottom: 4,
-    fontWeight: '500',
   },
   portfolioValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  portfolioValueLarge: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
+  portfolioValueLarge: {},
   portfolioChange: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  portfolioChangeText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  portfolioChangePercent: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  portfolioChangeText: {},
+  portfolioChangePercent: {},
+
+  // Tournament card — ambient shadow, no border
   tournamentCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    ...AmbientShadow,
   },
   tournamentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
-  tournamentName: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
+  tournamentName: { marginBottom: 6 },
   tournamentDescription: {
-    fontSize: 13,
-    opacity: 0.7,
+    color: Colors.light.onSurfaceVariant,
     lineHeight: 18,
   },
   tournamentBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: Radii.sm,
   },
   tournamentBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  tournamentStatsWrapper: {
+    marginBottom: Spacing.md,
   },
   tournamentStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    marginBottom: 16,
+    paddingVertical: Spacing.md,
   },
-  tournamentStat: {
-    alignItems: 'center',
-  },
-  tournamentStatValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
+  tournamentStat: { alignItems: 'center' },
+  tournamentStatValue: { marginBottom: 4 },
   tournamentStatLabel: {
-    fontSize: 11,
-    opacity: 0.6,
+    color: Colors.light.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   tournamentButton: {
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
-  tournamentButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  tournamentButtonText: { color: '#FFFFFF' },
 });
