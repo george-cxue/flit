@@ -8,6 +8,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePortfolio } from '@/contexts/portfolio-context';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export default function FantasyHubScreen() {
   const router = useRouter();
@@ -19,8 +20,15 @@ export default function FantasyHubScreen() {
 
   const c = Colors.light;
   const { getPortfolioByLeague, setSelectedLeagueId, refreshPortfolios } = usePortfolio();
+  const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
 
   const fetchGroups = async () => {
+    if (!authLoaded || !isSignedIn || !userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const data = await GroupService.getGroups();
       setGroups(data);
@@ -38,7 +46,7 @@ export default function FantasyHubScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-    }, [])
+    }, [authLoaded, isSignedIn, userId])
   );
 
   const onRefresh = () => {

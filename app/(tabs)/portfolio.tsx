@@ -15,11 +15,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export default function PortfolioScreen() {
   const { leagueId: paramLeagueId } = useLocalSearchParams();
   const [groups, setGroups] = React.useState<Group[]>([]);
-  const c = Colors.light;
+  const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
 
   const {
     selectedLeagueId,
@@ -43,6 +44,11 @@ export default function PortfolioScreen() {
 
   useEffect(() => {
     const fetchGroups = async () => {
+      if (!authLoaded || !isSignedIn || !userId) {
+        setGroups([]);
+        return;
+      }
+
       try {
         const data = await GroupService.getGroups();
         setGroups(data);
@@ -51,7 +57,7 @@ export default function PortfolioScreen() {
       }
     };
     fetchGroups();
-  }, []);
+  }, [authLoaded, isSignedIn, userId]);
 
   useEffect(() => {
     if (paramLeagueId && typeof paramLeagueId === 'string') {

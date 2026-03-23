@@ -26,6 +26,11 @@ export const getAuthenticatedUserId = (): string | null => {
 
 // Determine the API base URL based on the environment
 const getApiUrl = (): string => {
+  const explicitApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (explicitApiUrl) {
+    return explicitApiUrl.endsWith('/api') ? explicitApiUrl : `${explicitApiUrl}/api`;
+  }
+
   // Check if we're in development mode
   const isDev = __DEV__;
 
@@ -46,8 +51,7 @@ const getApiUrl = (): string => {
     return 'http://localhost:3000/api';
   }
 
-  // Production URL (update this when you deploy)
-  return 'https://your-production-api.com/api';
+  throw new Error('Missing EXPO_PUBLIC_API_URL for non-development build');
 };
 
 // Create axios instance with default config
