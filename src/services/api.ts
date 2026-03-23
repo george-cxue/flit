@@ -26,6 +26,11 @@ export const getAuthenticatedUserId = (): string | null => {
 
 // Determine the API base URL based on the environment
 const getApiUrl = (): string => {
+  // Explicit override - use when testing on physical device with Expo Go + deployed backend
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
   // Check if we're in development mode
   const isDev = __DEV__;
 
@@ -46,14 +51,16 @@ const getApiUrl = (): string => {
     return 'http://localhost:3000/api';
   }
 
-  // Production URL (update this when you deploy)
-  return 'https://your-production-api.com/api';
+  // Production URL
+  return 'https://flit-backend.onrender.com/api';
 };
 
 // Create axios instance with default config
+const apiBaseUrl = getApiUrl();
 export const apiClient = axios.create({
-  baseURL: getApiUrl(),
-  timeout: 10000, // 10 second timeout
+  baseURL: apiBaseUrl,
+  // 45s timeout for remote APIs (Render cold start can take ~30–50s on free tier)
+  timeout: apiBaseUrl.includes('onrender.com') ? 45000 : 10000,
   headers: {
     'Content-Type': 'application/json',
   },
