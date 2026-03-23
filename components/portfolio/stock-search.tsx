@@ -5,6 +5,9 @@ import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Stock } from '@/types/portfolio';
 import { apiClient } from '@/src/services/api';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+
+const c = Colors.light;
 
 interface StockSearchProps {
   liquidFunds: number;
@@ -22,8 +25,6 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
 
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBackground = useThemeColor({}, 'cardBackground');
 
   // Fetch stocks from API when search query changes
   useEffect(() => {
@@ -50,8 +51,8 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
           name: asset.name,
           currentPrice: asset.currentPrice,
           previousClose: asset.previousClose,
-          changePercent: asset.previousClose > 0 
-            ? ((asset.currentPrice - asset.previousClose) / asset.previousClose) * 100 
+          changePercent: asset.previousClose > 0
+            ? ((asset.currentPrice - asset.previousClose) / asset.previousClose) * 100
             : 0,
           sector: asset.sector || 'Unknown',
           marketCap: asset.marketCap,
@@ -108,14 +109,14 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
         </ThemedText>
       </View>
 
-      <View style={[styles.searchContainer, { borderColor: primaryColor }]}>
+      <View style={styles.searchContainer}>
         <ThemedText style={styles.searchIcon}>🔍</ThemedText>
         <TextInput
           style={[styles.searchInput, { color: textColor }]}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search stocks by symbol, name, or sector..."
-          placeholderTextColor="#888"
+          placeholderTextColor={c.onSurfaceVariant}
         />
       </View>
 
@@ -127,7 +128,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
       )}
 
       {!loading && filteredStocks.length > 0 && (
-        <View style={[styles.resultsContainer, { backgroundColor: cardBackground }]}>
+        <View style={styles.resultsContainer}>
           <FlatList
             data={filteredStocks}
             keyExtractor={(item) => item.symbol}
@@ -151,7 +152,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                   <ThemedText
                     style={[
                       styles.priceChange,
-                      { color: item.changePercent >= 0 ? '#10b981' : '#ef4444' },
+                      { color: item.changePercent >= 0 ? c.success : c.danger },
                     ]}
                   >
                     {item.changePercent >= 0 ? '+' : ''}
@@ -172,7 +173,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
         onRequestClose={() => setShowModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <ThemedView style={[styles.modalContent, { backgroundColor }]}>
+          <ThemedView style={styles.modalContent}>
             {selectedStock && (
               <>
                 <View style={styles.modalHeader}>
@@ -185,7 +186,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                   </TouchableOpacity>
                 </View>
 
-                <View style={[styles.priceCard, { backgroundColor: cardBackground }]}>
+                <View style={styles.priceCard}>
                   <ThemedText style={styles.currentPriceLabel}>Current Price</ThemedText>
                   <ThemedText style={styles.currentPriceValue}>
                     ${selectedStock.currentPrice.toFixed(2)}
@@ -193,7 +194,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                   <ThemedText
                     style={[
                       styles.currentPriceChange,
-                      { color: selectedStock.changePercent >= 0 ? '#10b981' : '#ef4444' },
+                      { color: selectedStock.changePercent >= 0 ? c.success : c.danger },
                     ]}
                   >
                     {selectedStock.changePercent >= 0 ? '+' : ''}
@@ -204,16 +205,16 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                 <View style={styles.inputSection}>
                   <ThemedText style={styles.inputLabel}>Number of Shares</ThemedText>
                   <TextInput
-                    style={[styles.sharesInput, { color: textColor, borderColor: primaryColor }]}
+                    style={[styles.sharesInput, { color: textColor }]}
                     value={shares}
                     onChangeText={setShares}
                     keyboardType="number-pad"
                     placeholder="1"
-                    placeholderTextColor="#888"
+                    placeholderTextColor={c.onSurfaceVariant}
                   />
                 </View>
 
-                <View style={[styles.costSummary, { backgroundColor: cardBackground }]}>
+                <View style={styles.costSummary}>
                   <View style={styles.costRow}>
                     <ThemedText style={styles.costLabel}>Total Cost</ThemedText>
                     <ThemedText style={styles.costValue}>${totalCost.toFixed(2)}</ThemedText>
@@ -227,7 +228,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                     <ThemedText
                       style={[
                         styles.costValue,
-                        { color: liquidFunds - totalCost >= 0 ? '#10b981' : '#ef4444' },
+                        { color: liquidFunds - totalCost >= 0 ? c.success : c.danger },
                       ]}
                     >
                       ${(liquidFunds - totalCost).toFixed(2)}
@@ -246,14 +247,14 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                     styles.buyButton,
                     {
                       backgroundColor:
-                        totalCost > liquidFunds || totalCost === 0 || purchasing ? '#888' : primaryColor,
+                        totalCost > liquidFunds || totalCost === 0 || purchasing ? c.onSurfaceVariant : primaryColor,
                     },
                   ]}
                   onPress={handleBuyStock}
                   disabled={totalCost > liquidFunds || totalCost === 0 || purchasing}
                 >
                   {purchasing ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={c.onPrimary} />
                   ) : (
                     <ThemedText style={styles.buyButtonText}>
                       Buy {shares} Share{parseInt(shares) !== 1 ? 's' : ''}
@@ -271,79 +272,90 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: Spacing.md,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   title: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 24,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.7,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: Spacing.sm + 2,
   },
   searchIcon: {
     fontSize: 18,
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   searchInput: {
     flex: 1,
+    fontFamily: 'Inter_400Regular',
     fontSize: 16,
+    lineHeight: 24,
   },
   resultsContainer: {
-    marginTop: 12,
-    borderRadius: 12,
+    marginTop: Spacing.sm + 4,
+    borderRadius: Radii.md,
     maxHeight: 300,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   stockItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: Spacing.sm + 4,
   },
   stockInfo: {
     flex: 1,
   },
   stockSymbol: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '700',
+    lineHeight: 24,
+    color: c.onSurface,
     marginBottom: 2,
   },
   stockName: {
-    fontSize: 14,
-    opacity: 0.8,
-    marginBottom: 4,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.xs,
   },
   stockSector: {
-    fontSize: 12,
-    opacity: 0.6,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
   },
   stockPrice: {
     alignItems: 'flex-end',
   },
   priceValue: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 24,
+    color: c.onSurface,
     marginBottom: 2,
   },
   priceChange: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 14,
-    fontWeight: '500',
+    lineHeight: 20,
   },
   separator: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 12,
+    backgroundColor: c.surfaceContainerHigh,
+    marginHorizontal: '10%',
   },
   modalOverlay: {
     flex: 1,
@@ -351,9 +363,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: Radii.lg,
+    borderTopRightRadius: Radii.lg,
+    padding: Spacing.lg,
+    backgroundColor: c.surfaceContainerLow,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -362,87 +375,102 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalSymbol: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 32,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   modalName: {
-    fontSize: 16,
-    opacity: 0.8,
+    ...Typography['body-lg'],
+    color: c.onSurfaceVariant,
   },
   closeButton: {
     fontSize: 24,
-    opacity: 0.6,
+    color: c.onSurfaceVariant,
   },
   priceCard: {
-    padding: 16,
-    borderRadius: 12,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
     alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   currentPriceLabel: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 4,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.xs,
   },
   currentPriceValue: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 40,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   currentPriceChange: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 14,
-    fontWeight: '500',
+    lineHeight: 20,
   },
   inputSection: {
     marginBottom: 20,
   },
   inputLabel: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    lineHeight: 20,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   sharesInput: {
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '600',
   },
   costSummary: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   costRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   costLabel: {
-    fontSize: 14,
-    opacity: 0.7,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
   },
   costValue: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
+    lineHeight: 20,
+    color: c.onSurface,
   },
   errorText: {
-    color: '#ef4444',
+    fontFamily: 'Inter_400Regular',
     fontSize: 14,
+    lineHeight: 20,
+    color: c.danger,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.sm + 4,
   },
   buyButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   buyButtonText: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    color: c.onPrimary,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -451,8 +479,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
     marginLeft: 10,
-    fontSize: 14,
-    opacity: 0.7,
   },
 });

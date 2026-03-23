@@ -1,9 +1,11 @@
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Radii, Spacing } from '@/constants/theme';
+import { ThemedText } from '@/components/themed-text';
+
+const c = Colors.light;
 
 interface SignOutButtonProps {
   style?: object;
@@ -12,8 +14,6 @@ interface SignOutButtonProps {
 export function SignOutButton({ style }: SignOutButtonProps) {
   const { signOut } = useClerk();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
   const [isLoading, setIsLoading] = useState(false);
   const isMountedRef = useRef(true);
 
@@ -40,14 +40,16 @@ export function SignOutButton({ style }: SignOutButtonProps) {
 
   return (
     <TouchableOpacity
-      style={[styles.button, { backgroundColor: colors.danger }, style]}
+      style={[styles.button, style]}
       onPress={handleSignOut}
       disabled={isLoading}
     >
       {isLoading ? (
-        <ActivityIndicator color="#FFFFFF" size="small" />
+        <ActivityIndicator color={c.onPrimary} size="small" />
       ) : (
-        <Text style={styles.buttonText}>Sign Out</Text>
+        <ThemedText type="label-lg" style={styles.buttonText}>
+          Sign Out
+        </ThemedText>
       )}
     </TouchableOpacity>
   );
@@ -55,14 +57,13 @@ export function SignOutButton({ style }: SignOutButtonProps) {
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderRadius: Radii.lg,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
+    backgroundColor: c.danger,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
 });

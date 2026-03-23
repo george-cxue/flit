@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow, AmbientShadow } from '@/constants/theme';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -8,6 +8,8 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
 import { apiClient } from '@/src/services/api';
 import { useAuthContext } from '@/contexts/auth-context';
+
+const c = Colors.light;
 
 interface MemberWithPortfolio {
     id: string;
@@ -28,29 +30,25 @@ export default function GroupDetailScreen() {
     const [loading, setLoading] = useState(true);
     const [membersWithPortfolios, setMembersWithPortfolios] = useState<MemberWithPortfolio[]>([]);
 
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-
     useEffect(() => {
         const fetchGroupAndPortfolios = async () => {
             try {
                 if (typeof id === 'string') {
                     const data = await GroupService.getGroupById(id);
                     setGroup(data || null);
-                    
+
                     if (data) {
                         // Fetch portfolio data for all members
                         const portfolioPromises = data.members.map(async (member: any) => {
                             try {
                                 const response = await apiClient.get(`/fantasy-groups/${id}/portfolio/${member.id}`);
                                 const portfolio = response.data;
-                                
+
                                 // Calculate total value the same way as portfolio context
                                 const totalValue = portfolio.totalValue || portfolio.cashBalance;
                                 const startingBalance = data.settings.startingBalance || 10000;
                                 const returnPercent = ((totalValue - startingBalance) / startingBalance) * 100;
-                                
+
                                 return {
                                     ...member,
                                     portfolioValue: totalValue,
@@ -67,7 +65,7 @@ export default function GroupDetailScreen() {
                                 };
                             }
                         });
-                        
+
                         const membersWithData = await Promise.all(portfolioPromises);
                         // Sort by portfolio value (highest to lowest)
                         const sortedMembers = membersWithData.sort((a, b) => b.portfolioValue - a.portfolioValue);
@@ -86,7 +84,7 @@ export default function GroupDetailScreen() {
     if (loading) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -162,7 +160,7 @@ export default function GroupDetailScreen() {
             if (updatedGroup) {
                 setGroup(updatedGroup);
             }
-            
+
             if (Platform.OS === 'web') {
                 window.alert('Competition started! Status should now be ACTIVE.');
             } else {
@@ -218,10 +216,10 @@ export default function GroupDetailScreen() {
 
             // Show success message after a short delay
             setTimeout(() => {
-                const successMessage = result.groupDeleted 
+                const successMessage = result.groupDeleted
                     ? 'You left the group. The group was deleted as no members remain.'
                     : 'You have successfully left the group.';
-                
+
                 if (Platform.OS === 'web') {
                     window.alert(successMessage);
                 } else {
@@ -314,7 +312,7 @@ export default function GroupDetailScreen() {
                     <ThemedText type="title">{group.name}</ThemedText>
                     <View style={[
                         styles.statusBadge,
-                        { backgroundColor: competitionEnded ? '#9E9E9E' : competitionStarted ? '#4CAF50' : '#FFC107' }
+                        { backgroundColor: competitionEnded ? c.onSurfaceVariant : competitionStarted ? c.success : c.warning }
                     ]}>
                         <ThemedText style={styles.statusText}>
                             {competitionEnded ? 'COMPLETED' : competitionStarted ? 'ACTIVE' : 'PENDING'}
@@ -323,7 +321,7 @@ export default function GroupDetailScreen() {
                 </View>
 
                 {/* Competition Status */}
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.card}>
                     <ThemedText type="subtitle" style={styles.cardTitle}>Competition Period</ThemedText>
                     <ThemedText style={styles.periodText}>{formatPeriod(group.settings.competitionPeriod)}</ThemedText>
                     <View style={styles.dateRange}>
@@ -337,13 +335,13 @@ export default function GroupDetailScreen() {
                             <ThemedText style={styles.notStartedText}>
                                 Competition starts on {startDate.toLocaleString()}
                             </ThemedText>
-                            <ThemedText style={[styles.notStartedText, { marginTop: 8 }]}>
+                            <ThemedText style={[styles.notStartedText, { marginTop: Spacing.sm }]}>
                                 Players can start trading once the competition begins.
                             </ThemedText>
 
                             {isAdmin && (
                                 <TouchableOpacity
-                                    style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
+                                    style={[styles.primaryButton, { marginTop: Spacing.md }]}
                                     onPress={handleStartCompetition}
                                 >
                                     <ThemedText style={styles.primaryButtonText}>Start Competition Now</ThemedText>
@@ -352,7 +350,7 @@ export default function GroupDetailScreen() {
                         </View>
                     ) : (
                         <TouchableOpacity
-                            style={[styles.primaryButton, { backgroundColor: primaryColor, marginTop: 12 }]}
+                            style={[styles.primaryButton, { marginTop: Spacing.md }]}
                             onPress={() => {
                                 // Navigate to portfolio tab with this group selected
                                 router.push({
@@ -370,12 +368,12 @@ export default function GroupDetailScreen() {
 
                 {/* Join Code */}
                 {group.joinCode && !competitionEnded && (
-                    <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                    <View style={styles.card}>
                         <ThemedText type="subtitle" style={styles.cardTitle}>Group Join Code</ThemedText>
                         <View style={styles.joinCodeContainer}>
                             <ThemedText style={styles.joinCodeText}>{group.joinCode}</ThemedText>
                             <TouchableOpacity
-                                style={[styles.shareButton, { backgroundColor: primaryColor }]}
+                                style={styles.shareButton}
                                 onPress={handleShareCode}
                             >
                                 <ThemedText style={styles.shareButtonText}>Share</ThemedText>
@@ -393,14 +391,14 @@ export default function GroupDetailScreen() {
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Portfolio Rankings</ThemedText>
                         {membersWithPortfolios.map((member, index) => {
                             const isCurrentUser = member.id === user?.id;
-                            const displayName = member.firstName && member.lastName 
-                                ? `${member.firstName} ${member.lastName}` 
+                            const displayName = member.firstName && member.lastName
+                                ? `${member.firstName} ${member.lastName}`
                                 : member.name || member.username;
 
                             return (
                                 <TouchableOpacity
                                     key={member.id}
-                                    style={[styles.rankingRow, { borderBottomColor: borderColor, backgroundColor: cardBg }]}
+                                    style={styles.rankingRow}
                                     onPress={() => {
                                         if (isCurrentUser) {
                                             // Navigate to portfolio tab for editing
@@ -417,9 +415,9 @@ export default function GroupDetailScreen() {
                                     <View style={styles.rankInfo}>
                                         <View style={[
                                             styles.rankBadge,
-                                            { backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#E0E0E0' }
+                                            { backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : c.surfaceContainerHigh }
                                         ]}>
-                                            <ThemedText style={[styles.rankText, { color: index < 3 ? '#000' : '#666' }]}>
+                                            <ThemedText style={[styles.rankText, { color: index < 3 ? '#000' : c.onSurfaceVariant }]}>
                                                 #{index + 1}
                                             </ThemedText>
                                         </View>
@@ -440,7 +438,7 @@ export default function GroupDetailScreen() {
                                         </ThemedText>
                                         <ThemedText style={[
                                             styles.returnPercent,
-                                            { color: member.returnPercent >= 0 ? '#4CAF50' : '#F44336' }
+                                            { color: member.returnPercent >= 0 ? c.success : c.danger }
                                         ]}>
                                             {member.returnPercent >= 0 ? '+' : ''}{member.returnPercent.toFixed(2)}%
                                         </ThemedText>
@@ -455,21 +453,26 @@ export default function GroupDetailScreen() {
                 {!competitionStarted && (
                     <View style={styles.section}>
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Members</ThemedText>
-                        {group.members.map((member) => (
-                            <View key={member.id} style={[styles.memberRow, { borderBottomColor: borderColor }]}>
-                                <View style={styles.memberInfo}>
-                                    <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
-                                    <View>
-                                        <ThemedText style={styles.memberName}>{member.name}</ThemedText>
-                                        <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                        {group.members.map((member, index) => (
+                            <React.Fragment key={member.id}>
+                                <View style={styles.memberRow}>
+                                    <View style={styles.memberInfo}>
+                                        <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                        <View>
+                                            <ThemedText style={styles.memberName}>{member.name}</ThemedText>
+                                            <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                        </View>
                                     </View>
+                                    {member.id === group.adminUserId && (
+                                        <View style={styles.adminBadge}>
+                                            <ThemedText style={styles.adminText}>Admin</ThemedText>
+                                        </View>
+                                    )}
                                 </View>
-                                {member.id === group.adminUserId && (
-                                    <View style={[styles.adminBadge, { borderColor: primaryColor }]}>
-                                        <ThemedText style={[styles.adminText, { color: primaryColor }]}>Admin</ThemedText>
-                                    </View>
+                                {index < group.members.length - 1 && (
+                                    <View style={styles.floatingDivider} />
                                 )}
-                            </View>
+                            </React.Fragment>
                         ))}
                     </View>
                 )}
@@ -477,7 +480,7 @@ export default function GroupDetailScreen() {
                 {/* Settings Summary */}
                 <View style={styles.section}>
                     <ThemedText type="subtitle" style={styles.sectionTitle}>Group Settings</ThemedText>
-                    <View style={[styles.settingsCard, { backgroundColor: cardBg, borderColor }]}>
+                    <View style={styles.settingsCard}>
                         <SettingRow label="Group Size" value={`${group.settings.groupSize} Players`} />
                         <SettingRow label="Starting Balance" value={`$${group.settings.startingBalance.toLocaleString()}`} />
                         <SettingRow label="Scoring" value={group.settings.scoringMethod} />
@@ -489,10 +492,10 @@ export default function GroupDetailScreen() {
                 {isAdmin && !competitionEnded && (
                     <View style={styles.section}>
                         <TouchableOpacity
-                            style={[styles.dangerButton, { borderColor: '#F44336' }]}
+                            style={styles.dangerButton}
                             onPress={handleEndGroup}
                         >
-                            <ThemedText style={[styles.dangerButtonText, { color: '#F44336' }]}>
+                            <ThemedText style={styles.dangerButtonText}>
                                 End Competition
                             </ThemedText>
                         </TouchableOpacity>
@@ -502,10 +505,10 @@ export default function GroupDetailScreen() {
                 {/* Leave Group */}
                 <View style={styles.section}>
                     <TouchableOpacity
-                        style={[styles.dangerButton, { borderColor: '#F44336' }]}
+                        style={styles.dangerButton}
                         onPress={handleLeaveGroup}
                     >
-                        <ThemedText style={[styles.dangerButtonText, { color: '#F44336' }]}>
+                        <ThemedText style={styles.dangerButtonText}>
                             Leave Group
                         </ThemedText>
                     </TouchableOpacity>
@@ -526,6 +529,7 @@ const SettingRow = ({ label, value }: { label: string; value: string }) => (
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -535,87 +539,90 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
         paddingBottom: 40,
     },
     header: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: Radii.sm,
     },
     statusText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     card: {
-        padding: 20,
-        borderRadius: 16,
-        marginBottom: 24,
-        borderWidth: 1,
+        padding: Spacing.lg,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     cardTitle: {
-        marginBottom: 8,
+        marginBottom: Spacing.sm,
     },
     periodText: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 4,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
+        marginBottom: Spacing.xs,
     },
     dateRange: {
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     dateText: {
-        fontSize: 14,
-        opacity: 0.7,
+        ...Typography['body-md'],
+        color: c.onSurfaceVariant,
     },
     notStartedContainer: {
-        marginTop: 12,
-        padding: 16,
-        backgroundColor: 'rgba(255, 193, 7, 0.1)',
-        borderRadius: 8,
+        marginTop: Spacing.md,
+        padding: Spacing.md,
+        backgroundColor: c.surfaceContainerLow,
+        borderRadius: Radii.sm,
     },
     notStartedText: {
-        fontSize: 14,
-        opacity: 0.8,
+        ...Typography['body-md'],
+        color: c.onSurfaceVariant,
         textAlign: 'center',
     },
     primaryButton: {
-        paddingVertical: 12,
-        borderRadius: 8,
+        backgroundColor: c.primary,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
         alignItems: 'center',
     },
     primaryButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 16,
+        color: c.onPrimary,
+        fontFamily: 'Inter_600SemiBold',
+        ...Typography['title-md'],
     },
     section: {
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     sectionTitle: {
-        marginBottom: 12,
+        marginBottom: Spacing.md,
     },
     rankingRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        marginBottom: 8,
-        borderRadius: 12,
-        borderBottomWidth: 1,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.md,
+        marginBottom: Spacing.sm,
+        borderRadius: Radii.md,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     rankInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: Spacing.md,
         flex: 1,
     },
     rankBadge: {
@@ -626,104 +633,111 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     rankText: {
-        fontSize: 12,
-        fontWeight: 'bold',
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     memberRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
+        paddingVertical: Spacing.md,
+    },
+    floatingDivider: {
+        height: 1,
+        backgroundColor: c.surfaceContainerHigh,
+        marginHorizontal: '10%',
     },
     memberInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: Spacing.md,
     },
     memberAvatar: {
         fontSize: 24,
     },
     memberName: {
-        fontWeight: '600',
+        fontFamily: 'Inter_600SemiBold',
     },
     memberUsername: {
-        fontSize: 12,
-        opacity: 0.6,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
     },
     performanceInfo: {
         alignItems: 'flex-end',
     },
     portfolioValue: {
-        fontWeight: '700',
-        fontSize: 16,
+        fontFamily: 'Inter_600SemiBold',
+        ...Typography['title-md'],
     },
     returnPercent: {
-        fontSize: 14,
-        fontWeight: '600',
+        ...Typography['body-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     adminBadge: {
-        borderWidth: 1,
-        paddingHorizontal: 8,
+        backgroundColor: c.primaryContainer,
+        paddingHorizontal: Spacing.sm,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: Radii.sm,
     },
     adminText: {
-        fontSize: 10,
-        fontWeight: 'bold',
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onPrimary,
     },
     settingsCard: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     settingRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        marginBottom: Spacing.sm,
     },
     settingLabel: {
-        opacity: 0.7,
+        color: c.onSurfaceVariant,
     },
     settingValue: {
-        fontWeight: '600',
+        fontFamily: 'Inter_600SemiBold',
     },
     joinCodeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 8,
-        marginBottom: 8,
+        marginTop: Spacing.sm,
+        marginBottom: Spacing.sm,
     },
     joinCodeText: {
         fontSize: 24,
-        fontWeight: 'bold',
+        fontFamily: 'Inter_600SemiBold',
         letterSpacing: 2,
     },
     shareButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
+        backgroundColor: c.primary,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        borderRadius: Radii.lg,
     },
     shareButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 14,
+        color: c.onPrimary,
+        fontFamily: 'Inter_600SemiBold',
+        ...Typography['body-md'],
     },
     helperText: {
-        fontSize: 12,
-        opacity: 0.6,
-        marginTop: 4,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginTop: Spacing.xs,
     },
     dangerButton: {
         paddingVertical: 14,
-        borderRadius: 8,
+        borderRadius: Radii.lg,
         alignItems: 'center',
-        borderWidth: 2,
-        backgroundColor: 'transparent',
+        backgroundColor: c.surfaceContainerLow,
     },
     dangerButtonText: {
-        fontWeight: '600',
-        fontSize: 16,
+        fontFamily: 'Inter_600SemiBold',
+        ...Typography['title-md'],
+        color: c.danger,
     },
 });

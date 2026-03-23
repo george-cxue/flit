@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import { PASS_THRESHOLD } from '@/src/types/lesson';
@@ -25,6 +24,8 @@ import type {
   ListBlock,
 } from '@/src/types/lesson';
 
+const c = Colors.light;
+
 type Phase = 'content' | 'question' | 'failed' | 'complete';
 
 const PASS_PCT = Math.round(PASS_THRESHOLD * 100); // 75
@@ -33,15 +34,6 @@ export default function LessonPlayerScreen() {
   const { user, syncUser } = useAuthContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-  const cardBg = useThemeColor({}, 'cardBackground' as any);
-  const primaryColor = useThemeColor({}, 'primary' as any);
-  const successColor = useThemeColor({}, 'success' as any);
-  const dangerColor = useThemeColor({}, 'danger' as any);
-  const borderColor = useThemeColor({}, 'border' as any);
-  const warningColor = useThemeColor({}, 'warning' as any);
 
   const { completeLesson, isLessonCompleted } = useLessons(user?.id || null);
 
@@ -90,7 +82,7 @@ export default function LessonPlayerScreen() {
       setSelectedAnswer(index);
       const correct = index === currentQuestion.correctIndex;
       setIsCorrect(correct);
-      if (correct) setCorrectCount((c) => c + 1);
+      if (correct) setCorrectCount((ct) => ct + 1);
     },
     [selectedAnswer, currentQuestion]
   );
@@ -168,21 +160,23 @@ export default function LessonPlayerScreen() {
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.resultContent}>
           <ThemedText style={styles.resultEmoji}>🔒</ThemedText>
-          <ThemedText type="title" style={styles.resultTitle}>
+          <ThemedText type="headline-lg" style={styles.resultTitle}>
             Lesson Locked
           </ThemedText>
-          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
-          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
-            <ThemedText style={[styles.resultLabel, { textAlign: 'center' }]}>
+          <ThemedText type="body-lg" style={[styles.resultSubtitle, { color: c.onSurfaceVariant }]}>
+            {lesson.title}
+          </ThemedText>
+          <View style={[styles.resultCard, { backgroundColor: c.surfaceContainerLowest }]}>
+            <ThemedText type="body-md" style={[styles.resultLabel, { textAlign: 'center' }]}>
               {prevLesson
                 ? `Complete "${prevLesson.title}" before starting this lesson.`
                 : `Complete all lessons in the previous unit first.`}
             </ThemedText>
           </View>
         </ScrollView>
-        <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+        <View style={[styles.bottomBar, { backgroundColor: c.surfaceContainerLowest }]}>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: primaryColor }]}
+            style={[styles.continueButton, { backgroundColor: c.primary }]}
             onPress={handleClose}
           >
             <ThemedText style={styles.continueButtonText}>Back to Lessons</ThemedText>
@@ -199,26 +193,33 @@ export default function LessonPlayerScreen() {
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.resultContent}>
           <ThemedText style={styles.resultEmoji}>😔</ThemedText>
-          <ThemedText type="title" style={styles.resultTitle}>
+          <ThemedText type="headline-lg" style={styles.resultTitle}>
             Not quite!
           </ThemedText>
-          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
+          <ThemedText type="body-lg" style={[styles.resultSubtitle, { color: c.onSurfaceVariant }]}>
+            {lesson.title}
+          </ThemedText>
 
-          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+          <View style={[styles.resultCard, { backgroundColor: c.surfaceContainerLowest }]}>
             <View style={styles.resultRow}>
-              <ThemedText style={styles.resultLabel}>Your score</ThemedText>
+              <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                Your score
+              </ThemedText>
               <ThemedText
-                type="defaultSemiBold"
-                style={[styles.resultValue, { color: dangerColor }]}
+                type="title-md"
+                style={[styles.resultValue, { color: c.danger }]}
               >
                 {quizResult.score}/{quizResult.total} ({pct}%)
               </ThemedText>
             </View>
+            <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
             <View style={styles.resultRow}>
-              <ThemedText style={styles.resultLabel}>Required to pass</ThemedText>
+              <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                Required to pass
+              </ThemedText>
               <ThemedText
-                type="defaultSemiBold"
-                style={[styles.resultValue, { color: warningColor }]}
+                type="title-md"
+                style={[styles.resultValue, { color: c.warning }]}
               >
                 {PASS_PCT}%
               </ThemedText>
@@ -226,25 +227,28 @@ export default function LessonPlayerScreen() {
             <View
               style={[
                 styles.failHint,
-                { backgroundColor: dangerColor + '12', borderColor: dangerColor + '40' },
+                { backgroundColor: c.danger + '12' },
               ]}
             >
-              <ThemedText style={[styles.failHintText, { color: dangerColor }]}>
+              <ThemedText type="body-md" style={[styles.failHintText, { color: c.danger }]}>
                 Re-read the lesson content and try again. You can do it!
               </ThemedText>
             </View>
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+        <View style={[styles.bottomBar, { backgroundColor: c.surfaceContainerLowest }]}>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: primaryColor }]}
+            style={[styles.continueButton, { backgroundColor: c.primary }]}
             onPress={handleRetry}
           >
             <ThemedText style={styles.continueButtonText}>Try Again</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleClose}>
-            <ThemedText style={[styles.secondaryButtonText, { color: primaryColor }]}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: c.secondaryContainer }]}
+            onPress={handleClose}
+          >
+            <ThemedText type="label-lg" style={[styles.secondaryButtonText, { color: c.onSecondaryContainer }]}>
               Back to Lessons
             </ThemedText>
           </TouchableOpacity>
@@ -263,53 +267,72 @@ export default function LessonPlayerScreen() {
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.resultContent}>
           <ThemedText style={styles.resultEmoji}>🎉</ThemedText>
-          <ThemedText type="title" style={styles.resultTitle}>
+          <ThemedText type="headline-lg" style={styles.resultTitle}>
             Lesson Passed!
           </ThemedText>
-          <ThemedText style={styles.resultSubtitle}>{lesson.title}</ThemedText>
+          <ThemedText type="body-lg" style={[styles.resultSubtitle, { color: c.onSurfaceVariant }]}>
+            {lesson.title}
+          </ThemedText>
 
-          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+          <View style={[styles.resultCard, { backgroundColor: c.surfaceContainerLowest }]}>
             {total > 0 && (
-              <View style={styles.resultRow}>
-                <ThemedText style={styles.resultLabel}>Score</ThemedText>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.resultValue, { color: successColor }]}
-                >
-                  {finalScore}/{total} ({pct}%)
-                </ThemedText>
-              </View>
+              <>
+                <View style={styles.resultRow}>
+                  <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                    Score
+                  </ThemedText>
+                  <ThemedText
+                    type="title-md"
+                    style={[styles.resultValue, { color: c.success }]}
+                  >
+                    {finalScore}/{total} ({pct}%)
+                  </ThemedText>
+                </View>
+                <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+              </>
             )}
             <View style={styles.resultRow}>
-              <ThemedText style={styles.resultLabel}>Added to portfolio</ThemedText>
+              <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                Added to portfolio
+              </ThemedText>
               <ThemedText
-                type="defaultSemiBold"
-                style={[styles.resultValue, { color: successColor }]}
+                type="title-md"
+                style={[styles.resultValue, { color: c.success }]}
               >
                 +${lesson.reward.toLocaleString()}
               </ThemedText>
             </View>
             {earnedStats && earnedStats.financialIQEarned > 0 && (
-              <View style={styles.resultRow}>
-                <ThemedText style={styles.resultLabel}>Financial IQ</ThemedText>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.resultValue, { color: successColor }]}
-                >
-                  +{earnedStats.financialIQEarned} pts ({earnedStats.financialIQScore} total)
-                </ThemedText>
-              </View>
+              <>
+                <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+                <View style={styles.resultRow}>
+                  <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                    Financial IQ
+                  </ThemedText>
+                  <ThemedText
+                    type="title-md"
+                    style={[styles.resultValue, { color: c.success }]}
+                  >
+                    +{earnedStats.financialIQEarned} pts ({earnedStats.financialIQScore} total)
+                  </ThemedText>
+                </View>
+              </>
             )}
             {earnedStats && earnedStats.learningStreak > 0 && (
-              <View style={styles.resultRow}>
-                <ThemedText style={styles.resultLabel}>Daily Streak</ThemedText>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.resultValue, { color: successColor }]}
-                >
-                  🔥 {earnedStats.learningStreak} day{earnedStats.learningStreak !== 1 ? 's' : ''}
-                </ThemedText>
-              </View>
+              <>
+                <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+                <View style={styles.resultRow}>
+                  <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
+                    Daily Streak
+                  </ThemedText>
+                  <ThemedText
+                    type="title-md"
+                    style={[styles.resultValue, { color: c.success }]}
+                  >
+                    🔥 {earnedStats.learningStreak} day{earnedStats.learningStreak !== 1 ? 's' : ''}
+                  </ThemedText>
+                </View>
+              </>
             )}
           </View>
 
@@ -317,19 +340,19 @@ export default function LessonPlayerScreen() {
             <View
               style={[
                 styles.attributionBox,
-                { backgroundColor: colors.primaryPale, borderColor: colors.primaryLight },
+                { backgroundColor: c.surfaceContainerLow },
               ]}
             >
-              <ThemedText style={[styles.attributionText, { color: colors.primary }]}>
+              <ThemedText type="label-md" style={[styles.attributionText, { color: c.primary }]}>
                 {course.attribution} • {course.license}
               </ThemedText>
             </View>
           ) : null}
         </ScrollView>
 
-        <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+        <View style={[styles.bottomBar, { backgroundColor: c.surfaceContainerLowest }]}>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: primaryColor }]}
+            style={[styles.continueButton, { backgroundColor: c.primary }]}
             onPress={handleClose}
           >
             <ThemedText style={styles.continueButtonText}>Back to Lessons</ThemedText>
@@ -348,15 +371,18 @@ export default function LessonPlayerScreen() {
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBarBg}>
-          <View
+          <LinearGradient
+            colors={[c.primary, c.primaryContainer]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={[
               styles.progressBarFill,
-              { width: `${progressPct}%`, backgroundColor: primaryColor },
+              { width: `${progressPct}%` },
             ]}
           />
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <ThemedText style={styles.closeButtonText}>✕</ThemedText>
+          <ThemedText style={[styles.closeButtonText, { color: c.onSurfaceVariant }]}>✕</ThemedText>
         </TouchableOpacity>
       </View>
 
@@ -367,18 +393,18 @@ export default function LessonPlayerScreen() {
       >
         {/* Header badge */}
         <View style={styles.header}>
-          <View style={[styles.lessonBadge, { backgroundColor: colors.primaryPale }]}>
-            <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
+          <View style={[styles.lessonBadge, { backgroundColor: c.surfaceContainerLow }]}>
+            <ThemedText type="label-md" style={[styles.badgeText, { color: c.primary }]}>
               {lesson.difficulty} · {lesson.estimatedMinutes} min
             </ThemedText>
           </View>
           {phase === 'content' && (
-            <ThemedText type="title" style={styles.lessonTitle}>
+            <ThemedText type="headline-lg" style={styles.lessonTitle}>
               {lesson.title}
             </ThemedText>
           )}
           {phase === 'question' && (
-            <ThemedText type="title" style={styles.lessonTitle}>
+            <ThemedText type="headline-lg" style={styles.lessonTitle}>
               Question {questionIndex + 1} of {questions.length}
             </ThemedText>
           )}
@@ -391,18 +417,15 @@ export default function LessonPlayerScreen() {
               <ContentBlockView
                 key={i}
                 block={block}
-                cardBg={cardBg}
-                borderColor={borderColor}
-                primaryColor={primaryColor}
-                successColor={successColor}
-                colors={colors}
               />
             ))}
-            <View style={[styles.rewardCard, { backgroundColor: cardBg, borderColor }]}>
-              <ThemedText style={styles.rewardLabel}>Pass this lesson to add to portfolio</ThemedText>
+            <View style={[styles.rewardCard, { backgroundColor: c.surfaceContainerLowest }]}>
+              <ThemedText type="body-md" style={[styles.rewardLabel, { color: c.onSurfaceVariant }]}>
+                Pass this lesson to add to portfolio
+              </ThemedText>
               <ThemedText
-                type="defaultSemiBold"
-                style={[styles.rewardValue, { color: successColor }]}
+                type="title-md"
+                style={[styles.rewardValue, { color: c.success }]}
               >
                 +${lesson.reward.toLocaleString()}
               </ThemedText>
@@ -411,10 +434,10 @@ export default function LessonPlayerScreen() {
               <View
                 style={[
                   styles.passRequirement,
-                  { backgroundColor: warningColor + '15', borderColor: warningColor + '50' },
+                  { backgroundColor: c.warning + '15' },
                 ]}
               >
-                <ThemedText style={[styles.passRequirementText, { color: warningColor }]}>
+                <ThemedText type="label-lg" style={[styles.passRequirementText, { color: c.warning }]}>
                   ⚡ {PASS_PCT}% required to pass ({Math.ceil(questions.length * PASS_THRESHOLD)}/{questions.length} correct)
                 </ThemedText>
               </View>
@@ -425,7 +448,7 @@ export default function LessonPlayerScreen() {
         {/* Question Phase */}
         {phase === 'question' && currentQuestion && (
           <>
-            <ThemedText type="defaultSemiBold" style={styles.questionText}>
+            <ThemedText type="title-lg" style={styles.questionText}>
               {currentQuestion.question}
             </ThemedText>
 
@@ -435,37 +458,37 @@ export default function LessonPlayerScreen() {
                 const isThisCorrect = index === currentQuestion.correctIndex;
                 const showResult = selectedAnswer !== null;
 
-                let borderC = borderColor;
-                let bgC = cardBg;
+                let bgC = c.surfaceContainerLowest;
+                let accentColor = c.outlineVariant;
                 if (showResult && isSelected && isCorrect) {
-                  borderC = successColor;
-                  bgC = colors.success + '15';
+                  accentColor = c.success;
+                  bgC = c.success + '15';
                 } else if (showResult && isSelected && !isCorrect) {
-                  borderC = dangerColor;
-                  bgC = colors.danger + '15';
+                  accentColor = c.danger;
+                  bgC = c.danger + '15';
                 } else if (showResult && isThisCorrect) {
-                  borderC = successColor;
-                  bgC = colors.success + '10';
+                  accentColor = c.success;
+                  bgC = c.success + '10';
                 }
 
                 return (
                   <TouchableOpacity
                     key={index}
-                    style={[styles.answerButton, { backgroundColor: bgC, borderColor: borderC }]}
+                    style={[styles.answerButton, { backgroundColor: bgC }, showResult && (isSelected || isThisCorrect) ? { borderWidth: 2, borderColor: accentColor } : null]}
                     onPress={() => handleAnswerSelect(index)}
                     disabled={selectedAnswer !== null}
                   >
-                    <View style={[styles.answerCircle, { borderColor: borderC }]}>
+                    <View style={[styles.answerCircle, { backgroundColor: c.surfaceContainerHigh }]}>
                       {isSelected && (
                         <View
                           style={[
                             styles.answerCircleFill,
-                            { backgroundColor: isCorrect ? successColor : dangerColor },
+                            { backgroundColor: isCorrect ? c.success : c.danger },
                           ]}
                         />
                       )}
                     </View>
-                    <ThemedText style={styles.answerText}>{answer}</ThemedText>
+                    <ThemedText type="body-lg" style={styles.answerText}>{answer}</ThemedText>
                     {showResult && isSelected && (
                       <ThemedText style={styles.resultIcon}>
                         {isCorrect ? '✓' : '✗'}
@@ -481,20 +504,20 @@ export default function LessonPlayerScreen() {
                 style={[
                   styles.feedbackCard,
                   {
-                    backgroundColor: isCorrect ? successColor + '15' : dangerColor + '15',
-                    borderColor: isCorrect ? successColor : dangerColor,
+                    backgroundColor: isCorrect ? c.success + '15' : c.danger + '15',
                   },
                 ]}
               >
                 <ThemedText
+                  type="title-md"
                   style={[
                     styles.feedbackTitle,
-                    { color: isCorrect ? successColor : dangerColor },
+                    { color: isCorrect ? c.success : c.danger },
                   ]}
                 >
                   {isCorrect ? '🎉 Correct!' : '❌ Not quite'}
                 </ThemedText>
-                <ThemedText style={styles.feedbackText}>
+                <ThemedText type="body-md" style={styles.feedbackText}>
                   {currentQuestion.explanation}
                 </ThemedText>
               </View>
@@ -506,12 +529,12 @@ export default function LessonPlayerScreen() {
       </ScrollView>
 
       {/* Bottom Action */}
-      <View style={[styles.bottomBar, { borderTopColor: borderColor }]}>
+      <View style={[styles.bottomBar, { backgroundColor: c.surfaceContainerLowest }]}>
         <TouchableOpacity
           style={[
             styles.continueButton,
             {
-              backgroundColor: continueEnabled ? primaryColor : borderColor,
+              backgroundColor: continueEnabled ? c.primary : c.surfaceContainerHighest,
               opacity: continueEnabled ? 1 : 0.5,
             },
           ]}
@@ -539,46 +562,41 @@ export default function LessonPlayerScreen() {
 
 function ContentBlockView({
   block,
-  cardBg,
-  borderColor,
-  primaryColor,
-  successColor,
-  colors,
 }: {
   block: ContentBlock;
-  cardBg: string;
-  borderColor: string;
-  primaryColor: string;
-  successColor: string;
-  colors: (typeof Colors)['light'];
 }) {
   switch (block.type) {
     case 'paragraph':
       return (
-        <ThemedText style={styles.contentText}>
+        <ThemedText type="body-lg" style={styles.contentText}>
           {(block as ParagraphBlock).text}
         </ThemedText>
       );
     case 'heading':
       return (
-        <ThemedText type="defaultSemiBold" style={styles.contentHeading}>
+        <ThemedText type="title-lg" style={styles.contentHeading}>
           {(block as HeadingBlock).text}
         </ThemedText>
       );
     case 'example': {
       const b = block as ExampleBlock;
       return (
-        <View style={[styles.exampleBox, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText type="defaultSemiBold" style={styles.exampleTitle}>
+        <View style={[styles.exampleBox, { backgroundColor: c.surfaceContainerLowest, ...SubtleShadow }]}>
+          <ThemedText type="label-lg" style={[styles.exampleTitle, { color: c.onSurfaceVariant }]}>
             {b.title}
           </ThemedText>
-          {b.body && <ThemedText style={styles.exampleBody}>{b.body}</ThemedText>}
+          {b.body && <ThemedText type="body-md" style={[styles.exampleBody, { color: c.onSurfaceVariant }]}>{b.body}</ThemedText>}
           {b.rows?.map((row, i) => (
-            <View key={i} style={styles.exampleRow}>
-              <ThemedText style={styles.exampleLabel}>{row.label}</ThemedText>
-              <ThemedText style={[styles.exampleValue, { color: successColor }]}>
-                {row.value}
-              </ThemedText>
+            <View key={i}>
+              {i > 0 && (
+                <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+              )}
+              <View style={styles.exampleRow}>
+                <ThemedText type="body-md" style={[styles.exampleLabel, { color: c.onSurfaceVariant }]}>{row.label}</ThemedText>
+                <ThemedText type="label-lg" style={[styles.exampleValue, { color: c.success }]}>
+                  {row.value}
+                </ThemedText>
+              </View>
             </View>
           ))}
         </View>
@@ -587,9 +605,9 @@ function ContentBlockView({
     case 'keypoint': {
       const b = block as KeypointBlock;
       return (
-        <View style={[styles.keypoint, { backgroundColor: colors.primaryPale }]}>
+        <View style={[styles.keypoint, { backgroundColor: c.surfaceContainerLow }]}>
           <ThemedText style={styles.keypointIcon}>{b.icon}</ThemedText>
-          <ThemedText style={[styles.keypointText, { color: colors.primaryDark }]}>
+          <ThemedText type="label-lg" style={[styles.keypointText, { color: c.primary }]}>
             {b.text}
           </ThemedText>
         </View>
@@ -601,8 +619,8 @@ function ContentBlockView({
         <View style={styles.listBlock}>
           {b.items.map((item, i) => (
             <View key={i} style={styles.listItem}>
-              <ThemedText style={[styles.listBullet, { color: primaryColor }]}>•</ThemedText>
-              <ThemedText style={styles.listText}>{item}</ThemedText>
+              <ThemedText style={[styles.listBullet, { color: c.primary }]}>•</ThemedText>
+              <ThemedText type="body-lg" style={styles.listText}>{item}</ThemedText>
             </View>
           ))}
         </View>
@@ -620,150 +638,149 @@ const styles = StyleSheet.create({
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.md + 4,
     paddingTop: 60,
-    paddingBottom: 12,
-    gap: 12,
+    paddingBottom: Spacing.sm + 4,
+    gap: Spacing.sm + 4,
   },
   progressBarBg: {
     flex: 1,
     height: 10,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 5,
+    backgroundColor: c.surfaceContainerHighest,
+    borderRadius: Radii.full,
     overflow: 'hidden',
   },
-  progressBarFill: { height: '100%', borderRadius: 5 },
+  progressBarFill: { height: '100%', borderRadius: Radii.full },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    width: Spacing.xl,
+    height: Spacing.xl,
+    borderRadius: Radii.full,
+    backgroundColor: c.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeButtonText: { fontSize: 18, opacity: 0.6 },
+  closeButtonText: { fontSize: 18 },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  header: { marginBottom: 24 },
+  scrollContent: { padding: Spacing.md + 4, paddingBottom: 40 },
+  header: { marginBottom: Spacing.lg },
   lessonBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.sm + 4,
   },
-  badgeText: { fontSize: 12, fontWeight: '600' },
+  badgeText: {},
   lessonTitle: { fontSize: 26, lineHeight: 32 },
-  contentText: { fontSize: 16, lineHeight: 26, marginBottom: 16 },
-  contentHeading: { fontSize: 18, marginTop: 8, marginBottom: 12 },
-  exampleBox: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 16 },
-  exampleTitle: { fontSize: 14, marginBottom: 10, opacity: 0.8 },
-  exampleBody: { fontSize: 14, marginBottom: 10, opacity: 0.7 },
+  contentText: { marginBottom: Spacing.md },
+  contentHeading: { marginTop: Spacing.sm, marginBottom: Spacing.sm + 4 },
+  exampleBox: { borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.md },
+  exampleTitle: { marginBottom: Spacing.sm + 2 },
+  exampleBody: { marginBottom: Spacing.sm + 2 },
   exampleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    paddingVertical: Spacing.xs,
   },
-  exampleLabel: { fontSize: 14, opacity: 0.7, flex: 1 },
-  exampleValue: { fontSize: 14, fontWeight: '600' },
+  exampleLabel: { flex: 1 },
+  exampleValue: {},
   keypoint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 12,
+    padding: Spacing.sm + 6,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm + 4,
   },
   keypointIcon: { fontSize: 22, lineHeight: 28 },
-  keypointText: { flex: 1, fontSize: 14, lineHeight: 22, fontWeight: '500' },
-  listBlock: { marginBottom: 16, gap: 10 },
-  listItem: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  keypointText: { flex: 1, lineHeight: 22 },
+  listBlock: { marginBottom: Spacing.md, gap: Spacing.sm + 2 },
+  listItem: { flexDirection: 'row', gap: Spacing.sm + 2, alignItems: 'flex-start' },
   listBullet: { fontSize: 16, lineHeight: 24, fontWeight: 'bold' },
-  listText: { flex: 1, fontSize: 15, lineHeight: 24 },
+  listText: { flex: 1 },
   rewardCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 8,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    ...SubtleShadow,
   },
-  rewardLabel: { fontSize: 14, opacity: 0.7 },
-  rewardValue: { fontSize: 16 },
+  rewardLabel: {},
+  rewardValue: {},
   passRequirement: {
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
-    marginTop: 4,
+    borderRadius: Radii.sm + 2,
+    padding: Spacing.sm + 4,
+    marginTop: Spacing.xs,
   },
-  passRequirementText: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  questionText: { fontSize: 20, lineHeight: 28, marginBottom: 24 },
-  answersContainer: { gap: 12, marginBottom: 24 },
+  passRequirementText: { textAlign: 'center' },
+  questionText: { marginBottom: Spacing.lg },
+  answersContainer: { gap: Spacing.sm + 4, marginBottom: Spacing.lg },
   answerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    gap: 12,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    gap: Spacing.sm + 4,
+    ...SubtleShadow,
   },
   answerCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
+    width: Spacing.lg,
+    height: Spacing.lg,
+    borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  answerCircleFill: { width: 14, height: 14, borderRadius: 7 },
-  answerText: { flex: 1, fontSize: 15, lineHeight: 22 },
+  answerCircleFill: { width: 14, height: 14, borderRadius: Radii.full },
+  answerText: { flex: 1 },
   resultIcon: { fontSize: 20 },
-  feedbackCard: { borderRadius: 12, borderWidth: 2, padding: 16, marginBottom: 16 },
-  feedbackTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  feedbackText: { fontSize: 14, lineHeight: 22 },
+  feedbackCard: { borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.md },
+  feedbackTitle: { marginBottom: Spacing.sm },
+  feedbackText: { lineHeight: 22 },
   bottomPadding: { height: 60 },
-  bottomBar: { padding: 20, paddingBottom: 36, borderTopWidth: 1, gap: 10 },
-  continueButton: { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-  continueButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { alignItems: 'center', paddingVertical: 10 },
-  secondaryButtonText: { fontSize: 15, fontWeight: '600' },
+  bottomBar: {
+    padding: Spacing.md + 4,
+    paddingBottom: 36,
+    gap: Spacing.sm + 2,
+    ...SubtleShadow,
+  },
+  continueButton: { borderRadius: Radii.lg, paddingVertical: Spacing.md, alignItems: 'center' },
+  continueButtonText: { color: c.onPrimary, fontFamily: Typography['title-md'].fontFamily, fontSize: Typography['title-md'].fontSize },
+  secondaryButton: { alignItems: 'center', paddingVertical: Spacing.sm + 2, borderRadius: Radii.lg },
+  secondaryButtonText: {},
   // Result screens (pass & fail)
-  resultContent: { padding: 32, alignItems: 'center', flexGrow: 1 },
-  resultEmoji: { fontSize: 72, marginTop: 60, marginBottom: 16 },
-  resultTitle: { fontSize: 28, marginBottom: 8, textAlign: 'center' },
-  resultSubtitle: { fontSize: 16, opacity: 0.6, textAlign: 'center', marginBottom: 32 },
+  resultContent: { padding: Spacing.xl, alignItems: 'center', flexGrow: 1 },
+  resultEmoji: { fontSize: 72, marginTop: 60, marginBottom: Spacing.md },
+  resultTitle: { marginBottom: Spacing.sm, textAlign: 'center' },
+  resultSubtitle: { textAlign: 'center', marginBottom: Spacing.xl },
   resultCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
+    borderRadius: Radii.md,
+    padding: Spacing.md + 4,
     width: '100%',
-    gap: 14,
-    marginBottom: 20,
+    gap: Spacing.sm + 6,
+    marginBottom: Spacing.md + 4,
+    ...AmbientShadow,
   },
   resultRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  resultLabel: { fontSize: 14, opacity: 0.7 },
-  resultValue: { fontSize: 16 },
+  resultLabel: {},
+  resultValue: {},
   failHint: {
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
-    marginTop: 4,
+    borderRadius: Radii.sm + 2,
+    padding: Spacing.sm + 4,
+    marginTop: Spacing.xs,
   },
-  failHintText: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  failHintText: { lineHeight: 18, textAlign: 'center' },
   attributionBox: {
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 12,
+    borderRadius: Radii.sm,
+    padding: Spacing.sm + 4,
     width: '100%',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
-  attributionText: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  attributionText: { textAlign: 'center', lineHeight: 18 },
 });

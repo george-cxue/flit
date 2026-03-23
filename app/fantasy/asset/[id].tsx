@@ -1,20 +1,18 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { MarketService } from '@/src/services/fantasy/marketService';
 import { Asset } from '@/src/types/fantasy';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
+const c = Colors.light;
+
 export default function AssetScreen() {
     const { id } = useLocalSearchParams(); // Asset ID
     const [asset, setAsset] = useState<Asset | null>(null);
     const [loading, setLoading] = useState(true);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
 
     useEffect(() => {
         const fetchAsset = async () => {
@@ -25,8 +23,6 @@ export default function AssetScreen() {
                 }
             } catch (error) {
                 setAsset(null);
-                // Optionally log the error
-                // console.error('Failed to fetch asset:', error);
             } finally {
                 setLoading(false);
             }
@@ -37,7 +33,7 @@ export default function AssetScreen() {
     if (loading) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -60,7 +56,7 @@ export default function AssetScreen() {
                     </View>
                     <View style={styles.priceContainer}>
                         <ThemedText type="title">${asset.currentPrice.toFixed(2)}</ThemedText>
-                        <ThemedText style={{ color: asset.changePercent >= 0 ? '#4CAF50' : '#FF4444', textAlign: 'right' }}>
+                        <ThemedText style={{ color: asset.changePercent >= 0 ? c.success : c.danger, textAlign: 'right' }}>
                             {asset.changePercent > 0 ? '+' : ''}{asset.changePercent}%
                         </ThemedText>
                     </View>
@@ -68,7 +64,7 @@ export default function AssetScreen() {
 
                 {/* Lock Status */}
                 {asset.isLocked && (
-                    <View style={[styles.lockCard, { borderColor: '#FFC107', backgroundColor: '#FFF8E1' }]}>
+                    <View style={styles.lockCard}>
                         <ThemedText style={styles.lockTitle}>🔒 Asset Locked</ThemedText>
                         <ThemedText style={styles.lockText}>
                             Complete the following lessons to unlock this asset:
@@ -80,14 +76,14 @@ export default function AssetScreen() {
                 )}
 
                 {/* Details */}
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.card}>
                     <SettingRow label="Type" value={asset.type} />
                     <SettingRow label="Tier" value={asset.tier} />
                     <SettingRow label="Risk Level" value="Moderate" />
                 </View>
 
                 {/* Chart Placeholder */}
-                <View style={[styles.chartContainer, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.chartContainer}>
                     <ThemedText style={styles.chartPlaceholder}>Price Chart Coming Soon</ThemedText>
                 </View>
 
@@ -106,6 +102,7 @@ const SettingRow = ({ label, value }: { label: string; value: string }) => (
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -115,67 +112,69 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.lg,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 24,
+        marginBottom: Spacing.lg,
     },
     assetName: {
-        fontSize: 16,
-        opacity: 0.7,
+        ...Typography['title-md'],
+        color: c.onSurfaceVariant,
     },
     priceContainer: {
         alignItems: 'flex-end',
     },
     lockCard: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 24,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLow,
     },
     lockTitle: {
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#F57F17',
+        fontFamily: 'Inter_600SemiBold',
+        marginBottom: Spacing.sm,
+        color: c.warning,
     },
     lockText: {
-        marginBottom: 8,
-        color: '#F57F17',
+        marginBottom: Spacing.sm,
+        color: c.warning,
     },
     lessonItem: {
-        marginLeft: 8,
-        color: '#F57F17',
-        fontWeight: '600',
+        marginLeft: Spacing.sm,
+        color: c.warning,
+        fontFamily: 'Inter_600SemiBold',
     },
     card: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 24,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.lg,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     settingRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        marginBottom: Spacing.sm,
     },
     settingLabel: {
-        opacity: 0.7,
+        color: c.onSurfaceVariant,
     },
     settingValue: {
-        fontWeight: '600',
+        fontFamily: 'Inter_600SemiBold',
     },
     chartContainer: {
         height: 200,
-        borderRadius: 16,
-        borderWidth: 1,
+        borderRadius: Radii.md,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     chartPlaceholder: {
-        opacity: 0.5,
+        color: c.onSurfaceVariant,
         fontStyle: 'italic',
     },
 });

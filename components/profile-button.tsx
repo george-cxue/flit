@@ -1,8 +1,8 @@
 import { useClerk } from '@clerk/clerk-expo';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Modal,
@@ -10,9 +10,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Radii, Spacing, AmbientShadow } from '@/constants/theme';
+import { ThemedText } from '@/components/themed-text';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+const c = Colors.light;
 
 interface ProfileButtonProps {
   style?: object;
@@ -21,8 +23,6 @@ interface ProfileButtonProps {
 export function ProfileButton({ style }: ProfileButtonProps) {
   const { signOut } = useClerk();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const isMountedRef = useRef(true);
@@ -52,14 +52,14 @@ export function ProfileButton({ style }: ProfileButtonProps) {
   return (
     <>
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.primary }, style]}
+        style={[styles.button, style]}
         onPress={() => setDropdownVisible(true)}
         disabled={isSigningOut}
       >
         {isSigningOut ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
+          <ActivityIndicator color={c.onPrimary} size="small" />
         ) : (
-          <MaterialIcons name="person" size={24} color="#FFFFFF" />
+          <MaterialIcons name="person" size={24} color={c.onPrimary} />
         )}
       </TouchableOpacity>
 
@@ -74,30 +74,35 @@ export function ProfileButton({ style }: ProfileButtonProps) {
           onPress={() => setDropdownVisible(false)}
         >
           <Pressable
-            style={[styles.dropdown, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+            style={styles.dropdown}
             onPress={(e) => e.stopPropagation()}
           >
-            <TouchableOpacity
-              style={[styles.menuItem, styles.menuItemWithBorder, { borderBottomColor: colors.border }]}
-              onPress={handleViewProfile}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="person" size={20} color={colors.primary} />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>
-                View Profile
-              </Text>
-              <MaterialIcons name="chevron-right" size={20} color={colors.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.menuItem]}
-              onPress={handleSignOut}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="logout" size={20} color={colors.danger} />
-              <Text style={[styles.menuItemText, { color: colors.danger }]}>
-                Sign Out
-              </Text>
-            </TouchableOpacity>
+            <BlurView intensity={70} tint="light" style={styles.blurFill}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleViewProfile}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="person" size={20} color={c.primary} />
+                <ThemedText type="label-lg" style={styles.menuItemText}>
+                  View Profile
+                </ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={c.onSurfaceVariant} />
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleSignOut}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="logout" size={20} color={c.danger} />
+                <ThemedText type="label-lg" style={[styles.menuItemText, { color: c.danger }]}>
+                  Sign Out
+                </ThemedText>
+              </TouchableOpacity>
+            </BlurView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -109,9 +114,10 @@ const styles = StyleSheet.create({
   button: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: c.primary,
   },
   overlay: {
     flex: 1,
@@ -119,32 +125,33 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
     paddingTop: 56,
-    paddingRight: 20,
+    paddingRight: Spacing.md,
   },
   dropdown: {
     minWidth: 200,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: Radii.md,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: c.surfaceContainerLowest,
+    ...AmbientShadow,
+  },
+  blurFill: {
+    overflow: 'hidden',
+    borderRadius: Radii.md,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm + 4,
   },
-  menuItemWithBorder: {
-    borderBottomWidth: 1,
+  divider: {
+    height: 1,
+    backgroundColor: c.surfaceContainerHigh,
+    marginHorizontal: '10%',
   },
   menuItemText: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
+    color: c.onSurface,
   },
 });

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { StockHolding } from '@/types/portfolio';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+
+const c = Colors.light;
 
 interface HoldingsListProps {
   holdings: StockHolding[];
@@ -11,7 +13,6 @@ interface HoldingsListProps {
 }
 
 export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
-  const cardBackground = useThemeColor({}, 'cardBackground');
   const [sellModalVisible, setSellModalVisible] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<StockHolding | null>(null);
   const [sellShares, setSellShares] = useState('');
@@ -65,7 +66,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
         data={holdings}
         keyExtractor={(item) => item.symbol}
         renderItem={({ item }) => (
-          <View style={[styles.holdingCard, { backgroundColor: cardBackground }]}>
+          <View style={styles.holdingCard}>
             <View style={styles.holdingHeader}>
               <View>
                 <ThemedText style={styles.symbol}>{item.symbol}</ThemedText>
@@ -76,7 +77,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
                 <ThemedText
                   style={[
                     styles.changePercent,
-                    { color: item.changePercent >= 0 ? '#10b981' : '#ef4444' },
+                    { color: item.changePercent >= 0 ? c.success : c.danger },
                   ]}
                 >
                   {item.changePercent >= 0 ? '+' : ''}
@@ -118,7 +119,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
         onRequestClose={() => setSellModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBackground }]}>
+          <View style={styles.modalContent}>
             <ThemedText style={styles.modalTitle}>Sell {selectedHolding?.symbol}</ThemedText>
             <ThemedText style={styles.modalSubtitle}>
               You own {selectedHolding?.shares} shares at ${selectedHolding?.currentPrice.toFixed(2)} each
@@ -126,7 +127,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
             <TextInput
               style={styles.input}
               placeholder="Number of shares to sell"
-              placeholderTextColor="#888"
+              placeholderTextColor={c.onSurfaceVariant}
               keyboardType="numeric"
               value={sellShares}
               onChangeText={setSellShares}
@@ -146,7 +147,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
                 disabled={selling}
               >
                 {selling ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={c.onPrimary} />
                 ) : (
                   <ThemedText style={styles.confirmButtonText}>Sell</ThemedText>
                 )}
@@ -161,61 +162,72 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: Spacing.md,
   },
   title: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
+    lineHeight: 24,
+    color: c.onSurface,
+    marginBottom: Spacing.sm + 4,
   },
   emptyContainer: {
-    padding: 32,
+    padding: Spacing.xl,
     alignItems: 'center',
   },
   emptyIcon: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: Spacing.sm + 4,
   },
   emptyText: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    lineHeight: 24,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    opacity: 0.7,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
     textAlign: 'center',
   },
   holdingCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.sm + 4,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   holdingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: Spacing.sm + 4,
   },
   symbol: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '700',
+    lineHeight: 24,
+    color: c.onSurface,
     marginBottom: 2,
   },
   name: {
-    fontSize: 14,
-    opacity: 0.7,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
   },
   valueContainer: {
     alignItems: 'flex-end',
   },
   totalValue: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 18,
-    fontWeight: '700',
+    lineHeight: 24,
+    color: c.onSurface,
     marginBottom: 2,
   },
   changePercent: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
+    lineHeight: 20,
   },
   holdingDetails: {
     flexDirection: 'row',
@@ -225,26 +237,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 12,
-    opacity: 0.6,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
     marginBottom: 2,
   },
   detailValue: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
+    lineHeight: 20,
+    color: c.onSurface,
   },
   sellButton: {
-    marginTop: 12,
-    backgroundColor: '#ef4444',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    marginTop: Spacing.sm + 4,
+    backgroundColor: c.danger,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   sellButtonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
   modalOverlay: {
     flex: 1,
@@ -254,52 +268,57 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '85%',
-    padding: 24,
-    borderRadius: 16,
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   modalTitle: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
+    lineHeight: 28,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   modalSubtitle: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 16,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.md,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.md,
+    padding: Spacing.sm + 4,
+    fontFamily: 'Inter_400Regular',
     fontSize: 16,
-    marginBottom: 16,
-    color: '#fff',
+    lineHeight: 24,
+    marginBottom: Spacing.md,
+    color: c.onSurface,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.sm + 4,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: Spacing.sm + 4,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#333',
+    backgroundColor: c.surfaceContainerHigh,
   },
   confirmButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: c.success,
   },
   cancelButtonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    color: c.onSurface,
   },
   confirmButtonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
 });

@@ -4,6 +4,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { AssetAllocation } from '@/types/portfolio';
+import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+
+const c = Colors.light;
 
 interface AssetAllocationManagerProps {
   allocation: AssetAllocation;
@@ -12,7 +15,6 @@ interface AssetAllocationManagerProps {
 }
 
 export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: AssetAllocationManagerProps) {
-  const cardBackground = useThemeColor({}, 'cardBackground');
   const primaryColor = useThemeColor({}, 'tint');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<keyof AssetAllocation | null>(null);
@@ -93,7 +95,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
         const balance = allocation[assetType];
 
         return (
-          <View key={assetType} style={[styles.assetCard, { backgroundColor: cardBackground }]}>
+          <View key={assetType} style={styles.assetCard}>
             <View style={styles.assetHeader}>
               <View style={styles.assetInfo}>
                 <ThemedText style={styles.assetEmoji}>{info.emoji}</ThemedText>
@@ -133,7 +135,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: cardBackground }]}>
+          <View style={styles.modalContent}>
             {selectedAsset && (
               <>
                 <ThemedText style={styles.modalTitle}>
@@ -147,7 +149,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
                 <TextInput
                   style={styles.input}
                   placeholder="Amount ($)"
-                  placeholderTextColor="#888"
+                  placeholderTextColor={c.onSurfaceVariant}
                   keyboardType="numeric"
                   value={amount}
                   onChangeText={setAmount}
@@ -167,7 +169,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
                     disabled={processing}
                   >
                     {processing ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={c.onPrimary} />
                     ) : (
                       <ThemedText style={styles.confirmButtonText}>
                         {isBuying ? 'Buy' : 'Sell'}
@@ -186,28 +188,32 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: Spacing.md,
   },
   title: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
+    lineHeight: 24,
+    color: c.onSurface,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 12,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.sm + 4,
   },
   assetCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.sm + 4,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   assetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.sm + 4,
   },
   assetInfo: {
     flexDirection: 'row',
@@ -216,41 +222,45 @@ const styles = StyleSheet.create({
   },
   assetEmoji: {
     fontSize: 32,
-    marginRight: 12,
+    marginRight: Spacing.sm + 4,
   },
   assetDetails: {
     flex: 1,
   },
   assetName: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 24,
+    color: c.onSurface,
     marginBottom: 2,
   },
   assetDescription: {
-    fontSize: 12,
-    opacity: 0.7,
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
   },
   assetBalance: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 18,
-    fontWeight: '700',
+    lineHeight: 24,
+    color: c.onSurface,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: Spacing.sm,
   },
   button: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   sellButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: c.danger,
   },
   buttonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
   disabledText: {
     opacity: 0.5,
@@ -263,52 +273,57 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '85%',
-    padding: 24,
-    borderRadius: 16,
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   modalTitle: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
+    lineHeight: 28,
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
   },
   modalSubtitle: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 16,
+    ...Typography['body-md'],
+    color: c.onSurfaceVariant,
+    marginBottom: Spacing.md,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.md,
+    padding: Spacing.sm + 4,
+    fontFamily: 'Inter_400Regular',
     fontSize: 16,
-    marginBottom: 16,
-    color: '#fff',
+    lineHeight: 24,
+    marginBottom: Spacing.md,
+    color: c.onSurface,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.sm + 4,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: Spacing.sm + 4,
+    borderRadius: Radii.lg,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#333',
+    backgroundColor: c.surfaceContainerHigh,
   },
   confirmButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: c.success,
   },
   cancelButtonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    color: c.onSurface,
   },
   confirmButtonText: {
-    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    fontWeight: '600',
+    color: c.onPrimary,
   },
 });

@@ -1,12 +1,14 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { MOCK_ASSETS } from '@/src/mocks/fantasy/assets';
 import { DraftService } from '@/src/services/fantasy/draftService';
 import { Asset, DraftState } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+
+const c = Colors.light;
 
 export default function DraftScreen() {
     const { id } = useLocalSearchParams();
@@ -16,12 +18,6 @@ export default function DraftScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [picking, setPicking] = useState(false);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const textColor = useThemeColor({}, 'text' as any);
-    const dangerColor = '#FF4444';
 
     const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -102,7 +98,7 @@ export default function DraftScreen() {
     if (loading || !draftState) {
         return (
             <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={primaryColor} />
+                <ActivityIndicator size="large" color={c.primary} />
             </ThemedView>
         );
     }
@@ -116,14 +112,14 @@ export default function DraftScreen() {
         return (
             <ThemedView style={styles.container}>
                 <View style={[styles.centered, { flex: 1 }]}>
-                    <ThemedText type="title" style={{ marginBottom: 16, textAlign: 'center' }}>
+                    <ThemedText type="title" style={{ marginBottom: Spacing.md, textAlign: 'center' }}>
                         Draft Not Started
                     </ThemedText>
-                    <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.7, paddingHorizontal: 32 }}>
+                    <ThemedText style={{ marginBottom: Spacing.lg, textAlign: 'center', color: c.onSurfaceVariant, paddingHorizontal: Spacing.xl }}>
                         The group admin needs to start the draft before picks can be made.
                     </ThemedText>
                     <TouchableOpacity
-                        style={[styles.startButton, { backgroundColor: primaryColor }]}
+                        style={styles.startButton}
                         onPress={handleStartDraft}
                     >
                         <ThemedText style={styles.startButtonText}>Start Draft</ThemedText>
@@ -138,14 +134,14 @@ export default function DraftScreen() {
         return (
             <ThemedView style={styles.container}>
                 <View style={[styles.centered, { flex: 1 }]}>
-                    <ThemedText type="title" style={{ marginBottom: 16, textAlign: 'center' }}>
-                        🎉 Draft Complete!
+                    <ThemedText type="title" style={{ marginBottom: Spacing.md, textAlign: 'center' }}>
+                        Draft Complete!
                     </ThemedText>
-                    <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.7, paddingHorizontal: 32 }}>
+                    <ThemedText style={{ marginBottom: Spacing.lg, textAlign: 'center', color: c.onSurfaceVariant, paddingHorizontal: Spacing.xl }}>
                         All picks have been made. Portfolios have been created.
                     </ThemedText>
                     <TouchableOpacity
-                        style={[styles.startButton, { backgroundColor: primaryColor }]}
+                        style={styles.startButton}
                         onPress={() => router.back()}
                     >
                         <ThemedText style={styles.startButtonText}>Back to Group</ThemedText>
@@ -158,14 +154,14 @@ export default function DraftScreen() {
     return (
         <ThemedView style={styles.container}>
             {/* Draft Header / Status */}
-            <View style={[styles.header, { borderBottomColor: borderColor }]}>
+            <View style={styles.header}>
                 <View style={styles.roundInfo}>
                     <ThemedText style={styles.roundText}>Round {draftState.currentRound}</ThemedText>
                     <ThemedText style={styles.pickText}>Pick {draftState.currentPickNumber}</ThemedText>
                 </View>
 
                 <View style={styles.timerContainer}>
-                    <ThemedText style={[styles.timer, { color: draftState.remainingTimeSeconds < 10 ? dangerColor : textColor }]}>
+                    <ThemedText style={[styles.timer, { color: draftState.remainingTimeSeconds < 10 ? c.danger : c.onSurface }]}>
                         {draftState.remainingTimeSeconds}s
                     </ThemedText>
                     <ThemedText style={styles.onClockText}>
@@ -174,13 +170,15 @@ export default function DraftScreen() {
                 </View>
             </View>
 
+            <View style={styles.headerDivider} />
+
             {/* Asset Selection */}
             <View style={styles.mainContent}>
                 <View style={styles.searchContainer}>
                     <TextInput
-                        style={[styles.searchInput, { backgroundColor: cardBg, borderColor, color: textColor }]}
+                        style={styles.searchInput}
                         placeholder="Search assets..."
-                        placeholderTextColor="#888"
+                        placeholderTextColor={c.onSurfaceVariant}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
@@ -192,7 +190,6 @@ export default function DraftScreen() {
                             key={asset.id}
                             style={[
                                 styles.assetCard,
-                                { backgroundColor: cardBg, borderColor },
                                 asset.isLocked && styles.lockedAsset
                             ]}
                             onPress={() => isMyTurn && handlePick(asset)}
@@ -205,10 +202,10 @@ export default function DraftScreen() {
                                 </View>
                                 <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
                                 <View style={styles.badges}>
-                                    <View style={[styles.badge, { backgroundColor: '#E0E0E0' }]}>
+                                    <View style={styles.badge}>
                                         <ThemedText style={styles.badgeText}>{asset.type}</ThemedText>
                                     </View>
-                                    <View style={[styles.badge, { backgroundColor: asset.tier === 'Tier 1' ? '#E0E0E0' : '#FFD700' }]}>
+                                    <View style={[styles.badge, asset.tier !== 'Tier 1' && { backgroundColor: '#FFD700' }]}>
                                         <ThemedText style={styles.badgeText}>{asset.tier}</ThemedText>
                                     </View>
                                 </View>
@@ -216,13 +213,13 @@ export default function DraftScreen() {
 
                             <View style={styles.priceInfo}>
                                 <ThemedText style={styles.price}>${asset.currentPrice.toFixed(2)}</ThemedText>
-                                <ThemedText style={{ color: asset.changePercent >= 0 ? '#4CAF50' : '#FF4444' }}>
+                                <ThemedText style={{ color: asset.changePercent >= 0 ? c.success : c.danger }}>
                                     {asset.changePercent > 0 ? '+' : ''}{asset.changePercent}%
                                 </ThemedText>
                             </View>
 
                             {isMyTurn && !asset.isLocked && (
-                                <View style={[styles.pickButton, { backgroundColor: primaryColor }]}>
+                                <View style={styles.pickButton}>
                                     <ThemedText style={styles.pickButtonText}>PICK</ThemedText>
                                 </View>
                             )}
@@ -232,11 +229,12 @@ export default function DraftScreen() {
             </View>
 
             {/* Recent Picks Footer */}
-            <View style={[styles.footer, { borderTopColor: borderColor, backgroundColor: cardBg }]}>
+            <View style={styles.footerDivider} />
+            <View style={styles.footer}>
                 <ThemedText style={styles.footerTitle}>Recent Picks</ThemedText>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {draftState.picks.slice(-5).reverse().map((pick, index) => (
-                        <View key={index} style={[styles.recentPick, { borderColor }]}>
+                        <View key={index} style={styles.recentPick}>
                             <ThemedText style={styles.recentPickTicker}>
                                 {MOCK_ASSETS.find(a => a.id === pick.assetId)?.ticker || 'Unknown'}
                             </ThemedText>
@@ -252,6 +250,7 @@ export default function DraftScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     centered: {
         justifyContent: 'center',
@@ -261,56 +260,61 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
+        padding: Spacing.md,
+    },
+    headerDivider: {
+        height: 1,
+        backgroundColor: c.surfaceContainerHigh,
+        marginHorizontal: '10%',
     },
     roundInfo: {
         alignItems: 'flex-start',
     },
     roundText: {
-        fontSize: 12,
-        opacity: 0.7,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
     },
     pickText: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        ...Typography['title-lg'],
     },
     timerContainer: {
         alignItems: 'flex-end',
     },
     timer: {
         fontSize: 24,
-        fontWeight: 'bold',
+        fontFamily: 'Inter_600SemiBold',
         fontVariant: ['tabular-nums'],
     },
     onClockText: {
-        fontSize: 12,
-        fontWeight: '600',
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     mainContent: {
         flex: 1,
     },
     searchContainer: {
-        padding: 16,
+        padding: Spacing.md,
     },
     searchInput: {
         height: 44,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
+        color: c.onSurface,
     },
     assetList: {
         flex: 1,
-        paddingHorizontal: 16,
+        paddingHorizontal: Spacing.md,
     },
     assetCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 8,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.sm,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     lockedAsset: {
         opacity: 0.6,
@@ -324,16 +328,16 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     ticker: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     lockIcon: {
         fontSize: 12,
     },
     assetName: {
-        fontSize: 12,
-        opacity: 0.7,
-        marginBottom: 4,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.xs,
     },
     badges: {
         flexDirection: 'row',
@@ -342,67 +346,78 @@ const styles = StyleSheet.create({
     badge: {
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: Radii.sm,
+        backgroundColor: c.surfaceContainerHigh,
     },
     badgeText: {
+        ...Typography['label-md'],
         fontSize: 10,
-        color: '#000',
-        fontWeight: '600',
+        color: c.onSurface,
+        fontFamily: 'Inter_500Medium',
     },
     priceInfo: {
         alignItems: 'flex-end',
-        marginRight: 12,
+        marginRight: Spacing.md,
     },
     price: {
-        fontSize: 16,
-        fontWeight: '600',
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     pickButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
+        backgroundColor: c.primary,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: Radii.lg,
     },
     pickButtonText: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
+    },
+    footerDivider: {
+        height: 1,
+        backgroundColor: c.surfaceContainerHigh,
+        marginHorizontal: '10%',
     },
     footer: {
-        padding: 16,
-        borderTopWidth: 1,
+        padding: Spacing.md,
+        backgroundColor: c.surfaceContainerLow,
         height: 120,
     },
     footerTitle: {
-        fontSize: 12,
-        fontWeight: '600',
-        marginBottom: 8,
-        opacity: 0.7,
+        ...Typography['label-md'],
+        fontFamily: 'Inter_600SemiBold',
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.sm,
     },
     recentPick: {
         width: 80,
         height: 60,
-        borderWidth: 1,
-        borderRadius: 8,
-        marginRight: 8,
+        borderRadius: Radii.sm,
+        marginRight: Spacing.sm,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 4,
+        padding: Spacing.xs,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     recentPickTicker: {
-        fontWeight: 'bold',
+        fontFamily: 'Inter_600SemiBold',
     },
     recentPickUser: {
+        ...Typography['label-md'],
         fontSize: 10,
-        opacity: 0.7,
+        color: c.onSurfaceVariant,
     },
     startButton: {
-        paddingHorizontal: 32,
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: c.primary,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.md,
+        borderRadius: Radii.lg,
     },
     startButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+        color: c.onPrimary,
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
 });

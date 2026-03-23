@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { AssetAllocationManager } from '@/components/portfolio/asset-allocation-manager';
@@ -36,14 +36,12 @@ export default function PortfolioScreen() {
     refreshPortfolios,
   } = usePortfolio();
 
-  // Refresh portfolios whenever this tab gains focus
   useFocusEffect(
     useCallback(() => {
       refreshPortfolios();
     }, [refreshPortfolios])
   );
 
-  // Fetch groups
   useEffect(() => {
     const fetchGroups = async () => {
       if (!authLoaded || !isSignedIn || !userId) {
@@ -61,31 +59,26 @@ export default function PortfolioScreen() {
     fetchGroups();
   }, [authLoaded, isSignedIn, userId]);
 
-  // Pre-select group if passed as parameter
   useEffect(() => {
     if (paramLeagueId && typeof paramLeagueId === 'string') {
       setSelectedLeagueId(paramLeagueId);
     }
   }, [paramLeagueId]);
 
-  const primaryColor = useThemeColor({}, 'tint');
-  const cardBackground = useThemeColor({}, 'cardBackground');
-  const borderColor = useThemeColor({}, 'border');
-
   const currentPortfolio = getCurrentPortfolio();
 
   if (loading) {
     return (
       <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ThemedText>Loading portfolios...</ThemedText>
+        <ThemedText type="body-lg">Loading portfolios...</ThemedText>
       </ThemedView>
     );
   }
 
   if (!currentPortfolio) {
     return (
-      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <ThemedText style={{ textAlign: 'center', marginBottom: 16 }}>
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }]}>
+        <ThemedText type="body-lg" style={{ textAlign: 'center', marginBottom: Spacing.md }}>
           No portfolios found. Join or create a group to get started!
         </ThemedText>
       </ThemedView>
@@ -108,23 +101,22 @@ export default function PortfolioScreen() {
     <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
         {/* Group Selector */}
-        <View style={[styles.leagueSelector, { backgroundColor: cardBackground }]}>
-          <ThemedText style={styles.sectionLabel}>Group</ThemedText>
+        <View style={[styles.leagueSelector, { backgroundColor: c.surfaceContainerLowest }]}>
+          <ThemedText type="label-lg" style={styles.sectionLabel}>Group</ThemedText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueTabs}>
             {groups.map((group) => (
               <TouchableOpacity
                 key={group.id}
                 style={[
                   styles.leagueTab,
-                  selectedLeagueId === group.id && {
-                    backgroundColor: primaryColor,
-                    borderColor: primaryColor,
+                  {
+                    backgroundColor: selectedLeagueId === group.id ? c.primary : c.surfaceContainerLow,
                   },
-                  selectedLeagueId !== group.id && { borderColor },
                 ]}
                 onPress={() => setSelectedLeagueId(group.id)}
               >
                 <ThemedText
+                  type="label-lg"
                   style={[
                     styles.leagueTabText,
                     selectedLeagueId === group.id && styles.leagueTabTextActive,
@@ -133,6 +125,7 @@ export default function PortfolioScreen() {
                   {group.name}
                 </ThemedText>
                 <ThemedText
+                  type="label-md"
                   style={[
                     styles.leagueMemberCount,
                     selectedLeagueId === group.id && styles.leagueMemberCountActive,
@@ -146,38 +139,38 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Portfolio Value */}
-        <View style={[styles.valueCard, { backgroundColor: cardBackground }]}>
-          <ThemedText style={styles.valueLabel}>Total Portfolio Value</ThemedText>
+        <View style={[styles.valueCard, { backgroundColor: c.surfaceContainerLowest, ...AmbientShadow }]}>
+          <ThemedText type="label-lg" style={styles.valueLabel}>Total Portfolio Value</ThemedText>
           <ThemedText style={styles.valueAmount}>
             ${currentPortfolio.totalValue.toFixed(2)}
           </ThemedText>
           <View style={styles.balanceRow}>
             <View style={styles.balanceItem}>
-              <ThemedText style={styles.balanceLabel}>Cash</ThemedText>
-              <ThemedText style={styles.balanceValue}>
+              <ThemedText type="label-md" style={styles.balanceLabel}>Cash</ThemedText>
+              <ThemedText type="title-md" style={styles.balanceValue}>
                 ${currentPortfolio.liquidFunds.toFixed(2)}
               </ThemedText>
             </View>
             <View style={styles.balanceItem}>
-              <ThemedText style={styles.balanceLabel}>Stocks</ThemedText>
-              <ThemedText style={styles.balanceValue}>
+              <ThemedText type="label-md" style={styles.balanceLabel}>Stocks</ThemedText>
+              <ThemedText type="title-md" style={styles.balanceValue}>
                 ${(currentPortfolio.totalValue - currentPortfolio.liquidFunds - currentPortfolio.allocation.savings - currentPortfolio.allocation.bonds - currentPortfolio.allocation.indexFunds).toFixed(2)}
               </ThemedText>
             </View>
             <View style={styles.balanceItem}>
-              <ThemedText style={styles.balanceLabel}>Other</ThemedText>
-              <ThemedText style={styles.balanceValue}>
+              <ThemedText type="label-md" style={styles.balanceLabel}>Other</ThemedText>
+              <ThemedText type="title-md" style={styles.balanceValue}>
                 ${(currentPortfolio.allocation.savings + currentPortfolio.allocation.bonds + currentPortfolio.allocation.indexFunds).toFixed(2)}
               </ThemedText>
             </View>
           </View>
-          <ThemedText style={styles.balanceNote}>
+          <ThemedText type="label-md" style={styles.balanceNote}>
             Portfolio value is automatically updated every hour with real-time stock prices
           </ThemedText>
         </View>
 
         {/* Performance Chart */}
-        <View style={[styles.chartCard, { backgroundColor: cardBackground }]}>
+        <View style={[styles.chartCard, { backgroundColor: c.surfaceContainerLowest }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
             sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}
@@ -185,7 +178,7 @@ export default function PortfolioScreen() {
           />
         </View>
 
-        {/* Time Frame Selector */}
+        {/* Time Frame Selector — pill buttons */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -196,12 +189,14 @@ export default function PortfolioScreen() {
               key={tf}
               style={[
                 styles.timeFrameButton,
-                timeFrame === tf && { backgroundColor: primaryColor },
-                timeFrame !== tf && { borderColor },
+                {
+                  backgroundColor: timeFrame === tf ? c.primary : c.surfaceContainerHigh,
+                },
               ]}
               onPress={() => setTimeFrame(tf)}
             >
               <ThemedText
+                type="label-lg"
                 style={[
                   styles.timeFrameText,
                   timeFrame === tf && styles.timeFrameTextActive,
@@ -213,8 +208,8 @@ export default function PortfolioScreen() {
           ))}
         </ScrollView>
 
-        {/* Other Assets - Buy/Sell */}
-        <View style={[styles.section, { backgroundColor: cardBackground }]}>
+        {/* Other Assets */}
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <AssetAllocationManager
             allocation={currentPortfolio.allocation}
             cashBalance={currentPortfolio.liquidFunds}
@@ -223,7 +218,7 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Stock Search */}
-        <View style={[styles.section, { backgroundColor: cardBackground }]}>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <StockSearch
             liquidFunds={currentPortfolio.liquidFunds}
             onBuyStock={handleBuyStock}
@@ -231,7 +226,7 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Holdings List */}
-        <View style={[styles.section, { backgroundColor: cardBackground }]}>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <HoldingsList holdings={currentPortfolio.holdings} onSellStock={handleSellStock} />
         </View>
       </ThemedView>
@@ -240,120 +235,99 @@ export default function PortfolioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
+  container: { flex: 1 },
+  content: { padding: Spacing.md },
+
   leagueSelector: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    ...SubtleShadow,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    opacity: 0.7,
+    color: Colors.light.onSurfaceVariant,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  leagueTabs: {
-    flexDirection: 'row',
-  },
+  leagueTabs: { flexDirection: 'row' },
   leagueTab: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: Radii.md,
     marginRight: 12,
-    borderWidth: 2,
     minWidth: 120,
+    // No borderWidth
   },
   leagueTabText: {
-    fontSize: 14,
-    fontWeight: '600',
     marginBottom: 2,
+    color: Colors.light.onSurface,
   },
-  leagueTabTextActive: {
-    color: '#fff',
-  },
+  leagueTabTextActive: { color: '#fff' },
   leagueMemberCount: {
-    fontSize: 12,
-    opacity: 0.6,
+    color: Colors.light.onSurfaceVariant,
   },
-  leagueMemberCountActive: {
-    color: '#fff',
-    opacity: 0.8,
-  },
+  leagueMemberCountActive: { color: '#fff', opacity: 0.8 },
+
   valueCard: {
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
     alignItems: 'center',
   },
   valueLabel: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 8,
+    color: Colors.light.onSurfaceVariant,
+    marginBottom: Spacing.sm,
   },
   valueAmount: {
     fontSize: 36,
-    fontWeight: '700',
-    marginBottom: 16,
+    fontFamily: Typography['display-md'].fontFamily,
+    color: Colors.light.onSurface,
+    marginBottom: Spacing.md,
   },
   balanceRow: {
     flexDirection: 'row',
-    gap: 32,
+    gap: Spacing.xl,
     marginBottom: 12,
   },
-  balanceItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
+  balanceItem: { alignItems: 'center', flex: 1 },
   balanceLabel: {
-    fontSize: 12,
-    opacity: 0.6,
+    color: Colors.light.onSurfaceVariant,
     marginBottom: 4,
   },
-  balanceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  balanceValue: {},
   balanceNote: {
-    fontSize: 11,
-    opacity: 0.5,
+    color: Colors.light.onSurfaceVariant,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: Spacing.sm,
     fontStyle: 'italic',
   },
+
   timeFrameContainer: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.md,
   },
   timeFrameButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radii.full,
     minWidth: 60,
     alignItems: 'center',
+    // No borderWidth
   },
-  timeFrameText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  timeFrameTextActive: {
-    color: '#fff',
-  },
+  timeFrameText: { color: Colors.light.onSurface },
+  timeFrameTextActive: { color: '#fff' },
+
   chartCard: {
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    ...SubtleShadow,
   },
   section: {
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    ...SubtleShadow,
   },
 });

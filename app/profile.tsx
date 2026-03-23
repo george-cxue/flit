@@ -12,11 +12,12 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { apiClient } from '@/src/services/api';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+const c = Colors.light;
 
 interface ProfileUser {
   id: string;
@@ -43,8 +44,6 @@ export default function ProfileScreen() {
   const { user: authUser, updateUserFromProfile } = useAuthContext();
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
 
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -166,20 +165,20 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.center, { backgroundColor: c.surface }]}>
+        <ActivityIndicator size="large" color={c.primary} />
       </View>
     );
   }
 
   if (error || !profile) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: c.surface }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
+          <MaterialIcons name="arrow-back" size={24} color={c.onSurface} />
         </TouchableOpacity>
         <View style={styles.center}>
-          <Text style={[styles.errorText, { color: colors.danger }]}>
+          <Text style={[styles.errorText, { color: c.danger }]}>
             {error ?? 'Profile not found'}
           </Text>
         </View>
@@ -195,20 +194,20 @@ export default function ProfileScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: c.surface }]}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
+          <MaterialIcons name="arrow-back" size={24} color={c.onSurface} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: c.onSurface }]}>Profile</Text>
         {!isEditing ? (
           <TouchableOpacity onPress={() => setIsEditing(true)}>
-            <Text style={[styles.editButton, { color: colors.primary }]}>Edit</Text>
+            <Text style={[styles.editButton, { color: c.primary }]}>Edit</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleCancel} disabled={isSaving}>
-            <Text style={[styles.editButton, { color: colors.icon }]}>Cancel</Text>
+            <Text style={[styles.editButton, { color: c.onSurfaceVariant }]}>Cancel</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -218,112 +217,127 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Avatar & name - Clerk-style */}
-        <View style={[styles.profileHeader, { borderBottomColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+        {/* Avatar & name */}
+        <View style={styles.profileHeader}>
+          <View style={[styles.avatar, { backgroundColor: c.primary }]}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <Text style={[styles.displayName, { color: colors.text }]}>
+          <Text style={[styles.displayName, { color: c.onSurface }]}>
             {profile.firstName || profile.lastName
               ? [profile.firstName, profile.lastName].filter(Boolean).join(' ')
               : profile.username}
           </Text>
           {profile.email && (
-            <Text style={[styles.email, { color: colors.icon }]}>{profile.email}</Text>
+            <Text style={[styles.email, { color: c.onSurfaceVariant }]}>{profile.email}</Text>
           )}
         </View>
 
-        {/* Profile sections - Clerk-inspired */}
+        {/* Floating divider instead of borderBottom */}
+        <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+
+        {/* Profile sections */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.icon }]}>
+          <Text style={[styles.sectionTitle, { color: c.onSurfaceVariant }]}>
             Personal Information
           </Text>
 
           {saveError && (
-            <View style={[styles.errorBanner, { backgroundColor: colors.danger + '20' }]}>
-              <Text style={[styles.errorBannerText, { color: colors.danger }]}>
+            <View style={[styles.errorBanner, { backgroundColor: c.danger + '20' }]}>
+              <Text style={[styles.errorBannerText, { color: c.danger }]}>
                 {saveError}
               </Text>
             </View>
           )}
 
-          <View style={[styles.field, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.label, { color: colors.icon }]}>First Name</Text>
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: c.onSurfaceVariant }]}>First Name</Text>
             {isEditing ? (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={c.onSurfaceVariant}
                 autoCapitalize="words"
               />
             ) : (
-              <Text style={[styles.value, { color: colors.text }]}>
-                {profile.firstName || '—'}
+              <Text style={[styles.value, { color: c.onSurface }]}>
+                {profile.firstName || '\u2014'}
               </Text>
             )}
           </View>
 
-          <View style={[styles.field, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.label, { color: colors.icon }]}>Last Name</Text>
+          {/* Floating divider */}
+          <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Last Name</Text>
             {isEditing ? (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Last name"
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={c.onSurfaceVariant}
                 autoCapitalize="words"
               />
             ) : (
-              <Text style={[styles.value, { color: colors.text }]}>
-                {profile.lastName || '—'}
+              <Text style={[styles.value, { color: c.onSurface }]}>
+                {profile.lastName || '\u2014'}
               </Text>
             )}
           </View>
 
-          <View style={[styles.field, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.label, { color: colors.icon }]}>Username</Text>
+          {/* Floating divider */}
+          <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Username</Text>
             {isEditing ? (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Username"
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={c.onSurfaceVariant}
                 autoCapitalize="none"
               />
             ) : (
-              <Text style={[styles.value, { color: colors.text }]}>
+              <Text style={[styles.value, { color: c.onSurface }]}>
                 {profile.username}
               </Text>
             )}
           </View>
 
-          <View style={[styles.field, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.label, { color: colors.icon }]}>Date of Birth</Text>
+          {/* Floating divider */}
+          <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Date of Birth</Text>
             {isEditing ? (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
                 value={dateOfBirth}
                 onChangeText={setDateOfBirth}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={c.onSurfaceVariant}
               />
             ) : (
-              <Text style={[styles.value, { color: colors.text }]}>
+              <Text style={[styles.value, { color: c.onSurface }]}>
                 {profile.dateOfBirth
                   ? formatDateForInput(profile.dateOfBirth)
-                  : '—'}
+                  : '\u2014'}
               </Text>
             )}
           </View>
 
-          <View style={[styles.field]}>
-            <Text style={[styles.label, { color: colors.icon }]}>Email</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{profile.email}</Text>
-            <Text style={[styles.hint, { color: colors.icon }]}>
+          {/* Floating divider */}
+          <View style={{ height: 1, backgroundColor: c.surfaceContainerHigh, marginHorizontal: '10%' }} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Email</Text>
+            <Text style={[styles.value, { color: c.onSurface }]}>{profile.email}</Text>
+            <Text style={[styles.hint, { color: c.onSurfaceVariant }]}>
               Email cannot be changed here
             </Text>
           </View>
@@ -331,14 +345,14 @@ export default function ProfileScreen() {
 
         {isEditing && (
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: colors.primary }]}
+            style={[styles.saveButton, { backgroundColor: c.primary }]}
             onPress={handleSave}
             disabled={isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color={c.onPrimary} size="small" />
             ) : (
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+              <Text style={[styles.saveButtonText, { color: c.onPrimary }]}>Save Changes</Text>
             )}
           </TouchableOpacity>
         )}
@@ -362,110 +376,131 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
     paddingTop: 56,
-    borderBottomWidth: 1,
+    backgroundColor: c.surfaceContainerLowest,
+    ...SubtleShadow,
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: Spacing.sm,
+    marginLeft: -Spacing.sm,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: Typography['title-lg'].fontFamily,
+    fontSize: Typography['title-lg'].fontSize,
+    lineHeight: Typography['title-lg'].lineHeight,
   },
   editButton: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontFamily: Typography['title-md'].fontFamily,
+    fontSize: Typography['title-md'].fontSize,
+    lineHeight: Typography['title-md'].lineHeight,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
+    padding: Spacing.lg,
   },
   profileHeader: {
     alignItems: 'center',
-    paddingBottom: 24,
-    marginBottom: 24,
-    borderBottomWidth: 1,
+    paddingBottom: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.sm + 4,
+    ...AmbientShadow,
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '600',
+    color: c.onPrimary,
+    fontFamily: Typography['headline-md'].fontFamily,
+    fontSize: Typography['headline-md'].fontSize,
   },
   displayName: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontFamily: Typography['title-lg'].fontFamily,
+    fontSize: Typography['title-lg'].fontSize,
+    lineHeight: Typography['title-lg'].lineHeight,
+    marginBottom: Spacing.xs,
   },
   email: {
-    fontSize: 15,
-    opacity: 0.8,
+    fontFamily: Typography['body-md'].fontFamily,
+    fontSize: Typography['body-md'].fontSize,
+    lineHeight: Typography['body-md'].lineHeight,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
+    backgroundColor: c.surfaceContainerLowest,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    ...SubtleShadow,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Typography['label-md'].fontFamily,
+    fontSize: Typography['label-md'].fontSize,
+    lineHeight: Typography['label-md'].lineHeight,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   field: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: Spacing.sm + 4,
   },
   label: {
-    fontSize: 12,
-    marginBottom: 6,
+    fontFamily: Typography['label-md'].fontFamily,
+    fontSize: Typography['label-md'].fontSize,
+    lineHeight: Typography['label-md'].lineHeight,
+    marginBottom: Spacing.xs + 2,
   },
   value: {
-    fontSize: 16,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    lineHeight: Typography['body-lg'].lineHeight,
   },
   input: {
-    fontSize: 16,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    lineHeight: Typography['body-lg'].lineHeight,
+    borderRadius: Radii.sm,
+    padding: Spacing.sm + 4,
   },
   hint: {
-    fontSize: 12,
-    marginTop: 4,
-    opacity: 0.7,
+    fontFamily: Typography['label-md'].fontFamily,
+    fontSize: Typography['label-md'].fontSize,
+    lineHeight: Typography['label-md'].lineHeight,
+    marginTop: Spacing.xs,
   },
   errorBanner: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: Spacing.sm + 4,
+    borderRadius: Radii.sm,
+    marginBottom: Spacing.md,
   },
   errorBannerText: {
-    fontSize: 14,
+    fontFamily: Typography['body-md'].fontFamily,
+    fontSize: Typography['body-md'].fontSize,
+    lineHeight: Typography['body-md'].lineHeight,
   },
   errorText: {
-    fontSize: 16,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    lineHeight: Typography['body-lg'].lineHeight,
   },
   saveButton: {
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: Radii.lg,
+    padding: Spacing.md,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Spacing.sm,
+    ...AmbientShadow,
   },
   saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography['title-md'].fontFamily,
+    fontSize: Typography['title-md'].fontSize,
+    lineHeight: Typography['title-md'].lineHeight,
   },
   bottomPadding: {
     height: 40,

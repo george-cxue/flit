@@ -1,11 +1,13 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { WaiverService } from '@/src/services/fantasy/waiverService';
 import { Asset } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+
+const c = Colors.light;
 
 export default function PlayersScreen() {
     const { id } = useLocalSearchParams(); // Group ID
@@ -14,11 +16,6 @@ export default function PlayersScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [claiming, setClaiming] = useState<string | null>(null);
-
-    const primaryColor = useThemeColor({}, 'primary' as any);
-    const cardBg = useThemeColor({}, 'cardBackground' as any);
-    const borderColor = useThemeColor({}, 'border' as any);
-    const textColor = useThemeColor({}, 'text' as any);
 
     const fetchAssets = async () => {
         if (typeof id === 'string') {
@@ -59,22 +56,22 @@ export default function PlayersScreen() {
         <ThemedView style={styles.container}>
             <View style={styles.searchContainer}>
                 <TextInput
-                    style={[styles.searchInput, { backgroundColor: cardBg, borderColor, color: textColor }]}
+                    style={styles.searchInput}
                     placeholder="Search players..."
-                    placeholderTextColor="#888"
+                    placeholderTextColor={c.onSurfaceVariant}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color={primaryColor} style={{ marginTop: 20 }} />
+                <ActivityIndicator size="large" color={c.primary} style={{ marginTop: Spacing.lg }} />
             ) : (
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                     {assets.map((asset) => (
                         <TouchableOpacity
                             key={asset.id}
-                            style={[styles.assetCard, { backgroundColor: cardBg, borderColor }]}
+                            style={styles.assetCard}
                             onPress={() => router.push(`/fantasy/asset/${asset.id}`)}
                         >
                             <View style={styles.assetInfo}>
@@ -84,10 +81,10 @@ export default function PlayersScreen() {
                                 </View>
                                 <ThemedText style={styles.assetName}>{asset.name}</ThemedText>
                                 <View style={styles.badges}>
-                                    <View style={[styles.badge, { backgroundColor: '#E0E0E0' }]}>
+                                    <View style={styles.badge}>
                                         <ThemedText style={styles.badgeText}>{asset.type}</ThemedText>
                                     </View>
-                                    <View style={[styles.badge, { backgroundColor: asset.tier === 'Tier 1' ? '#E0E0E0' : '#FFD700' }]}>
+                                    <View style={[styles.badge, asset.tier !== 'Tier 1' && { backgroundColor: '#FFD700' }]}>
                                         <ThemedText style={styles.badgeText}>{asset.tier}</ThemedText>
                                     </View>
                                 </View>
@@ -98,7 +95,7 @@ export default function PlayersScreen() {
                                 <TouchableOpacity
                                     style={[
                                         styles.claimButton,
-                                        { backgroundColor: primaryColor, opacity: asset.isLocked ? 0.5 : 1 }
+                                        { opacity: asset.isLocked ? 0.5 : 1 }
                                     ]}
                                     onPress={() => handleClaim(asset)}
                                     disabled={claiming === asset.id}
@@ -119,31 +116,34 @@ export default function PlayersScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: c.surface,
     },
     searchContainer: {
-        padding: 16,
+        padding: Spacing.md,
     },
     searchInput: {
         height: 44,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        backgroundColor: c.surfaceContainerHigh,
+        borderRadius: Radii.md,
+        paddingHorizontal: Spacing.md,
+        color: c.onSurface,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 16,
+        padding: Spacing.md,
         paddingTop: 0,
     },
     assetCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 8,
+        padding: Spacing.md,
+        borderRadius: Radii.md,
+        marginBottom: Spacing.sm,
+        backgroundColor: c.surfaceContainerLowest,
+        ...SubtleShadow,
     },
     assetInfo: {
         flex: 1,
@@ -154,16 +154,16 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     ticker: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        ...Typography['title-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     lockIcon: {
         fontSize: 12,
     },
     assetName: {
-        fontSize: 12,
-        opacity: 0.7,
-        marginBottom: 4,
+        ...Typography['label-md'],
+        color: c.onSurfaceVariant,
+        marginBottom: Spacing.xs,
     },
     badges: {
         flexDirection: 'row',
@@ -172,20 +172,22 @@ const styles = StyleSheet.create({
     badge: {
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: Radii.sm,
+        backgroundColor: c.surfaceContainerHigh,
     },
     badgeText: {
+        ...Typography['label-md'],
         fontSize: 10,
-        color: '#000',
-        fontWeight: '600',
+        color: c.onSurface,
+        fontFamily: 'Inter_500Medium',
     },
     actionContainer: {
         alignItems: 'flex-end',
-        gap: 8,
+        gap: Spacing.sm,
     },
     price: {
-        fontSize: 14,
-        fontWeight: '600',
+        ...Typography['body-md'],
+        fontFamily: 'Inter_600SemiBold',
     },
     claimButton: {
         width: 32,
@@ -193,11 +195,12 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: c.primary,
     },
     claimButtonText: {
-        color: '#FFFFFF',
+        color: c.onPrimary,
         fontSize: 18,
-        fontWeight: 'bold',
+        fontFamily: 'Inter_600SemiBold',
         marginTop: -2,
     },
 });

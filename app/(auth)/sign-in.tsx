@@ -1,15 +1,15 @@
 import { useSignIn } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { TextInput, TouchableOpacity, View, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import React, { useState } from 'react';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography, Radii, Spacing } from '@/constants/theme';
+import { ThemedText } from '@/components/themed-text';
+
+const c = Colors.light;
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
 
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
@@ -43,87 +43,71 @@ export default function SignInScreen() {
     }
   };
 
-  const styles = createStyles(colors);
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+          <ThemedText type="headline-lg" style={styles.title}>Welcome Back</ThemedText>
         </View>
 
         <View style={styles.form}>
           {error ? (
-            <View style={[styles.errorContainer, { backgroundColor: colors.danger + '20' }]}>
-              <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+            <View style={styles.errorContainer}>
+              <ThemedText type="body-md" style={styles.errorText}>{error}</ThemedText>
             </View>
           ) : null}
 
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <ThemedText type="label-lg" style={styles.label}>Email</ThemedText>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.cardBackground,
-                  color: colors.text,
-                  borderColor: colors.border,
-                },
-              ]}
+              style={styles.input}
               autoCapitalize="none"
               keyboardType="email-address"
               value={emailAddress}
               placeholder="Enter your email"
-              placeholderTextColor={colors.icon}
+              placeholderTextColor={c.onSurfaceVariant}
               onChangeText={setEmailAddress}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <ThemedText type="label-lg" style={styles.label}>Password</ThemedText>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.cardBackground,
-                  color: colors.text,
-                  borderColor: colors.border,
-                },
-              ]}
+              style={styles.input}
               value={password}
               placeholder="Enter your password"
-              placeholderTextColor={colors.icon}
+              placeholderTextColor={c.onSurfaceVariant}
               secureTextEntry={true}
               onChangeText={setPassword}
             />
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={styles.button}
             onPress={onSignInPress}
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={c.onPrimary} />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <ThemedText type="title-md" style={styles.buttonText}>Sign In</ThemedText>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.icon }]}>
-            Don't have an account?{' '}
-          </Text>
+          <ThemedText type="body-md" style={styles.footerText}>
+            Don&apos;t have an account?{' '}
+          </ThemedText>
           <Link href="/sign-up" asChild>
             <TouchableOpacity>
-              <Text style={[styles.linkText, { color: colors.primary }]}>Sign up</Text>
+              <ThemedText type="label-lg" style={styles.linkText}>Sign up</ThemedText>
             </TouchableOpacity>
           </Link>
         </View>
@@ -132,72 +116,68 @@ export default function SignInScreen() {
   );
 }
 
-const createStyles = (colors: typeof Colors.light) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      padding: 24,
-      justifyContent: 'center',
-    },
-    header: {
-      marginBottom: 32,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: '700',
-      marginBottom: 8,
-    },
-    subtitle: {
-      fontSize: 16,
-    },
-    form: {
-      gap: 16,
-    },
-    inputContainer: {
-      gap: 8,
-    },
-    label: {
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    input: {
-      borderWidth: 1,
-      borderRadius: 12,
-      padding: 16,
-      fontSize: 16,
-    },
-    button: {
-      borderRadius: 12,
-      padding: 16,
-      alignItems: 'center',
-      marginTop: 8,
-    },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    footer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 24,
-    },
-    footerText: {
-      fontSize: 14,
-    },
-    linkText: {
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    errorContainer: {
-      padding: 12,
-      borderRadius: 8,
-    },
-    errorText: {
-      fontSize: 14,
-      textAlign: 'center',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: c.surface,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: Spacing.lg,
+    justifyContent: 'center',
+  },
+  header: {
+    marginBottom: Spacing.xl,
+  },
+  title: {
+    color: c.onSurface,
+    marginBottom: Spacing.sm,
+  },
+  form: {
+    gap: Spacing.md,
+  },
+  inputContainer: {
+    gap: Spacing.sm,
+  },
+  label: {
+    color: c.onSurface,
+  },
+  input: {
+    backgroundColor: c.surfaceContainerHigh,
+    borderRadius: Radii.sm,
+    padding: Spacing.md,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    color: c.onSurface,
+  },
+  button: {
+    borderRadius: Radii.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    backgroundColor: c.primary,
+  },
+  buttonText: {
+    color: c.onPrimary,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: Spacing.lg,
+  },
+  footerText: {
+    color: c.onSurfaceVariant,
+  },
+  linkText: {
+    color: c.primary,
+  },
+  errorContainer: {
+    padding: Spacing.md,
+    borderRadius: Radii.sm,
+    backgroundColor: c.danger + '20',
+  },
+  errorText: {
+    color: c.danger,
+    textAlign: 'center',
+  },
+});
