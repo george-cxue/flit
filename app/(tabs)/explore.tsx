@@ -433,7 +433,7 @@ export default function ExploreScreen() {
 
           {!loadingWatchlist && watchlist.length === 0 && (
             <View style={styles.emptyState}>
-              <IconSymbol name="star" size={48} color="#999" />
+              <IconSymbol name="star.fill" size={48} color="#999" />
               <ThemedText style={styles.emptyText}>Your watchlist is empty</ThemedText>
               <ThemedText style={styles.emptyHint}>Search for stocks above to add them</ThemedText>
             </View>
