@@ -2,14 +2,13 @@
  * "The Architectural Mentor" Design System
  *
  * Colors, typography, spacing, and elevation tokens.
- * Light mode only. Dark mode keys are mirrored as placeholders.
+ * Supports light and dark mode palettes.
  */
 
 import { Platform, ViewStyle } from 'react-native';
 
 // ─── Colors ───────────────────────────────────────────────
-export const Colors = {
-  light: {
+const lightPalette = {
     // Brand
     primary: '#004be4',
     primaryContainer: '#0356ff',
@@ -48,10 +47,9 @@ export const Colors = {
     tabIconSelected: '#004be4',
     cardBackground: '#ffffff',
     border: 'rgba(44, 52, 55, 0.15)',
-  },
+};
 
-  // Dark mode: mirror keys with placeholder values (deferred)
-  dark: {
+const darkPalette = {
     primary: '#6B9BFF',
     primaryContainer: '#4a7aff',
     onPrimary: '#ffffff',
@@ -84,8 +82,20 @@ export const Colors = {
     tabIconSelected: '#6B9BFF',
     cardBackground: '#1E293B',
     border: 'rgba(236, 237, 238, 0.15)',
-  },
 };
+
+// Mutable active palette to maintain compatibility with existing `Colors.light` usage.
+const activePalette = { ...lightPalette };
+
+export const Colors = {
+  light: activePalette,
+  dark: darkPalette,
+};
+
+export function setActiveThemePalette(mode: 'light' | 'dark') {
+  const source = mode === 'dark' ? darkPalette : lightPalette;
+  Object.assign(activePalette, source);
+}
 
 // ─── Typography ───────────────────────────────────────────
 // Manrope: display & headlines (editorial, geometric)

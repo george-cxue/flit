@@ -51,13 +51,16 @@ const getApiUrl = (): string => {
     return 'http://localhost:3000/api';
   }
 
-  throw new Error('Missing EXPO_PUBLIC_API_URL for non-development build');
+  // Production URL
+  return 'https://flit-backend.onrender.com/api';
 };
 
 // Create axios instance with default config
+const apiBaseUrl = getApiUrl();
 export const apiClient = axios.create({
-  baseURL: getApiUrl(),
-  timeout: 10000, // 10 second timeout
+  baseURL: apiBaseUrl,
+  // 45s timeout for remote APIs (Render cold start can take ~30–50s on free tier)
+  timeout: apiBaseUrl.includes('onrender.com') ? 45000 : 10000,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
@@ -16,11 +17,14 @@ import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useThemeMode } from '@/contexts/theme-context';
 
 export default function PortfolioScreen() {
+  const insets = useSafeAreaInsets();
   const { leagueId: paramLeagueId } = useLocalSearchParams();
   const [groups, setGroups] = React.useState<Group[]>([]);
   const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
+  const { themeMode } = useThemeMode();
 
   const {
     selectedLeagueId,
@@ -65,7 +69,8 @@ export default function PortfolioScreen() {
     }
   }, [paramLeagueId]);
 
-  const c = Colors.light;
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const currentPortfolio = getCurrentPortfolio();
 
   if (loading) {
@@ -99,7 +104,7 @@ export default function PortfolioScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       <ThemedView style={styles.content}>
         {/* Group Selector */}
         <View style={[styles.leagueSelector, { backgroundColor: c.surfaceContainerLowest }]}>
@@ -221,6 +226,7 @@ export default function PortfolioScreen() {
         {/* Stock Search */}
         <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <StockSearch
+            groupId={selectedLeagueId}
             liquidFunds={currentPortfolio.liquidFunds}
             onBuyStock={handleBuyStock}
           />
@@ -235,7 +241,7 @@ export default function PortfolioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: { flex: 1 },
   content: { padding: Spacing.md },
 
@@ -246,7 +252,7 @@ const styles = StyleSheet.create({
     ...SubtleShadow,
   },
   sectionLabel: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -262,11 +268,11 @@ const styles = StyleSheet.create({
   },
   leagueTabText: {
     marginBottom: 2,
-    color: Colors.light.onSurface,
+    color: c.onSurface,
   },
   leagueTabTextActive: { color: '#fff' },
   leagueMemberCount: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   leagueMemberCountActive: { color: '#fff', opacity: 0.8 },
 
@@ -277,13 +283,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   valueLabel: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: Spacing.sm,
   },
   valueAmount: {
+    lineHeight: 44,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     fontSize: 36,
     fontFamily: Typography['display-md'].fontFamily,
-    color: Colors.light.onSurface,
+    color: c.onSurface,
     marginBottom: Spacing.md,
   },
   balanceRow: {
@@ -293,12 +301,12 @@ const styles = StyleSheet.create({
   },
   balanceItem: { alignItems: 'center', flex: 1 },
   balanceLabel: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: 4,
   },
   balanceValue: {},
   balanceNote: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     textAlign: 'center',
     marginTop: Spacing.sm,
     fontStyle: 'italic',
@@ -318,7 +326,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     // No borderWidth
   },
-  timeFrameText: { color: Colors.light.onSurface },
+  timeFrameText: { color: c.onSurface },
   timeFrameTextActive: { color: '#fff' },
 
   chartCard: {

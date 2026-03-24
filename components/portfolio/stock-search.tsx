@@ -1,20 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Stock } from '@/types/portfolio';
 import { apiClient } from '@/src/services/api';
 import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
-
-const c = Colors.light;
+import { useThemeMode } from '@/contexts/theme-context';
 
 interface StockSearchProps {
+  groupId: string;
   liquidFunds: number;
   onBuyStock: (stock: Stock, shares: number) => Promise<void>;
 }
 
-export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
+export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchProps) {
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [shares, setShares] = useState('1');
@@ -26,40 +29,36 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
 
-  // Fetch stocks from API when search query changes
+  // Fetch stocks from group-specific assets API (only shows assets purchasable in this group)
   useEffect(() => {
     const fetchStocks = async () => {
-      if (!searchQuery.trim()) {
+      if (!searchQuery.trim() || !groupId) {
         setStocks([]);
         return;
       }
 
       setLoading(true);
       try {
-        const response = await apiClient.get('/assets', {
-          params: {
-            search: searchQuery,
-            type: 'Stock',
-            isActive: true,
-          },
+        const response = await apiClient.get(`/fantasy-groups/${groupId}/assets`, {
+          params: { search: searchQuery, type: 'Stock' },
         });
 
-        // Map API response to Stock type
-        const mappedStocks: Stock[] = response.data.map((asset: any) => ({
+        const assets = response.data?.assets ?? response.data ?? [];
+        const mappedStocks: Stock[] = (Array.isArray(assets) ? assets : []).map((asset: any) => ({
           id: asset.id,
-          symbol: asset.ticker,
+          symbol: asset.ticker ?? asset.symbol,
           name: asset.name,
-          currentPrice: asset.currentPrice,
-          previousClose: asset.previousClose,
-          changePercent: asset.previousClose > 0
+          currentPrice: asset.currentPrice ?? 0,
+          previousClose: asset.previousClose ?? asset.currentPrice ?? 0,
+          changePercent: asset.changePercent ?? (asset.previousClose > 0
             ? ((asset.currentPrice - asset.previousClose) / asset.previousClose) * 100
-            : 0,
+            : 0),
           sector: asset.sector || 'Unknown',
           marketCap: asset.marketCap,
           tier: asset.tier,
         }));
 
-        setStocks(mappedStocks.slice(0, 10)); // Limit to 10 results
+        setStocks(mappedStocks.slice(0, 10));
       } catch (error) {
         console.error('Error fetching stocks:', error);
         setStocks([]);
@@ -68,9 +67,9 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
       }
     };
 
-    const debounceTimer = setTimeout(fetchStocks, 300); // Debounce search
+    const debounceTimer = setTimeout(fetchStocks, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+  }, [searchQuery, groupId]);
 
   const filteredStocks = stocks;
 
@@ -80,23 +79,37 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   }, [selectedStock, shares]);
 
   const handleBuyStock = async () => {
-    if (selectedStock && shares) {
-      const numShares = parseInt(shares);
-      if (numShares > 0 && totalCost <= liquidFunds) {
-        try {
-          setPurchasing(true);
-          await onBuyStock(selectedStock, numShares);
-          setShares('1');
-          setShowModal(false);
-          setSelectedStock(null);
-          setSearchQuery('');
-        } catch (error) {
-          console.error('Failed to purchase stock:', error);
-          alert('Failed to purchase stock. Please try again.');
-        } finally {
-          setPurchasing(false);
-        }
-      }
+    if (!selectedStock) return;
+
+    const numShares = parseInt(shares || '0', 10);
+    if (numShares <= 0 || isNaN(numShares)) {
+      alert('Please enter a valid number of shares (at least 1).');
+      return;
+    }
+    if (totalCost > liquidFunds) {
+      alert('Insufficient funds for this purchase.');
+      return;
+    }
+    if (!selectedStock.id) {
+      alert('This stock cannot be purchased. Try searching again.');
+      return;
+    }
+
+    try {
+      setPurchasing(true);
+      await onBuyStock(selectedStock, numShares);
+      setShares('1');
+      setShowModal(false);
+      setSelectedStock(null);
+      setSearchQuery('');
+    } catch (error) {
+      console.error('Failed to purchase stock:', error);
+      const msg = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error
+        || (error as { message?: string })?.message
+        || 'Failed to purchase stock. Please try again.';
+      alert(msg);
+    } finally {
+      setPurchasing(false);
     }
   };
 
@@ -110,12 +123,14 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
       </View>
 
       <View style={styles.searchContainer}>
-        <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+        <View style={styles.searchIconWrapper}>
+          <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+        </View>
         <TextInput
-          style={[styles.searchInput, { color: textColor }]}
+          style={[styles.searchInput, { backgroundColor: c.surfaceContainerHigh, color: textColor }]}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search stocks by symbol, name, or sector..."
+          placeholder="Search stocks"
           placeholderTextColor={c.onSurfaceVariant}
         />
       </View>
@@ -129,10 +144,9 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
 
       {!loading && filteredStocks.length > 0 && (
         <View style={styles.resultsContainer}>
-          <FlatList
-            data={filteredStocks}
-            keyExtractor={(item) => item.symbol}
-            renderItem={({ item }) => (
+          {filteredStocks.map((item, index) => (
+            <React.Fragment key={item.symbol}>
+              {index > 0 && <View style={styles.separator} />}
               <TouchableOpacity
                 style={styles.stockItem}
                 onPress={() => {
@@ -160,9 +174,8 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                   </ThemedText>
                 </View>
               </TouchableOpacity>
-            )}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-          />
+            </React.Fragment>
+          ))}
         </View>
       )}
 
@@ -205,7 +218,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
                 <View style={styles.inputSection}>
                   <ThemedText style={styles.inputLabel}>Number of Shares</ThemedText>
                   <TextInput
-                    style={[styles.sharesInput, { color: textColor }]}
+                    style={[styles.sharesInput, { backgroundColor: c.surfaceContainerHigh, color: textColor }]}
                     value={shares}
                     onChangeText={setShares}
                     keyboardType="number-pad"
@@ -270,7 +283,7 @@ export function StockSearch({ liquidFunds, onBuyStock }: StockSearchProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: {
     padding: Spacing.md,
   },
@@ -291,17 +304,21 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: c.surfaceContainerHigh,
     borderRadius: Radii.md,
-    paddingHorizontal: Spacing.sm + 4,
-    paddingVertical: Spacing.sm + 2,
+    gap: Spacing.sm,
   },
   searchIcon: {
     fontSize: 18,
-    marginRight: Spacing.sm,
+  },
+  searchIconWrapper: {
+    paddingLeft: Spacing.sm + 4,
   },
   searchInput: {
     flex: 1,
+    height: 44,
+    borderRadius: Radii.md,
+    paddingLeft: 12,
+    paddingRight: 12,
     fontFamily: 'Inter_400Regular',
     fontSize: 16,
     lineHeight: 24,
@@ -425,7 +442,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sharesInput: {
-    backgroundColor: c.surfaceContainerHigh,
     borderRadius: Radii.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 4,

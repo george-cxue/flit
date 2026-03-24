@@ -1,11 +1,17 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
-import { MOCK_SP500 } from '@/data/mock-portfolio';
 import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { PortfolioService } from '@/src/services/fantasy/portfolioService';
 import { apiClient } from '@/src/services/api';
 import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
 import { useAuthContext } from '@/contexts/auth-context';
+
+/** Coerce API values (string/number/Decimal) to safe numbers; avoids NaN/Invalid from Prisma Decimal or bad data */
+const toNum = (v: unknown, fallback = 0): number => {
+  if (v == null || v === '') return fallback;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
 
 interface PortfolioContextType {
   // Current state
@@ -93,9 +99,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const response = await apiClient.get(`/fantasy-groups/${group.id}/portfolio/${userId}`);
           const backendPortfolio = response.data;
 
-          // Transform backend portfolio to frontend Portfolio type
-          const totalValue = backendPortfolio.totalValue || backendPortfolio.cashBalance;
-          const startingBalance = group.settings.startingBalance || 10000;
+          // Transform backend portfolio to frontend Portfolio type (coerce numbers; API may return Decimal strings)
+          const totalValue = toNum(backendPortfolio.totalValue, toNum(backendPortfolio.cashBalance));
+          const startingBalance = toNum(group.settings?.startingBalance, 10000);
           const leagueStartDate = new Date(group.settings.startDate || Date.now());
 
           // Fetch real historical performance data from backend
@@ -105,9 +111,25 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
             const historyData = await PortfolioService.getPortfolioHistory(group.id, '1Y');
             
             if (historyData.history && historyData.history.length > 0) {
-              // Use real data from backend
-              history = historyData.history;
-              baselines = historyData.baselines;
+              // Use real data from backend; coerce values to avoid invalid number from Decimal/string
+              history = historyData.history.map((p: any) => ({
+                timestamp: typeof p.timestamp === 'number' ? p.timestamp : new Date(p.date ?? p.timestamp).getTime(),
+                value: toNum(p.value),
+              }));
+              baselines = historyData.baselines && {
+                sp500: (historyData.baselines.sp500 ?? []).map((b: any) => ({
+                  timestamp: typeof b.timestamp === 'number' ? b.timestamp : new Date(b.date ?? b.timestamp).getTime(),
+                  value: toNum(b.value),
+                })),
+                nasdaq: (historyData.baselines?.nasdaq ?? []).map((b: any) => ({
+                  timestamp: typeof b.timestamp === 'number' ? b.timestamp : new Date(b.date ?? b.timestamp).getTime(),
+                  value: toNum(b.value),
+                })),
+                dow: (historyData.baselines?.dow ?? []).map((b: any) => ({
+                  timestamp: typeof b.timestamp === 'number' ? b.timestamp : new Date(b.date ?? b.timestamp).getTime(),
+                  value: toNum(b.value),
+                })),
+              };
               
               // If we have limited data points (< 2), add a synthetic starting point
               // This allows charts to display percent changes properly
@@ -169,23 +191,29 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const portfolio: Portfolio = {
             leagueId: group.id,
             totalValue,
-            liquidFunds: backendPortfolio.cashBalance,
+            liquidFunds: toNum(backendPortfolio.cashBalance),
             lessonRewards: 0, // Not tracked in backend yet
             allocation: {
               savings: 0,
               bonds: 0,
               indexFunds: 0,
             },
-            holdings: backendPortfolio.slots?.map((slot: any) => ({
-              assetId: slot.assetId || slot.asset?.id,
-              symbol: slot.asset?.ticker || '',
-              name: slot.asset?.name || '',
-              shares: slot.shares,
-              averagePrice: slot.averageCost,
-              currentPrice: slot.asset?.currentPrice || slot.currentPrice,
-              totalValue: slot.shares * (slot.asset?.currentPrice || slot.currentPrice),
-              changePercent: slot.gainLossPercent || 0,
-            })) || [],
+            holdings: (backendPortfolio.slots ?? []).map((slot: any) => {
+              const shares = toNum(slot.shares);
+              const currentPrice = toNum(slot.asset?.currentPrice ?? slot.currentPrice);
+              const averageCost = toNum(slot.averageCost);
+              const gainLossPercent = toNum(slot.gainLossPercent);
+              return {
+                assetId: slot.assetId || slot.asset?.id,
+                symbol: slot.asset?.ticker || '',
+                name: slot.asset?.name || '',
+                shares,
+                averagePrice: averageCost,
+                currentPrice,
+                totalValue: shares * currentPrice,
+                changePercent: gainLossPercent,
+              };
+            }),
             history,
             baselines,
           };

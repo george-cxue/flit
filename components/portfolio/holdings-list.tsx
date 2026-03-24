@@ -13,6 +13,7 @@ interface HoldingsListProps {
 }
 
 export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
+  const styles = createStyles();
   const [sellModalVisible, setSellModalVisible] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<StockHolding | null>(null);
   const [sellShares, setSellShares] = useState('');
@@ -160,7 +161,7 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = () => StyleSheet.create({
   container: {
     padding: Spacing.md,
   },

@@ -49,30 +49,35 @@ export const PortfolioService = {
 
             const response = await apiClient.get(`/fantasy-portfolio/${groupId}/history`, { params });
             
-            // Transform backend response to frontend format
+            const toNum = (v: unknown): number => {
+                if (v == null || v === '') return 0;
+                const n = Number(v);
+                return Number.isFinite(n) ? n : 0;
+            };
+            // Transform backend response to frontend format; coerce values (Prisma Decimal can serialize as string)
             const history: PortfolioSnapshot[] = response.data.history.map((snapshot: any) => ({
                 timestamp: new Date(snapshot.date).getTime(),
-                value: snapshot.totalValue,
+                value: toNum(snapshot.totalValue),
             }));
 
             const baselines = {
-                sp500: response.data.baselines.sp500
-                    .filter((b: any) => b.value !== null)
+                sp500: (response.data.baselines?.sp500 ?? [])
+                    .filter((b: any) => b.value != null)
                     .map((b: any) => ({
                         timestamp: new Date(b.date).getTime(),
-                        value: b.value,
+                        value: toNum(b.value),
                     })),
-                nasdaq: response.data.baselines.nasdaq
-                    .filter((b: any) => b.value !== null)
+                nasdaq: (response.data.baselines?.nasdaq ?? [])
+                    .filter((b: any) => b.value != null)
                     .map((b: any) => ({
                         timestamp: new Date(b.date).getTime(),
-                        value: b.value,
+                        value: toNum(b.value),
                     })),
-                dow: response.data.baselines.dow
-                    .filter((b: any) => b.value !== null)
+                dow: (response.data.baselines?.dow ?? [])
+                    .filter((b: any) => b.value != null)
                     .map((b: any) => ({
                         timestamp: new Date(b.date).getTime(),
-                        value: b.value,
+                        value: toNum(b.value),
                     })),
             };
 

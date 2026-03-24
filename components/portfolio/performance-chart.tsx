@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useThemeMode } from '@/contexts/theme-context';
 import { PortfolioSnapshot, TimeFrame } from '@/types/portfolio';
 import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
 
@@ -67,11 +68,13 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
 
 const normalizeData = (data: PortfolioSnapshot[]): PortfolioSnapshot[] => {
   if (data.length === 0) return [];
-  const baseValue = data[0].value;
-  return data.map((point) => ({
-    timestamp: point.timestamp,
-    value: ((point.value - baseValue) / baseValue) * 100,
-  }));
+  const baseValue = Number(data[0].value);
+  if (!Number.isFinite(baseValue) || baseValue === 0) return data.map((p) => ({ ...p, value: 0 }));
+  return data.map((point) => {
+    const v = Number(point.value);
+    const normalized = Number.isFinite(v) ? ((v - baseValue) / baseValue) * 100 : 0;
+    return { timestamp: point.timestamp, value: normalized };
+  });
 };
 
 const sampleData = (data: PortfolioSnapshot[], maxPoints: number = 10): PortfolioSnapshot[] => {
@@ -94,6 +97,8 @@ const sampleData = (data: PortfolioSnapshot[], maxPoints: number = 10): Portfoli
 export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: PerformanceChartProps) {
   const primaryColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
+  const { themeMode } = useThemeMode();
+  const styles = createStyles();
 
   const chartData = useMemo(() => {
     const filteredPortfolio = filterDataByTimeFrame(portfolioHistory, timeFrame);
@@ -117,22 +122,23 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
       }
     });
 
+    const safeNum = (v: number) => (Number.isFinite(v) ? v : 0);
     return {
       labels,
       datasets: [
         {
-          data: normalizedPortfolio.length > 0 ? normalizedPortfolio.map(p => p.value) : [0],
+          data: normalizedPortfolio.length > 0 ? normalizedPortfolio.map(p => safeNum(p.value)) : [0],
           color: () => primaryColor,
           strokeWidth: 3,
         },
         {
-          data: normalizedSP500.length > 0 ? normalizedSP500.map(p => p.value) : [0],
+          data: normalizedSP500.length > 0 ? normalizedSP500.map(p => safeNum(p.value)) : [0],
           color: () => c.onSurfaceVariant,
           strokeWidth: 2,
         },
       ],
     };
-  }, [portfolioHistory, sp500History, timeFrame, primaryColor]);
+  }, [portfolioHistory, sp500History, timeFrame, primaryColor, themeMode]);
 
   const performanceChange = useMemo(() => {
     const filteredPortfolio = filterDataByTimeFrame(portfolioHistory, timeFrame);
@@ -142,12 +148,17 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
       return { portfolio: 0, sp500: 0 };
     }
 
-    const portfolioChange = ((filteredPortfolio[filteredPortfolio.length - 1].value - filteredPortfolio[0].value) / filteredPortfolio[0].value) * 100;
-    const sp500Change = ((filteredSP500[filteredSP500.length - 1].value - filteredSP500[0].value) / filteredSP500[0].value) * 100;
+    const p0 = Number(filteredPortfolio[0].value);
+    const pLast = Number(filteredPortfolio[filteredPortfolio.length - 1].value);
+    const s0 = Number(filteredSP500[0].value);
+    const sLast = Number(filteredSP500[filteredSP500.length - 1].value);
+
+    const portfolioChange = Number.isFinite(p0) && p0 !== 0 ? ((pLast - p0) / p0) * 100 : 0;
+    const sp500Change = Number.isFinite(s0) && s0 !== 0 ? ((sLast - s0) / s0) * 100 : 0;
 
     return {
-      portfolio: portfolioChange,
-      sp500: sp500Change,
+      portfolio: Number.isFinite(portfolioChange) ? portfolioChange : 0,
+      sp500: Number.isFinite(sp500Change) ? sp500Change : 0,
     };
   }, [portfolioHistory, sp500History, timeFrame]);
 
@@ -235,7 +246,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = () => StyleSheet.create({
   container: {
     padding: Spacing.md,
     borderRadius: Radii.md,

@@ -7,10 +7,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Typography } from '@/constants/theme';
 import { useAuthContext } from '@/contexts/auth-context';
 import { ProfileButton } from '@/components/profile-button';
+import { useThemeMode } from '@/contexts/theme-context';
 
 export default function TabLayout() {
   const { isLoaded, isSignedIn, user, syncError } = useAuthContext();
-  const colors = Colors.light;
+  const { themeMode } = useThemeMode();
+  const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
 
   if (!isLoaded) {
     return null;
@@ -39,7 +41,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={() => ({
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
         headerShown: false,
@@ -53,7 +55,7 @@ export default function TabLayout() {
           fontFamily: Typography['label-md'].fontFamily,
           fontSize: Typography['label-md'].fontSize,
         },
-      }}>
+      })}>
       <Tabs.Screen
         name="home"
         options={{

@@ -6,11 +6,13 @@ import { Group } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuthContext } from '@/contexts/auth-context';
 
 export default function FantasyHubScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [tournament, setTournament] = useState<Group | null>(null);
@@ -92,7 +94,7 @@ export default function FantasyHubScreen() {
     <ThemedView style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
       >
         <View style={styles.header}>

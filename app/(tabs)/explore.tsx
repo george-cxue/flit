@@ -25,6 +25,15 @@ import { ExploreService, TrendingStock } from "@/src/services/exploreService";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuthContext } from "@/contexts/auth-context";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Colors, Typography, Radii, Spacing, AmbientShadow } from '@/constants/theme';
+import { WatchlistService } from '@/src/services/watchlistService';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuthContext } from '@/contexts/auth-context';
 
 interface WatchlistItem {
   id: string;
@@ -59,6 +68,7 @@ const SECTOR_MAP: { key: string; label: string; icon: string }[] = [
 ];
 
 export default function ExploreScreen() {
+  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn, userId } = useAuthContext();
   const c = Colors.light;
 
@@ -455,7 +465,55 @@ export default function ExploreScreen() {
             </ThemedText>
           </View>
 
-          {/* Sort Pills */}
+          {/* Add to Watchlist Search */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchIconWrapper}>
+              <IconSymbol name="magnifyingglass" size={18} color={c.onSurfaceVariant} />
+            </View>
+            <TextInput
+              style={[styles.searchInputWithIcon, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
+              placeholder="Search stocks"
+              placeholderTextColor={c.onSurfaceVariant}
+              value={searchQuery}
+              onChangeText={searchStocks}
+              autoCapitalize="characters"
+              onSubmitEditing={() => searchStocks(searchQuery)}
+            />
+            <TouchableOpacity
+              style={[styles.searchButton, { backgroundColor: c.primary }]}
+              onPress={() => searchStocks(searchQuery)}
+            >
+              <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <View style={[styles.searchResultsContainer, { backgroundColor: c.surfaceContainerLowest }]}>
+              <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                {searchResults.map((result, idx) => (
+                  <TouchableOpacity
+                    key={result.symbol}
+                    style={styles.searchResultItem}
+                    onPress={() => addToWatchlist(result.symbol)}
+                  >
+                    {idx > 0 && <View style={styles.floatingDivider} />}
+                    <View style={styles.searchResultInner}>
+                      <View>
+                        <ThemedText type="title-md" style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
+                        <ThemedText type="label-md" style={styles.searchResultName} numberOfLines={1}>
+                          {result.description}
+                        </ThemedText>
+                      </View>
+                      <IconSymbol name="plus.circle.fill" size={24} color={c.primary} />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Sort Options */}
           {watchlist.length > 0 && (
             <View style={styles.sortContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>

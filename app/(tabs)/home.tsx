@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,15 +10,19 @@ import { useRouter, useFocusEffect, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useThemeMode } from '@/contexts/theme-context';
 import { ProfileButton } from '@/components/profile-button';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
-  const c = Colors.light;
-  const { resetOnboarding, profileName } = useOnboarding();
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
+  const { resetOnboarding } = useOnboarding();
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
   const { isLessonCompleted, reload, resetProgress } = useLessons(user?.id || null);
@@ -65,21 +70,15 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <View style={styles.headerText}>
-              <ThemedText type="headline-lg" style={styles.greeting}>
-                {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
-              </ThemedText>
-              <ThemedText type="body-md" style={styles.subtitle}>
-                {profileName?.trim()
-                  ? "Let's keep growing your money skills."
-                  : 'Ready to level up your financial skills?'}
-              </ThemedText>
+            <View style={styles.brandRow}>
+              <Image source={require('@/assets/images/flit-logo.png')} style={styles.brandLogo} resizeMode="contain" />
+              <ThemedText style={styles.brandText}>flit</ThemedText>
             </View>
             <ProfileButton />
           </View>
@@ -230,17 +229,30 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: Spacing.lg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   header: { marginBottom: Spacing.lg },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerText: { flex: 1, marginRight: Spacing.md },
-  greeting: { marginBottom: 4 },
-  subtitle: { color: Colors.light.onSurfaceVariant },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  brandLogo: {
+    width: 42,
+    height: 42,
+    marginRight: 12,
+  },
+  brandText: {
+    fontSize: 34,
+    fontFamily: Typography['display-md'].fontFamily,
+    textTransform: 'lowercase',
+    color: c.onSurface,
+  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
   // Hero IQ card with gradient
   iqCard: {
@@ -254,6 +266,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 64,
     fontFamily: Typography['display-lg'].fontFamily,
+    lineHeight: 76,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
     marginBottom: 12,
   },
   iqBadge: {
@@ -288,13 +302,13 @@ const styles = StyleSheet.create({
   },
   streakHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   streakTitle: { marginBottom: 4 },
-  streakSubtitle: { color: Colors.light.onSurfaceVariant },
+  streakSubtitle: { color: c.onSurfaceVariant },
   streakBadge: { alignItems: 'center' },
   streakNumber: {
     fontSize: 32,
     fontFamily: Typography['headline-lg'].fontFamily,
   },
-  streakDays: { color: Colors.light.onSurfaceVariant },
+  streakDays: { color: c.onSurfaceVariant },
 
   // Portfolio card — no border
   card: {
@@ -314,15 +328,17 @@ const styles = StyleSheet.create({
   portfolioBalance: {
     fontSize: 36,
     fontFamily: Typography['display-md'].fontFamily,
-    color: Colors.light.onSurface,
+    lineHeight: 44,
+    paddingTop: Platform.OS !== 'web' ? 4 : 0,
+    color: c.onSurface,
     marginBottom: Spacing.sm,
   },
   portfolioChange: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
-  changeLabel: { color: Colors.light.onSurfaceVariant },
+  changeLabel: { color: c.onSurfaceVariant },
   portfolioBreakdown: { gap: 12 },
   breakdownItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dot: { width: 12, height: 12, borderRadius: 6 },
-  breakdownLabel: { flex: 1, color: Colors.light.onSurfaceVariant },
+  breakdownLabel: { flex: 1, color: c.onSurfaceVariant },
   breakdownValue: {},
 
   // Lesson card — no border, accent strip instead of borderLeft
@@ -335,7 +351,7 @@ const styles = StyleSheet.create({
   },
   lessonAccent: {
     width: 4,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: c.primary,
   },
   lessonContent: {
     flex: 1,
@@ -347,7 +363,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  lessonTitle: { color: Colors.light.onSurfaceVariant },
+  lessonTitle: { color: c.onSurfaceVariant },
   lessonBadge: {
     backgroundColor: 'rgba(0, 75, 228, 0.08)',
     paddingHorizontal: 12,
@@ -356,11 +372,11 @@ const styles = StyleSheet.create({
   },
   lessonBadgeText: {},
   lessonName: { marginBottom: 6 },
-  lessonDescription: { color: Colors.light.onSurfaceVariant, marginBottom: 12 },
+  lessonDescription: { color: c.onSurfaceVariant, marginBottom: 12 },
   lessonMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  lessonDuration: { color: Colors.light.onSurfaceVariant },
-  lessonSeparator: { color: Colors.light.onSurfaceVariant },
-  lessonLevel: { color: Colors.light.onSurfaceVariant },
+  lessonDuration: { color: c.onSurfaceVariant },
+  lessonSeparator: { color: c.onSurfaceVariant },
+  lessonLevel: { color: c.onSurfaceVariant },
 
   // Quick actions — no border
   quickActions: { flexDirection: 'row', gap: 12, marginBottom: Spacing.md },
@@ -382,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     opacity: 0.5,
   },
-  debugButtonText: { color: Colors.light.onSurfaceVariant },
+  debugButtonText: { color: c.onSurfaceVariant },
 
   bottomPadding: { height: 20 },
 });

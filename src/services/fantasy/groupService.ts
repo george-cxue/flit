@@ -10,7 +10,9 @@ export const GroupService = {
                 // Return empty list so callers can retry on focus without surfacing noisy errors.
                 return [];
             }
-            const response = await apiClient.get('/fantasy-groups');
+            const response = await apiClient.get('/fantasy-groups', {
+                params: { userId },
+            });
             return response.data.groups || [];
         } catch (error) {
             if ((error as any)?.response?.status === 401) {
@@ -40,6 +42,7 @@ export const GroupService = {
             }
             const response = await apiClient.post('/fantasy-groups', {
                 name,
+                adminUserId: userId,
                 settings
             });
             return response.data;
@@ -54,7 +57,7 @@ export const GroupService = {
             if (!userId) {
                 throw new Error('User not authenticated');
             }
-            await apiClient.post(`/fantasy-groups/${groupId}/start`);
+            await apiClient.post(`/fantasy-groups/${groupId}/start`, { userId });
         } catch (error) {
             throw handleApiError(error);
         }
@@ -67,7 +70,8 @@ export const GroupService = {
                 throw new Error('User not authenticated');
             }
             const response = await apiClient.post('/fantasy-groups/join-by-code', {
-                joinCode: joinCode.toUpperCase()
+                joinCode: joinCode.toUpperCase(),
+                userId,
             });
             return response.data;
         } catch (error) {
@@ -81,7 +85,9 @@ export const GroupService = {
             if (!userId) {
                 throw new Error('User not authenticated');
             }
-            const response = await apiClient.delete(`/fantasy-groups/${groupId}/leave`);
+            const response = await apiClient.delete(`/fantasy-groups/${groupId}/leave`, {
+                data: { userId },
+            });
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -94,7 +100,7 @@ export const GroupService = {
             if (!userId) {
                 throw new Error('User not authenticated');
             }
-            const response = await apiClient.post(`/fantasy-groups/${groupId}/end`);
+            const response = await apiClient.post(`/fantasy-groups/${groupId}/end`, { userId });
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -104,7 +110,10 @@ export const GroupService = {
     // Tournament methods
     getActiveTournament: async (): Promise<Group | null> => {
         try {
-            const response = await apiClient.get('/fantasy-groups/tournaments/active');
+            const userId = getAuthenticatedUserId();
+            const response = await apiClient.get('/fantasy-groups/tournaments/active', {
+                params: userId ? { userId } : undefined,
+            });
             return response.data.tournament || null;
         } catch (error) {
             console.error('Error fetching tournament:', error);
@@ -118,7 +127,7 @@ export const GroupService = {
             if (!userId) {
                 throw new Error('User not authenticated');
             }
-            await apiClient.post(`/fantasy-groups/tournaments/${tournamentId}/join`);
+            await apiClient.post(`/fantasy-groups/tournaments/${tournamentId}/join`, { userId });
         } catch (error) {
             throw handleApiError(error);
         }
