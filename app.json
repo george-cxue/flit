@@ -4,7 +4,7 @@
     "slug": "flit",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/flit-logo.png",
     "scheme": "flit",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,9 +19,8 @@
       "package": "com.flit.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/flit-logo.png",
+        "monochromeImage": "./assets/images/flit-logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false

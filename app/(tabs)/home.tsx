@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
@@ -19,7 +19,7 @@ export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
   const c = Colors.light;
-  const { resetOnboarding, profileName } = useOnboarding();
+  const { resetOnboarding } = useOnboarding();
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
   const { isLessonCompleted, reload, resetProgress } = useLessons(user?.id || null);
@@ -73,15 +73,9 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <View style={styles.headerText}>
-              <ThemedText type="headline-lg" style={styles.greeting}>
-                {profileName?.trim() ? `Welcome back, ${profileName.trim()}!` : 'Welcome back!'}
-              </ThemedText>
-              <ThemedText type="body-md" style={styles.subtitle}>
-                {profileName?.trim()
-                  ? "Let's keep growing your money skills."
-                  : 'Ready to level up your financial skills?'}
-              </ThemedText>
+            <View style={styles.brandRow}>
+              <Image source={require('@/assets/images/flit-logo.png')} style={styles.brandLogo} resizeMode="contain" />
+              <ThemedText style={styles.brandText}>flit</ThemedText>
             </View>
             <ProfileButton />
           </View>
@@ -239,10 +233,23 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   header: { marginBottom: Spacing.lg },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerText: { flex: 1, marginRight: Spacing.md },
-  greeting: { marginBottom: 4 },
-  subtitle: { color: Colors.light.onSurfaceVariant },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  brandLogo: {
+    width: 42,
+    height: 42,
+    marginRight: 12,
+  },
+  brandText: {
+    fontSize: 34,
+    fontFamily: Typography['display-md'].fontFamily,
+    textTransform: 'lowercase',
+    color: Colors.light.onSurface,
+  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
   // Hero IQ card with gradient
   iqCard: {
