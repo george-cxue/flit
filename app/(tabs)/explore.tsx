@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,28 +9,13 @@ import {
   Linking,
   RefreshControl,
   Pressable,
-} from "react-native";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import {
-  Colors,
-  Typography,
-  Radii,
-  Spacing,
-  AmbientShadow,
-  SubtleShadow,
-} from "@/constants/theme";
-import { WatchlistService } from "@/src/services/watchlistService";
-import { ExploreService, TrendingStock } from "@/src/services/exploreService";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useFocusEffect } from "@react-navigation/native";
-import { useAuthContext } from "@/contexts/auth-context";
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Typography, Radii, Spacing, AmbientShadow } from '@/constants/theme';
+import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { WatchlistService } from '@/src/services/watchlistService';
+import { ExploreService, TrendingStock } from '@/src/services/exploreService';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -56,15 +41,15 @@ interface NewsArticle {
   ticker: string;
 }
 
-type SortOption = "symbol" | "price" | "change" | "changePercent";
+type SortOption = 'symbol' | 'price' | 'change' | 'changePercent';
 
 const SECTOR_MAP: { key: string; label: string; icon: string }[] = [
-  { key: "Technology", label: "Tech", icon: "💻" },
-  { key: "Healthcare", label: "Healthcare", icon: "🏥" },
-  { key: "Financial Services", label: "Finance", icon: "💰" },
-  { key: "Entertainment", label: "Entertainment", icon: "🎬" },
-  { key: "Energy", label: "Energy", icon: "⚡" },
-  { key: "Consumer", label: "Consumer", icon: "🛍️" },
+  { key: 'Technology', label: 'Tech', icon: '💻' },
+  { key: 'Healthcare', label: 'Healthcare', icon: '🏥' },
+  { key: 'Financial Services', label: 'Finance', icon: '💰' },
+  { key: 'Entertainment', label: 'Entertainment', icon: '🎬' },
+  { key: 'Energy', label: 'Energy', icon: '⚡' },
+  { key: 'Consumer', label: 'Consumer', icon: '🛍️' },
 ];
 
 export default function ExploreScreen() {
@@ -73,7 +58,7 @@ export default function ExploreScreen() {
   const c = Colors.light;
 
   // Unified search
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchingStocks, setSearchingStocks] = useState(false);
 
@@ -85,13 +70,11 @@ export default function ExploreScreen() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("symbol");
+  const [sortBy, setSortBy] = useState<SortOption>('symbol');
   const [sortAscending, setSortAscending] = useState(true);
 
   // Contextual news
-  const [selectedNewsSymbol, setSelectedNewsSymbol] = useState<string | null>(
-    null,
-  );
+  const [selectedNewsSymbol, setSelectedNewsSymbol] = useState<string | null>(null);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loadingNews, setLoadingNews] = useState(false);
 
@@ -100,7 +83,7 @@ export default function ExploreScreen() {
       const data = await ExploreService.getExploreData();
       setTrendingStocks(data.trendingStocks || []);
     } catch (error) {
-      console.error("Failed to fetch explore data:", error);
+      console.error('Failed to fetch explore data:', error);
     } finally {
       setLoadingExplore(false);
     }
@@ -112,7 +95,7 @@ export default function ExploreScreen() {
       const data = await WatchlistService.getWatchlist();
       setWatchlist(data);
     } catch (error) {
-      console.error("Failed to fetch watchlist:", error);
+      console.error('Failed to fetch watchlist:', error);
     } finally {
       setLoadingWatchlist(false);
     }
@@ -136,7 +119,6 @@ export default function ExploreScreen() {
     setRefreshing(false);
   };
 
-  // Unified search
   const searchStocks = async (query: string) => {
     setSearchQuery(query);
     if (!query.trim()) {
@@ -148,7 +130,7 @@ export default function ExploreScreen() {
       const results = await WatchlistService.searchStocks(query);
       setSearchResults(results);
     } catch (error) {
-      console.error("Failed to search stocks:", error);
+      console.error('Failed to search stocks:', error);
       setSearchResults([]);
     } finally {
       setSearchingStocks(false);
@@ -160,8 +142,8 @@ export default function ExploreScreen() {
       await WatchlistService.addToWatchlist(symbol);
       await fetchWatchlist();
     } catch (error: any) {
-      console.error("Failed to add to watchlist:", error);
-      alert(error.response?.data?.error || "Failed to add to watchlist");
+      console.error('Failed to add to watchlist:', error);
+      alert(error.response?.data?.error || 'Failed to add to watchlist');
     }
   };
 
@@ -170,12 +152,11 @@ export default function ExploreScreen() {
       await WatchlistService.removeFromWatchlist(id);
       setWatchlist((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Failed to remove from watchlist:", error);
-      alert("Failed to remove from watchlist");
+      console.error('Failed to remove from watchlist:', error);
+      alert('Failed to remove from watchlist');
     }
   };
 
-  // News
   const fetchNewsForSymbol = async (symbol: string) => {
     setSelectedNewsSymbol(symbol);
     setLoadingNews(true);
@@ -183,7 +164,7 @@ export default function ExploreScreen() {
       const articles = await WatchlistService.getStockNews(symbol);
       setNews(articles);
     } catch (error) {
-      console.error("Failed to fetch news:", error);
+      console.error('Failed to fetch news:', error);
       setNews([]);
     } finally {
       setLoadingNews(false);
@@ -191,7 +172,7 @@ export default function ExploreScreen() {
   };
 
   const selectStockForNews = (symbol: string) => {
-    setSearchQuery("");
+    setSearchQuery('');
     setSearchResults([]);
     fetchNewsForSymbol(symbol);
   };
@@ -205,7 +186,6 @@ export default function ExploreScreen() {
     setSearchResults([]);
   };
 
-  // Sort
   const handleSort = (option: SortOption) => {
     if (sortBy === option) {
       setSortAscending(!sortAscending);
@@ -219,18 +199,10 @@ export default function ExploreScreen() {
     return [...watchlist].sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
-        case "symbol":
-          comparison = a.symbol.localeCompare(b.symbol);
-          break;
-        case "price":
-          comparison = a.currentPrice - b.currentPrice;
-          break;
-        case "change":
-          comparison = a.change - b.change;
-          break;
-        case "changePercent":
-          comparison = a.changePercent - b.changePercent;
-          break;
+        case 'symbol': comparison = a.symbol.localeCompare(b.symbol); break;
+        case 'price': comparison = a.currentPrice - b.currentPrice; break;
+        case 'change': comparison = a.change - b.change; break;
+        case 'changePercent': comparison = a.changePercent - b.changePercent; break;
       }
       return sortAscending ? comparison : -comparison;
     });
@@ -242,9 +214,7 @@ export default function ExploreScreen() {
       <ThemedView style={styles.container}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={c.primary} />
-          <ThemedText type="body-md" style={{ marginTop: 12 }}>
-            Loading...
-          </ThemedText>
+          <ThemedText type="body-md" style={{ marginTop: 12 }}>Loading...</ThemedText>
         </View>
       </ThemedView>
     );
@@ -254,13 +224,13 @@ export default function ExploreScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.centerContainer}>
-          <ThemedText type="title-lg">
-            Please sign in to access Explore
-          </ThemedText>
+          <ThemedText type="title-lg">Please sign in to access Explore</ThemedText>
         </View>
       </ThemedView>
     );
   }
+
+  const searchBarTop = insets.top + Spacing.md;
 
   return (
     <ThemedView style={styles.container}>
@@ -268,28 +238,17 @@ export default function ExploreScreen() {
         style={styles.scrollView}
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={c.primary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
         }
       >
         {/* Search Bar */}
-        <View style={styles.searchSection}>
+        <View style={[styles.searchSection, { paddingTop: searchBarTop }]}>
           <View style={styles.searchBarWrapper}>
             <View style={styles.searchIconWrapper}>
-              <IconSymbol
-                name="magnifyingglass"
-                size={18}
-                color={c.onSurfaceVariant}
-              />
+              <IconSymbol name="magnifyingglass" size={18} color={c.onSurfaceVariant} />
             </View>
             <TextInput
-              style={[
-                styles.searchInput,
-                { backgroundColor: c.surfaceContainerHigh, color: c.onSurface },
-              ]}
+              style={[styles.searchInput, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
               placeholder="Search stocks by name or symbol..."
               placeholderTextColor={c.onSurfaceVariant}
               value={searchQuery}
@@ -300,16 +259,9 @@ export default function ExploreScreen() {
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 style={styles.clearButton}
-                onPress={() => {
-                  setSearchQuery("");
-                  setSearchResults([]);
-                }}
+                onPress={() => { setSearchQuery(''); setSearchResults([]); }}
               >
-                <IconSymbol
-                  name="xmark.circle.fill"
-                  size={20}
-                  color={c.onSurfaceVariant}
-                />
+                <IconSymbol name="xmark.circle.fill" size={20} color={c.onSurfaceVariant} />
               </TouchableOpacity>
             )}
           </View>
@@ -322,7 +274,7 @@ export default function ExploreScreen() {
             <View
               style={[
                 styles.searchOverlay,
-                { backgroundColor: c.surfaceContainerLowest },
+                { top: searchBarTop + 48 + Spacing.sm, backgroundColor: c.surfaceContainerLowest },
               ]}
             >
               {searchingStocks && (
@@ -340,23 +292,16 @@ export default function ExploreScreen() {
                         onPress={() => selectStockForNews(result.symbol)}
                       >
                         <ThemedText type="title-md">{result.symbol}</ThemedText>
-                        <ThemedText
-                          type="label-md"
-                          style={styles.secondaryText}
-                          numberOfLines={1}
-                        >
+                        <ThemedText type="label-md" style={styles.secondaryText} numberOfLines={1}>
                           {result.description}
                         </ThemedText>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.addButton]}
+                        style={styles.addButton}
                         onPress={() => addToWatchlist(result.symbol)}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       >
-                        <IconSymbol
-                          name="plus.circle.fill"
-                          size={22}
-                          color={c.primary}
-                        />
+                        <IconSymbol name="plus.circle.fill" size={22} color={c.primary} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -368,9 +313,7 @@ export default function ExploreScreen() {
 
         {/* Popular Stocks */}
         <View style={styles.sectionSpacing}>
-          <ThemedText type="title-lg" style={styles.sectionTitle}>
-            Popular Stocks
-          </ThemedText>
+          <ThemedText type="title-lg" style={styles.sectionTitle}>Popular Stocks</ThemedText>
           {loadingExplore ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator color={c.primary} />
@@ -386,42 +329,23 @@ export default function ExploreScreen() {
                 return (
                   <TouchableOpacity
                     key={stock.id}
-                    style={[
-                      styles.popularCard,
-                      { backgroundColor: c.surfaceContainerLowest },
-                    ]}
+                    style={[styles.popularCard, { backgroundColor: c.surfaceContainerLowest }]}
                     onPress={() => selectStockForNews(stock.ticker)}
                     activeOpacity={0.7}
                   >
-                    <ThemedText type="title-md" style={styles.popularTicker}>
-                      {stock.ticker}
-                    </ThemedText>
-                    <ThemedText
-                      type="label-md"
-                      style={styles.secondaryText}
-                      numberOfLines={1}
-                    >
+                    <ThemedText type="title-md" style={styles.popularTicker}>{stock.ticker}</ThemedText>
+                    <ThemedText type="label-md" style={styles.secondaryText} numberOfLines={1}>
                       {stock.name}
                     </ThemedText>
                     <ThemedText type="title-md" style={styles.popularPrice}>
                       ${stock.currentPrice.toFixed(2)}
                     </ThemedText>
-                    <View
-                      style={[
-                        styles.changeBadge,
-                        {
-                          backgroundColor: isPositive
-                            ? `${c.success}15`
-                            : `${c.danger}15`,
-                        },
-                      ]}
-                    >
-                      <ThemedText
-                        type="label-md"
-                        style={{ color: isPositive ? c.success : c.danger }}
-                      >
-                        {isPositive ? "+" : ""}
-                        {stock.changePercent.toFixed(2)}%
+                    <View style={[
+                      styles.changeBadge,
+                      { backgroundColor: isPositive ? `${c.success}15` : `${c.danger}15` },
+                    ]}>
+                      <ThemedText type="label-md" style={{ color: isPositive ? c.success : c.danger }}>
+                        {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
                       </ThemedText>
                     </View>
                   </TouchableOpacity>
@@ -433,17 +357,12 @@ export default function ExploreScreen() {
 
         {/* Explore Sectors */}
         <View style={styles.sectionSpacing}>
-          <ThemedText type="title-lg" style={styles.sectionTitle}>
-            Explore Sectors
-          </ThemedText>
+          <ThemedText type="title-lg" style={styles.sectionTitle}>Explore Sectors</ThemedText>
           <View style={styles.sectorGrid}>
             {SECTOR_MAP.map((sector) => (
               <TouchableOpacity
                 key={sector.key}
-                style={[
-                  styles.sectorCard,
-                  { backgroundColor: c.surfaceContainerLow },
-                ]}
+                style={[styles.sectorCard, { backgroundColor: c.surfaceContainerLow }]}
                 onPress={() => searchStocks(sector.key)}
                 activeOpacity={0.7}
               >
@@ -455,103 +374,37 @@ export default function ExploreScreen() {
         </View>
 
         {/* My Watchlist */}
-        <View
-          style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}
-        >
+        <View style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}>
           <View style={styles.watchlistHeader}>
             <ThemedText type="title-lg">My Watchlist</ThemedText>
             <ThemedText type="label-md" style={styles.secondaryText}>
-              {watchlist.length} {watchlist.length === 1 ? "stock" : "stocks"}
+              {watchlist.length} {watchlist.length === 1 ? 'stock' : 'stocks'}
             </ThemedText>
           </View>
 
-          {/* Add to Watchlist Search */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchIconWrapper}>
-              <IconSymbol name="magnifyingglass" size={18} color={c.onSurfaceVariant} />
-            </View>
-            <TextInput
-              style={[styles.searchInputWithIcon, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
-              placeholder="Search stocks"
-              placeholderTextColor={c.onSurfaceVariant}
-              value={searchQuery}
-              onChangeText={searchStocks}
-              autoCapitalize="characters"
-              onSubmitEditing={() => searchStocks(searchQuery)}
-            />
-            <TouchableOpacity
-              style={[styles.searchButton, { backgroundColor: c.primary }]}
-              onPress={() => searchStocks(searchQuery)}
-            >
-              <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <View style={[styles.searchResultsContainer, { backgroundColor: c.surfaceContainerLowest }]}>
-              <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                {searchResults.map((result, idx) => (
-                  <TouchableOpacity
-                    key={result.symbol}
-                    style={styles.searchResultItem}
-                    onPress={() => addToWatchlist(result.symbol)}
-                  >
-                    {idx > 0 && <View style={styles.floatingDivider} />}
-                    <View style={styles.searchResultInner}>
-                      <View>
-                        <ThemedText type="title-md" style={styles.searchResultSymbol}>{result.symbol}</ThemedText>
-                        <ThemedText type="label-md" style={styles.searchResultName} numberOfLines={1}>
-                          {result.description}
-                        </ThemedText>
-                      </View>
-                      <IconSymbol name="plus.circle.fill" size={24} color={c.primary} />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Sort Options */}
+          {/* Sort Pills */}
           {watchlist.length > 0 && (
             <View style={styles.sortContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {(
-                  [
-                    { key: "symbol" as SortOption, label: "Symbol" },
-                    { key: "price" as SortOption, label: "Price" },
-                    { key: "change" as SortOption, label: "Change $" },
-                    { key: "changePercent" as SortOption, label: "Change %" },
-                  ] as const
-                ).map((option) => (
+                {([
+                  { key: 'symbol' as SortOption, label: 'Symbol' },
+                  { key: 'price' as SortOption, label: 'Price' },
+                  { key: 'change' as SortOption, label: 'Change $' },
+                  { key: 'changePercent' as SortOption, label: 'Change %' },
+                ] as const).map((option) => (
                   <TouchableOpacity
                     key={option.key}
                     style={[
                       styles.sortPill,
-                      {
-                        backgroundColor:
-                          sortBy === option.key
-                            ? c.primary
-                            : c.surfaceContainerHigh,
-                      },
+                      { backgroundColor: sortBy === option.key ? c.primary : c.surfaceContainerHigh },
                     ]}
                     onPress={() => handleSort(option.key)}
                   >
                     <ThemedText
                       type="label-md"
-                      style={
-                        sortBy === option.key
-                          ? styles.sortPillTextActive
-                          : styles.sortPillText
-                      }
+                      style={sortBy === option.key ? styles.sortPillTextActive : styles.sortPillText}
                     >
-                      {option.label +
-                        (sortBy === option.key
-                          ? sortAscending
-                            ? " ↑"
-                            : " ↓"
-                          : "")}
+                      {option.label + (sortBy === option.key ? (sortAscending ? ' ↑' : ' ↓') : '')}
                     </ThemedText>
                   </TouchableOpacity>
                 ))}
@@ -568,17 +421,9 @@ export default function ExploreScreen() {
 
           {!loadingWatchlist && watchlist.length === 0 && (
             <View style={styles.emptyState}>
-              <IconSymbol
-                name="star.fill"
-                size={40}
-                color={c.surfaceContainerHighest}
-              />
-              <ThemedText type="body-lg" style={{ marginTop: 12 }}>
-                Your watchlist is empty
-              </ThemedText>
-              <ThemedText type="body-md" style={styles.secondaryText}>
-                Search above to add stocks
-              </ThemedText>
+              <IconSymbol name="star.fill" size={40} color={c.surfaceContainerHighest} />
+              <ThemedText type="body-lg" style={{ marginTop: 12 }}>Your watchlist is empty</ThemedText>
+              <ThemedText type="body-md" style={styles.secondaryText}>Search above to add stocks</ThemedText>
             </View>
           )}
 
@@ -594,11 +439,7 @@ export default function ExploreScreen() {
                   >
                     <View style={styles.watchlistItemLeft}>
                       <ThemedText type="title-md">{item.symbol}</ThemedText>
-                      <ThemedText
-                        type="label-md"
-                        style={styles.secondaryText}
-                        numberOfLines={1}
-                      >
+                      <ThemedText type="label-md" style={styles.secondaryText} numberOfLines={1}>
                         {item.name}
                       </ThemedText>
                     </View>
@@ -609,27 +450,15 @@ export default function ExploreScreen() {
                       <View style={styles.changeRow}>
                         <ThemedText
                           type="label-md"
-                          style={{
-                            color:
-                              (item.change || 0) >= 0 ? c.success : c.danger,
-                          }}
+                          style={{ color: (item.change || 0) >= 0 ? c.success : c.danger }}
                         >
-                          {((item.change || 0) >= 0 ? "+$" : "-$") +
-                            Math.abs(item.change || 0).toFixed(2)}
+                          {((item.change || 0) >= 0 ? '+$' : '-$') + Math.abs(item.change || 0).toFixed(2)}
                         </ThemedText>
                         <ThemedText
                           type="label-md"
-                          style={{
-                            color:
-                              (item.changePercent || 0) >= 0
-                                ? c.success
-                                : c.danger,
-                          }}
+                          style={{ color: (item.changePercent || 0) >= 0 ? c.success : c.danger }}
                         >
-                          (
-                          {((item.changePercent || 0) >= 0 ? "+" : "") +
-                            (item.changePercent || 0).toFixed(2)}
-                          %)
+                          ({((item.changePercent || 0) >= 0 ? '+' : '') + (item.changePercent || 0).toFixed(2)}%)
                         </ThemedText>
                       </View>
                     </View>
@@ -638,11 +467,7 @@ export default function ExploreScreen() {
                       onPress={() => removeFromWatchlist(item.id)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <IconSymbol
-                        name="xmark.circle.fill"
-                        size={22}
-                        color={c.danger}
-                      />
+                      <IconSymbol name="xmark.circle.fill" size={22} color={c.danger} />
                     </TouchableOpacity>
                   </TouchableOpacity>
                 </View>
@@ -653,22 +478,11 @@ export default function ExploreScreen() {
 
         {/* Stock News — contextual */}
         {selectedNewsSymbol && (
-          <View
-            style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}
-          >
+          <View style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}>
             <View style={styles.newsHeader}>
-              <ThemedText type="title-lg">
-                News for {selectedNewsSymbol}
-              </ThemedText>
-              <TouchableOpacity
-                onPress={clearNews}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <IconSymbol
-                  name="xmark.circle.fill"
-                  size={24}
-                  color={c.onSurfaceVariant}
-                />
+              <ThemedText type="title-lg">News for {selectedNewsSymbol}</ThemedText>
+              <TouchableOpacity onPress={clearNews} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <IconSymbol name="xmark.circle.fill" size={24} color={c.onSurfaceVariant} />
               </TouchableOpacity>
             </View>
 
@@ -683,26 +497,15 @@ export default function ExploreScreen() {
                 {news.slice(0, 5).map((article) => (
                   <TouchableOpacity
                     key={article.id}
-                    style={[
-                      styles.newsCard,
-                      { backgroundColor: c.surfaceContainerLow },
-                    ]}
+                    style={[styles.newsCard, { backgroundColor: c.surfaceContainerLow }]}
                     onPress={() => Linking.openURL(article.url)}
                     activeOpacity={0.7}
                   >
-                    <ThemedText
-                      type="title-md"
-                      style={styles.newsHeadline}
-                      numberOfLines={2}
-                    >
+                    <ThemedText type="title-md" style={styles.newsHeadline} numberOfLines={2}>
                       {article.headline}
                     </ThemedText>
                     <ThemedText type="label-md" style={styles.secondaryText}>
-                      {article.source || "Unknown"}
-                      {" \u2022 "}
-                      {article.publishedAt
-                        ? new Date(article.publishedAt).toLocaleDateString()
-                        : "Unknown date"}
+                      {article.source || 'Unknown'}{' \u2022 '}{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown date'}
                     </ThemedText>
                   </TouchableOpacity>
                 ))}
@@ -712,10 +515,7 @@ export default function ExploreScreen() {
             {!loadingNews && news.length === 0 && (
               <ThemedText
                 type="body-md"
-                style={[
-                  styles.secondaryText,
-                  { textAlign: "center", paddingVertical: Spacing.md },
-                ]}
+                style={[styles.secondaryText, { textAlign: 'center', paddingVertical: Spacing.md }]}
               >
                 No news found for {selectedNewsSymbol}
               </ThemedText>
@@ -735,28 +535,26 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   centerContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 40,
   },
 
-  // Unified search
+  // Search
   searchSection: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
     marginBottom: Spacing.lg,
-    zIndex: 10,
   },
   searchBarWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchIconWrapper: {
-    position: "absolute",
+    position: 'absolute',
     left: 14,
     zIndex: 1,
     height: 48,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
@@ -764,17 +562,19 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md,
     paddingLeft: 42,
     paddingRight: 42,
-    fontFamily: Typography["body-lg"].fontFamily,
-    fontSize: Typography["body-lg"].fontSize,
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
   },
   clearButton: {
-    position: "absolute",
+    position: 'absolute',
     right: 14,
     height: 48,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
+
+  // Overlay
   overlayBackdrop: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
@@ -782,8 +582,7 @@ const styles = StyleSheet.create({
     zIndex: 9,
   },
   searchOverlay: {
-    position: "absolute",
-    top: 60 + 48 + Spacing.sm,
+    position: 'absolute',
     left: Spacing.lg,
     right: Spacing.lg,
     borderRadius: Radii.md,
@@ -792,8 +591,8 @@ const styles = StyleSheet.create({
     ...AmbientShadow,
   },
   searchResultRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: Spacing.md,
   },
@@ -801,18 +600,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addButton: {
-    width: 28,
-    height: 28,
-    borderRadius: Radii.full,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 4,
   },
   searchingIndicator: {
     paddingVertical: Spacing.sm,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
-  // Section layout
+  // Sections
   sectionSpacing: {
     marginBottom: Spacing.lg,
   },
@@ -840,7 +635,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   changeBadge: {
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radii.full,
@@ -848,15 +643,15 @@ const styles = StyleSheet.create({
 
   // Sectors
   sectorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: Spacing.lg,
     gap: 12,
   },
   sectorCard: {
-    width: "47%",
-    flexDirection: "row",
-    alignItems: "center",
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
     padding: Spacing.md,
     borderRadius: Radii.md,
@@ -872,11 +667,11 @@ const styles = StyleSheet.create({
   floatingDivider: {
     height: 1,
     backgroundColor: Colors.light.surfaceContainerHigh,
-    marginHorizontal: "10%",
+    marginHorizontal: '10%',
   },
   loadingRow: {
     padding: Spacing.lg,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
   // Card wrapper
@@ -890,9 +685,9 @@ const styles = StyleSheet.create({
 
   // Watchlist
   watchlistHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   sortContainer: {
@@ -905,25 +700,25 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   sortPillText: { color: Colors.light.onSurface },
-  sortPillTextActive: { color: "#FFFFFF" },
+  sortPillTextActive: { color: '#FFFFFF' },
   emptyState: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: Spacing.xl,
   },
   watchlistItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
   },
   watchlistItemLeft: {
     flex: 1,
   },
   watchlistItemRight: {
-    alignItems: "flex-end",
+    alignItems: 'flex-end',
     marginRight: 12,
   },
   changeRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 4,
     marginTop: 2,
   },
@@ -933,9 +728,9 @@ const styles = StyleSheet.create({
 
   // News
   newsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   newsContainer: {
