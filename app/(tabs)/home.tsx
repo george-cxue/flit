@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
   const { themeMode } = useThemeMode();
-  const c = Colors.light;
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function HomeScreen() {
       reload();
       refreshPortfolios();
       syncUser();
-    }, [reload, refreshPortfolios, syncUser, themeMode])
+    }, [reload, refreshPortfolios, syncUser])
   );
 
   if (!isLoaded) {

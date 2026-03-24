@@ -6,8 +6,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Stock } from '@/types/portfolio';
 import { apiClient } from '@/src/services/api';
 import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
-
-const c = Colors.light;
+import { useThemeMode } from '@/contexts/theme-context';
 
 interface StockSearchProps {
   groupId: string;
@@ -16,6 +15,9 @@ interface StockSearchProps {
 }
 
 export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchProps) {
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [shares, setShares] = useState('1');
@@ -281,7 +283,7 @@ export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchPro
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: {
     padding: Spacing.md,
   },

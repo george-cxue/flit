@@ -1,5 +1,5 @@
 import { Tabs, Redirect } from 'expo-router';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -12,7 +12,7 @@ import { useThemeMode } from '@/contexts/theme-context';
 export default function TabLayout() {
   const { isLoaded, isSignedIn, user, syncError } = useAuthContext();
   const { themeMode } = useThemeMode();
-  const colors = Colors.light;
+  const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
 
   if (!isLoaded) {
     return null;
@@ -41,7 +41,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={() => ({
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
         headerShown: false,
@@ -55,7 +55,7 @@ export default function TabLayout() {
           fontFamily: Typography['label-md'].fontFamily,
           fontSize: Typography['label-md'].fontSize,
         },
-      }}>
+      })}>
       <Tabs.Screen
         name="home"
         options={{

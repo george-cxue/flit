@@ -10,11 +10,14 @@ import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useThemeMode } from '@/contexts/theme-context';
 
 export default function LessonsScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthContext();
-  const c = Colors.light;
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const router = useRouter();
 
   const { isLessonCompleted, getCourseCompletionCount, portfolioBalance, reload } = useLessons(user?.id || null);
@@ -163,7 +166,9 @@ export default function LessonsScreen() {
 // ─── Coming Soon Placeholder ──────────────────────────────────────────────────
 
 function ComingSoonPlaceholder({ course }: { course: LessonCourse }) {
-  const c = Colors.light;
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
 
   return (
     <View style={[styles.comingSoonCard, { backgroundColor: c.surfaceContainerLowest }]}>
@@ -196,7 +201,9 @@ function CourseContent({
   totalCount: number;
   onLessonPress: (lesson: Lesson) => void;
 }) {
-  const c = Colors.light;
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
@@ -263,7 +270,9 @@ function UnitSection({
   isLessonCompleted: (courseId: string, lessonId: string) => boolean;
   onLessonPress: (lesson: Lesson) => void;
 }) {
-  const c = Colors.light;
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const unitCompleted = unit.lessons.filter((l) =>
     isLessonCompleted(courseId, l.id)
   ).length;
@@ -375,7 +384,7 @@ function UnitSection({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: Spacing.lg },
@@ -415,7 +424,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   infoText: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     lineHeight: 20,
   },
 
@@ -449,7 +458,7 @@ const styles = StyleSheet.create({
   comingSoonIcon: { fontSize: 56 },
   comingSoonTitle: { textAlign: 'center' },
   comingSoonDescription: {
-    color: Colors.light.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -476,15 +485,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   courseProgressTitle: {},
-  courseProgressCount: { color: Colors.light.onSurfaceVariant },
+  courseProgressCount: { color: c.onSurfaceVariant },
   courseProgressBarBg: {
     height: 6,
-    backgroundColor: Colors.light.surfaceContainerHighest,
+    backgroundColor: c.surfaceContainerHighest,
     borderRadius: Radii.full,
     overflow: 'hidden',
   },
   courseProgressBarFill: { height: '100%', borderRadius: Radii.full },
-  courseAttribution: { color: Colors.light.onSurfaceVariant, opacity: 0.6 },
+  courseAttribution: { color: c.onSurfaceVariant, opacity: 0.6 },
 
   // Units — no border
   unitSection: {
@@ -502,7 +511,7 @@ const styles = StyleSheet.create({
   unitIcon: { fontSize: 28 },
   unitHeaderText: { flex: 1 },
   unitTitle: { marginBottom: 2 },
-  unitMeta: { color: Colors.light.onSurfaceVariant },
+  unitMeta: { color: c.onSurfaceVariant },
   unitSectionLocked: { opacity: 0.55 },
   lockedOpacity: { opacity: 0.45 },
 
@@ -518,7 +527,7 @@ const styles = StyleSheet.create({
   },
   floatingDivider: {
     height: 1,
-    backgroundColor: Colors.light.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
     marginHorizontal: '10%',
   },
   lessonStatusDot: {
@@ -534,10 +543,10 @@ const styles = StyleSheet.create({
   lessonRowLocked: { opacity: 0.5 },
   lessonInfo: { flex: 1 },
   lessonTitle: { marginBottom: 2 },
-  lessonMeta: { color: Colors.light.onSurfaceVariant },
+  lessonMeta: { color: c.onSurfaceVariant },
   lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   rewardBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radii.full },
   rewardText: {},
-  chevron: { fontSize: 20, color: Colors.light.onSurfaceVariant },
+  chevron: { fontSize: 20, color: c.onSurfaceVariant },
   bottomPadding: { height: 40 },
 });

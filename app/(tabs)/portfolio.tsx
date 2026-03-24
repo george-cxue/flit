@@ -69,7 +69,7 @@ export default function PortfolioScreen() {
     }
   }, [paramLeagueId]);
 
-  const c = Colors.light;
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const currentPortfolio = getCurrentPortfolio();
 
