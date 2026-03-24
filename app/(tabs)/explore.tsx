@@ -332,7 +332,7 @@ export default function ExploreScreen() {
             </View>
             <TextInput
               style={[styles.searchInputWithIcon, { backgroundColor: c.surfaceContainerHigh, color: c.onSurface }]}
-              placeholder="Search stocks to add..."
+              placeholder="Search stocks"
               placeholderTextColor={c.onSurfaceVariant}
               value={searchQuery}
               onChangeText={searchStocks}

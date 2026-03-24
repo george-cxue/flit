@@ -1,4 +1,5 @@
 import {
+  DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
@@ -28,6 +29,7 @@ import {
 
 import { PortfolioProvider } from "@/contexts/portfolio-context";
 import { AuthProvider } from "@/contexts/auth-context";
+import { ThemeModeProvider, useThemeMode } from "@/contexts/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,10 +57,22 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <ThemeModeProvider>
+      <AppShell />
+    </ThemeModeProvider>
+  );
+}
+
+function AppShell() {
+  const { themeMode, isThemeLoaded } = useThemeMode();
+
+  if (!isThemeLoaded) return null;
+
+  return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
         <SafeAreaProvider>
-          <ThemeProvider value={DefaultTheme}>
+          <ThemeProvider value={themeMode === "dark" ? DarkTheme : DefaultTheme}>
             <AuthProvider>
               <PortfolioProvider>
                 <Stack>
@@ -73,7 +87,7 @@ export default function RootLayout() {
                   <Stack.Screen name="fantasy" options={{ headerShown: false }} />
                   <Stack.Screen name="lesson" options={{ headerShown: false }} />
                 </Stack>
-                <StatusBar style="auto" />
+                <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
               </PortfolioProvider>
             </AuthProvider>
           </ThemeProvider>

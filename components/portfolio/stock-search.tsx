@@ -121,12 +121,14 @@ export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchPro
       </View>
 
       <View style={styles.searchContainer}>
-        <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+        <View style={styles.searchIconWrapper}>
+          <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+        </View>
         <TextInput
-          style={[styles.searchInput, { color: textColor }]}
+          style={[styles.searchInput, { backgroundColor: c.surfaceContainerHigh, color: textColor }]}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search stocks by symbol, name, or sector..."
+          placeholder="Search stocks"
           placeholderTextColor={c.onSurfaceVariant}
         />
       </View>
@@ -214,7 +216,7 @@ export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchPro
                 <View style={styles.inputSection}>
                   <ThemedText style={styles.inputLabel}>Number of Shares</ThemedText>
                   <TextInput
-                    style={[styles.sharesInput, { color: textColor }]}
+                    style={[styles.sharesInput, { backgroundColor: c.surfaceContainerHigh, color: textColor }]}
                     value={shares}
                     onChangeText={setShares}
                     keyboardType="number-pad"
@@ -300,17 +302,21 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: c.surfaceContainerHigh,
     borderRadius: Radii.md,
-    paddingHorizontal: Spacing.sm + 4,
-    paddingVertical: Spacing.sm + 2,
+    gap: Spacing.sm,
   },
   searchIcon: {
     fontSize: 18,
-    marginRight: Spacing.sm,
+  },
+  searchIconWrapper: {
+    paddingLeft: Spacing.sm + 4,
   },
   searchInput: {
     flex: 1,
+    height: 44,
+    borderRadius: Radii.md,
+    paddingLeft: 12,
+    paddingRight: 12,
     fontFamily: 'Inter_400Regular',
     fontSize: 16,
     lineHeight: 24,
@@ -434,7 +440,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sharesInput: {
-    backgroundColor: c.surfaceContainerHigh,
     borderRadius: Radii.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 4,

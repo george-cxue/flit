@@ -16,6 +16,7 @@ interface AssetAllocationManagerProps {
 
 export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: AssetAllocationManagerProps) {
   const primaryColor = useThemeColor({}, 'tint');
+  const styles = createStyles();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<keyof AssetAllocation | null>(null);
   const [amount, setAmount] = useState('');
@@ -186,7 +187,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = () => StyleSheet.create({
   container: {
     padding: Spacing.md,
   },

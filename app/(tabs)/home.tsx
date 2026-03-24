@@ -10,6 +10,7 @@ import { useRouter, useFocusEffect, Redirect } from 'expo-router';
 import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useThemeMode } from '@/contexts/theme-context';
 import { ProfileButton } from '@/components/profile-button';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
@@ -18,7 +19,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
+  const { themeMode } = useThemeMode();
   const c = Colors.light;
+  const styles = createStyles(c);
   const { resetOnboarding } = useOnboarding();
   const router = useRouter();
   const { portfolios, refreshPortfolios } = usePortfolio();
@@ -29,7 +32,7 @@ export default function HomeScreen() {
       reload();
       refreshPortfolios();
       syncUser();
-    }, [reload, refreshPortfolios, syncUser])
+    }, [reload, refreshPortfolios, syncUser, themeMode])
   );
 
   if (!isLoaded) {
@@ -226,7 +229,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: Spacing.lg },
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontFamily: Typography['display-md'].fontFamily,
     textTransform: 'lowercase',
-    color: Colors.light.onSurface,
+    color: c.onSurface,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
@@ -299,13 +302,13 @@ const styles = StyleSheet.create({
   },
   streakHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   streakTitle: { marginBottom: 4 },
-  streakSubtitle: { color: Colors.light.onSurfaceVariant },
+  streakSubtitle: { color: c.onSurfaceVariant },
   streakBadge: { alignItems: 'center' },
   streakNumber: {
     fontSize: 32,
     fontFamily: Typography['headline-lg'].fontFamily,
   },
-  streakDays: { color: Colors.light.onSurfaceVariant },
+  streakDays: { color: c.onSurfaceVariant },
 
   // Portfolio card — no border
   card: {
@@ -327,15 +330,15 @@ const styles = StyleSheet.create({
     fontFamily: Typography['display-md'].fontFamily,
     lineHeight: 44,
     paddingTop: Platform.OS !== 'web' ? 4 : 0,
-    color: Colors.light.onSurface,
+    color: c.onSurface,
     marginBottom: Spacing.sm,
   },
   portfolioChange: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
-  changeLabel: { color: Colors.light.onSurfaceVariant },
+  changeLabel: { color: c.onSurfaceVariant },
   portfolioBreakdown: { gap: 12 },
   breakdownItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dot: { width: 12, height: 12, borderRadius: 6 },
-  breakdownLabel: { flex: 1, color: Colors.light.onSurfaceVariant },
+  breakdownLabel: { flex: 1, color: c.onSurfaceVariant },
   breakdownValue: {},
 
   // Lesson card — no border, accent strip instead of borderLeft
@@ -348,7 +351,7 @@ const styles = StyleSheet.create({
   },
   lessonAccent: {
     width: 4,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: c.primary,
   },
   lessonContent: {
     flex: 1,
@@ -360,7 +363,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  lessonTitle: { color: Colors.light.onSurfaceVariant },
+  lessonTitle: { color: c.onSurfaceVariant },
   lessonBadge: {
     backgroundColor: 'rgba(0, 75, 228, 0.08)',
     paddingHorizontal: 12,
@@ -369,11 +372,11 @@ const styles = StyleSheet.create({
   },
   lessonBadgeText: {},
   lessonName: { marginBottom: 6 },
-  lessonDescription: { color: Colors.light.onSurfaceVariant, marginBottom: 12 },
+  lessonDescription: { color: c.onSurfaceVariant, marginBottom: 12 },
   lessonMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  lessonDuration: { color: Colors.light.onSurfaceVariant },
-  lessonSeparator: { color: Colors.light.onSurfaceVariant },
-  lessonLevel: { color: Colors.light.onSurfaceVariant },
+  lessonDuration: { color: c.onSurfaceVariant },
+  lessonSeparator: { color: c.onSurfaceVariant },
+  lessonLevel: { color: c.onSurfaceVariant },
 
   // Quick actions — no border
   quickActions: { flexDirection: 'row', gap: 12, marginBottom: Spacing.md },
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     opacity: 0.5,
   },
-  debugButtonText: { color: Colors.light.onSurfaceVariant },
+  debugButtonText: { color: c.onSurfaceVariant },
 
   bottomPadding: { height: 20 },
 });

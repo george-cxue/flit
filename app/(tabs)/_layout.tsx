@@ -1,5 +1,5 @@
 import { Tabs, Redirect } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -7,9 +7,11 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Typography } from '@/constants/theme';
 import { useAuthContext } from '@/contexts/auth-context';
 import { ProfileButton } from '@/components/profile-button';
+import { useThemeMode } from '@/contexts/theme-context';
 
 export default function TabLayout() {
   const { isLoaded, isSignedIn, user, syncError } = useAuthContext();
+  const { themeMode } = useThemeMode();
   const colors = Colors.light;
 
   if (!isLoaded) {

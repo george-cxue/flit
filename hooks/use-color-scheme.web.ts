@@ -1,4 +1,6 @@
-// Light mode only — "The Architectural Mentor" design system
+import { useThemeMode } from '@/contexts/theme-context';
+
 export function useColorScheme() {
-  return 'light' as const;
+  const { themeMode } = useThemeMode();
+  return themeMode;
 }

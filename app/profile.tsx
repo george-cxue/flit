@@ -2,6 +2,7 @@ import {
   View,
   Text,
   TextInput,
+  Switch,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -16,8 +17,7 @@ import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from 
 import { apiClient } from '@/src/services/api';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-
-const c = Colors.light;
+import { useThemeMode } from '@/contexts/theme-context';
 
 interface ProfileUser {
   id: string;
@@ -44,6 +44,9 @@ export default function ProfileScreen() {
   const { user: authUser, updateUserFromProfile } = useAuthContext();
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
+  const c = Colors.light;
+  const styles = createStyles(c);
+  const { isDarkMode, toggleThemeMode } = useThemeMode();
 
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -343,6 +346,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: c.onSurfaceVariant }]}>Appearance</Text>
+          <View style={styles.themeToggleRow}>
+            <View>
+              <Text style={[styles.value, { color: c.onSurface }]}>Dark Mode</Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleThemeMode}
+              trackColor={{ false: c.surfaceContainerHigh, true: c.primary + '66' }}
+              thumbColor={isDarkMode ? c.primary : c.onSurfaceVariant}
+              ios_backgroundColor={c.surfaceContainerHigh}
+            />
+          </View>
+        </View>
+
         {isEditing && (
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: c.primary }]}
@@ -363,7 +382,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -450,6 +469,13 @@ const styles = StyleSheet.create({
   },
   field: {
     paddingVertical: Spacing.sm + 4,
+  },
+  themeToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   label: {
     fontFamily: Typography['label-md'].fontFamily,
