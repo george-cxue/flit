@@ -123,16 +123,16 @@ export function StockSearch({ groupId, liquidFunds, onBuyStock }: StockSearchPro
       </View>
 
       <View style={styles.searchContainer}>
-        <View style={styles.searchIconWrapper}>
-          <ThemedText style={styles.searchIcon}>🔍</ThemedText>
-        </View>
         <TextInput
           style={[styles.searchInput, { backgroundColor: c.surfaceContainerHigh, color: textColor }]}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search stocks"
+          placeholder="Search stocks..."
           placeholderTextColor={c.onSurfaceVariant}
         />
+        <View style={styles.searchIconInline}>
+          <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+        </View>
       </View>
 
       {loading && (
@@ -302,22 +302,20 @@ const createStyles = (c: typeof Colors.light) => StyleSheet.create({
     color: c.onSurfaceVariant,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: Radii.md,
-    gap: Spacing.sm,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  searchIconInline: {
+    position: 'absolute',
+    left: 12,
   },
   searchIcon: {
-    fontSize: 18,
-  },
-  searchIconWrapper: {
-    paddingLeft: Spacing.sm + 4,
+    fontSize: 16,
   },
   searchInput: {
-    flex: 1,
     height: 44,
     borderRadius: Radii.md,
-    paddingLeft: 12,
+    paddingLeft: 38,
     paddingRight: 12,
     fontFamily: 'Inter_400Regular',
     fontSize: 16,

@@ -4,8 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StockHolding } from '@/types/portfolio';
 import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
-
-const c = Colors.light;
+import { useThemeMode } from '@/contexts/theme-context';
 
 interface HoldingsListProps {
   holdings: StockHolding[];
@@ -13,7 +12,9 @@ interface HoldingsListProps {
 }
 
 export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
-  const styles = createStyles();
+  const { themeMode } = useThemeMode();
+  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const styles = createStyles(c);
   const [sellModalVisible, setSellModalVisible] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<StockHolding | null>(null);
   const [sellShares, setSellShares] = useState('');
@@ -161,9 +162,9 @@ export function HoldingsList({ holdings, onSellStock }: HoldingsListProps) {
   );
 }
 
-const createStyles = () => StyleSheet.create({
+const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: {
-    padding: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   title: {
     fontFamily: 'Inter_600SemiBold',
@@ -196,7 +197,7 @@ const createStyles = () => StyleSheet.create({
     padding: Spacing.md,
     borderRadius: Radii.md,
     marginBottom: Spacing.sm + 4,
-    backgroundColor: c.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLow,
     ...SubtleShadow,
   },
   holdingHeader: {

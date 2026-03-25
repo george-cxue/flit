@@ -1,18 +1,18 @@
-import { Tabs, Redirect } from 'expo-router';
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Tabs, Redirect } from "expo-router";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography } from '@/constants/theme';
-import { useAuthContext } from '@/contexts/auth-context';
-import { ProfileButton } from '@/components/profile-button';
-import { useThemeMode } from '@/contexts/theme-context';
+import { HapticTab } from "@/components/haptic-tab";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors, Typography } from "@/constants/theme";
+import { useAuthContext } from "@/contexts/auth-context";
+import { ProfileButton } from "@/components/profile-button";
+import { useThemeMode } from "@/contexts/theme-context";
 
 export default function TabLayout() {
   const { isLoaded, isSignedIn, user, syncError } = useAuthContext();
   const { themeMode } = useThemeMode();
-  const colors = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const colors = themeMode === "dark" ? Colors.dark : Colors.light;
 
   if (!isLoaded) {
     return null;
@@ -24,9 +24,15 @@ export default function TabLayout() {
 
   if (syncError && !user) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.errorTitle, { color: colors.onSurface }]}>Account Setup Failed</Text>
-        <Text style={[styles.errorMessage, { color: colors.onSurfaceVariant }]}>{syncError}</Text>
+      <View
+        style={[styles.errorContainer, { backgroundColor: colors.surface }]}
+      >
+        <Text style={[styles.errorTitle, { color: colors.onSurface }]}>
+          Account Setup Failed
+        </Text>
+        <Text style={[styles.errorMessage, { color: colors.onSurfaceVariant }]}>
+          {syncError}
+        </Text>
         <Text style={[styles.errorHint, { color: colors.onSurfaceVariant }]}>
           Sign out and try again with a different username.
         </Text>
@@ -50,45 +56,59 @@ export default function TabLayout() {
           backgroundColor: colors.surfaceContainerLowest,
           borderTopWidth: 0,
           elevation: 0,
+          height: 76,
+          paddingBottom: 16,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontFamily: Typography['label-md'].fontFamily,
-          fontSize: Typography['label-md'].fontSize,
+          fontFamily: Typography["label-md"].fontFamily,
+          fontSize: 11,
         },
-      })}>
+      })}
+    >
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="house.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="lesson"
         options={{
-          title: 'Lessons',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
+          title: "Lessons",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="book.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
+          title: "Explore",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="magnifyingglass" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="portfolio"
         options={{
-          title: 'Portfolio',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.pie.fill" color={color} />,
+          title: "Portfolio",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="chart.pie.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="group"
         options={{
-          title: 'Groups',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="trophy.fill" color={color} />,
+          title: "Groups",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="trophy.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -104,26 +124,26 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   errorTitle: {
-    fontFamily: Typography['title-lg'].fontFamily,
-    fontSize: Typography['title-lg'].fontSize,
+    fontFamily: Typography["title-lg"].fontFamily,
+    fontSize: Typography["title-lg"].fontSize,
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorMessage: {
-    fontFamily: Typography['body-lg'].fontFamily,
-    fontSize: Typography['body-lg'].fontSize,
-    textAlign: 'center',
+    fontFamily: Typography["body-lg"].fontFamily,
+    fontSize: Typography["body-lg"].fontSize,
+    textAlign: "center",
     marginBottom: 8,
   },
   errorHint: {
-    fontFamily: Typography['body-md'].fontFamily,
-    fontSize: Typography['body-md'].fontSize,
-    textAlign: 'center',
+    fontFamily: Typography["body-md"].fontFamily,
+    fontSize: Typography["body-md"].fontSize,
+    textAlign: "center",
     marginBottom: 24,
     opacity: 0.8,
   },

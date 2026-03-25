@@ -1,88 +1,109 @@
-import { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
-import { useLessons } from '@/hooks/use-lessons';
-import { lessonService } from '@/src/services/lessonService';
-import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useThemeMode } from '@/contexts/theme-context';
+import { useState, useCallback, useEffect } from "react";
+import { StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useFocusEffect } from "expo-router";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import {
+  Colors,
+  Typography,
+  Radii,
+  Spacing,
+  SubtleShadow,
+} from "@/constants/theme";
+import { TopBar } from "@/components/top-bar";
+import { useLessons } from "@/hooks/use-lessons";
+import { lessonService } from "@/src/services/lessonService";
+import type { LessonCourse, LessonUnit, Lesson } from "@/src/types/lesson";
+import { useAuthContext } from "@/contexts/auth-context";
+import { useThemeMode } from "@/contexts/theme-context";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function LessonsScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuthContext();
   const { themeMode } = useThemeMode();
-  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const c = themeMode === "dark" ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const router = useRouter();
 
-  const { isLessonCompleted, getCourseCompletionCount, portfolioBalance, reload } = useLessons(user?.id || null);
+  const { isLessonCompleted, getCourseCompletionCount, reload } = useLessons(
+    user?.id || null,
+  );
+  const [infoDismissed, setInfoDismissed] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem("learning-dollars-info-dismissed").then((val) => {
+      setInfoDismissed(val === "true");
+    });
+  }, []);
+
+  const dismissInfo = () => {
+    setInfoDismissed(true);
+    AsyncStorage.setItem("learning-dollars-info-dismissed", "true");
+  };
 
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [reload])
+    }, [reload]),
   );
 
   const courses = lessonService.getCourses();
-  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id ?? '');
+  const [selectedCourseId, setSelectedCourseId] = useState(
+    courses[0]?.id ?? "",
+  );
   const selectedCourse = courses.find((co) => co.id === selectedCourseId);
 
   const handleLessonPress = (lesson: Lesson) => {
-    router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } });
+    router.push({ pathname: "/lesson/[id]", params: { id: lesson.id } });
   };
 
   return (
     <ThemedView style={styles.container}>
+      <TopBar />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <ThemedText type="headline-lg" style={styles.title}>
-            Lessons
-          </ThemedText>
-
-          {/* Portfolio Balance — Hero gradient */}
-          <LinearGradient
-            colors={[c.primary, c.primaryContainer]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.balanceCard}
+        {/* Learning Dollars Explanation — dismissable */}
+        {!infoDismissed && (
+          <View
+            style={[
+              styles.infoCard,
+              { backgroundColor: c.surfaceContainerLowest },
+            ]}
           >
-            <ThemedText type="label-lg" style={styles.balanceLabel}>Learning Dollars</ThemedText>
-            <ThemedText style={styles.balanceAmount}>
-              ${portfolioBalance.toLocaleString()}
-            </ThemedText>
-            <ThemedText type="body-md" style={styles.balanceHint}>
-              Complete lessons to grow your learning dollars
-            </ThemedText>
-          </LinearGradient>
-
-          {/* Learning Dollars Explanation */}
-          <View style={[styles.infoCard, { backgroundColor: c.surfaceContainerLowest }]}>
-            <ThemedText type="title-md" style={styles.infoTitle}>What are Learning Dollars?</ThemedText>
+            <View style={styles.infoHeader}>
+              <ThemedText type="title-md" style={styles.infoTitle}>
+                What are Learning Dollars?
+              </ThemedText>
+              <TouchableOpacity onPress={dismissInfo} hitSlop={8}>
+                <MaterialIcons
+                  name="close"
+                  size={20}
+                  color={c.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+            </View>
             <ThemedText type="body-md" style={styles.infoText}>
-              Learning Dollars determine your starting portfolio size when you join or create a group. The more lessons you complete, the bigger your starting balance!
+              Learning Dollars determine your starting portfolio size when you
+              join or create a group. The more lessons you complete, the bigger
+              your starting balance!
             </ThemedText>
-            <ThemedText type="body-md" style={[styles.infoText, { marginTop: 8 }]}>
-              {'\u2022'} Monthly Tournament requires $10,000{'\n'}
-              {'\u2022'} Custom groups can set any starting balance{'\n'}
-              {'\u2022'} You must have enough Learning Dollars to join
+            <ThemedText
+              type="body-md"
+              style={[styles.infoText, { marginTop: 8 }]}
+            >
+              {"\u2022"} Monthly Tournament requires $10,000{"\n"}
+              {"\u2022"} Custom groups can set any starting balance{"\n"}
+              {"\u2022"} You must have enough Learning Dollars to join
             </ThemedText>
           </View>
-        </View>
+        )}
 
         {/* Course Selector */}
-        <ThemedText type="title-md" style={styles.sectionLabel}>
-          Courses
-        </ThemedText>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -100,19 +121,23 @@ export default function LessonsScreen() {
                 style={[
                   styles.courseCard,
                   {
-                    backgroundColor: isSelected ? c.primary : c.surfaceContainerLowest,
+                    backgroundColor: isSelected
+                      ? c.primary
+                      : c.surfaceContainerLowest,
                   },
                   !isSelected && SubtleShadow,
                 ]}
                 onPress={() => setSelectedCourseId(course.id)}
                 activeOpacity={0.75}
               >
-                <ThemedText style={styles.courseCardIcon}>{course.icon}</ThemedText>
+                <ThemedText style={styles.courseCardIcon}>
+                  {course.icon}
+                </ThemedText>
                 <ThemedText
                   type="label-lg"
                   style={[
                     styles.courseCardTitle,
-                    { color: isSelected ? '#FFFFFF' : c.onSurface },
+                    { color: isSelected ? "#FFFFFF" : c.onSurface },
                   ]}
                   numberOfLines={2}
                 >
@@ -123,7 +148,11 @@ export default function LessonsScreen() {
                     type="label-md"
                     style={[
                       styles.courseCardMeta,
-                      { color: isSelected ? 'rgba(255,255,255,0.7)' : c.onSurfaceVariant },
+                      {
+                        color: isSelected
+                          ? "rgba(255,255,255,0.7)"
+                          : c.onSurfaceVariant,
+                      },
                     ]}
                   >
                     Coming Soon
@@ -133,7 +162,11 @@ export default function LessonsScreen() {
                     type="label-md"
                     style={[
                       styles.courseCardMeta,
-                      { color: isSelected ? 'rgba(255,255,255,0.7)' : c.onSurfaceVariant },
+                      {
+                        color: isSelected
+                          ? "rgba(255,255,255,0.7)"
+                          : c.onSurfaceVariant,
+                      },
                     ]}
                   >
                     {completed}/{total} complete
@@ -167,18 +200,30 @@ export default function LessonsScreen() {
 
 function ComingSoonPlaceholder({ course }: { course: LessonCourse }) {
   const { themeMode } = useThemeMode();
-  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const c = themeMode === "dark" ? Colors.dark : Colors.light;
   const styles = createStyles(c);
 
   return (
-    <View style={[styles.comingSoonCard, { backgroundColor: c.surfaceContainerLowest }]}>
+    <View
+      style={[
+        styles.comingSoonCard,
+        { backgroundColor: c.surfaceContainerLowest },
+      ]}
+    >
       <ThemedText style={styles.comingSoonIcon}>{course.icon}</ThemedText>
       <ThemedText type="title-lg" style={styles.comingSoonTitle}>
         {course.title}
       </ThemedText>
-      <ThemedText type="body-md" style={styles.comingSoonDescription}>{course.description}</ThemedText>
-      <View style={[styles.comingSoonBadge, { backgroundColor: c.surfaceTint }]}>
-        <ThemedText type="label-lg" style={[styles.comingSoonBadgeText, { color: c.primary }]}>
+      <ThemedText type="body-md" style={styles.comingSoonDescription}>
+        {course.description}
+      </ThemedText>
+      <View
+        style={[styles.comingSoonBadge, { backgroundColor: c.surfaceTint }]}
+      >
+        <ThemedText
+          type="label-lg"
+          style={[styles.comingSoonBadgeText, { color: c.primary }]}
+        >
           Coming Soon
         </ThemedText>
       </View>
@@ -202,14 +247,19 @@ function CourseContent({
   onLessonPress: (lesson: Lesson) => void;
 }) {
   const { themeMode } = useThemeMode();
-  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const c = themeMode === "dark" ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
     <>
       {/* Course progress strip */}
-      <View style={[styles.courseProgress, { backgroundColor: c.surfaceContainerLowest }]}>
+      <View
+        style={[
+          styles.courseProgress,
+          { backgroundColor: c.surfaceContainerLowest },
+        ]}
+      >
         <View style={styles.courseProgressTop}>
           <ThemedText type="title-md" style={styles.courseProgressTitle}>
             {course.title}
@@ -271,10 +321,10 @@ function UnitSection({
   onLessonPress: (lesson: Lesson) => void;
 }) {
   const { themeMode } = useThemeMode();
-  const c = themeMode === 'dark' ? Colors.dark : Colors.light;
+  const c = themeMode === "dark" ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const unitCompleted = unit.lessons.filter((l) =>
-    isLessonCompleted(courseId, l.id)
+    isLessonCompleted(courseId, l.id),
   ).length;
 
   return (
@@ -286,8 +336,10 @@ function UnitSection({
       ]}
     >
       <View style={styles.unitHeader}>
-        <ThemedText style={[styles.unitIcon, unitLocked && styles.lockedOpacity]}>
-          {unitLocked ? '🔒' : unit.icon}
+        <ThemedText
+          style={[styles.unitIcon, unitLocked && styles.lockedOpacity]}
+        >
+          {unitLocked ? "🔒" : unit.icon}
         </ThemedText>
         <View style={styles.unitHeaderText}>
           <ThemedText
@@ -298,7 +350,7 @@ function UnitSection({
           </ThemedText>
           <ThemedText type="label-md" style={styles.unitMeta}>
             {unitLocked
-              ? 'Complete previous unit to unlock'
+              ? "Complete previous unit to unlock"
               : `${unitCompleted}/${unit.lessons.length} complete`}
           </ThemedText>
         </View>
@@ -314,10 +366,7 @@ function UnitSection({
           return (
             <TouchableOpacity
               key={lesson.id}
-              style={[
-                styles.lessonRow,
-                lessonLocked && styles.lessonRowLocked,
-              ]}
+              style={[styles.lessonRow, lessonLocked && styles.lessonRowLocked]}
               onPress={() => !lessonLocked && onLessonPress(lesson)}
               activeOpacity={lessonLocked ? 1 : 0.7}
             >
@@ -332,8 +381,8 @@ function UnitSection({
                       backgroundColor: completed
                         ? c.success
                         : lessonLocked
-                        ? c.surfaceContainerHigh
-                        : 'rgba(0, 75, 228, 0.08)',
+                          ? c.surfaceContainerHigh
+                          : "rgba(0, 75, 228, 0.08)",
                     },
                   ]}
                 >
@@ -357,15 +406,23 @@ function UnitSection({
                   </ThemedText>
                   <ThemedText type="label-md" style={styles.lessonMeta}>
                     {lessonLocked
-                      ? 'Complete previous lesson first'
+                      ? "Complete previous lesson first"
                       : `${lesson.estimatedMinutes} min · ${lesson.difficulty}`}
                   </ThemedText>
                 </View>
 
                 <View style={styles.lessonRight}>
                   {!completed && !lessonLocked && (
-                    <View style={[styles.rewardBadge, { backgroundColor: 'rgba(0, 75, 228, 0.08)' }]}>
-                      <ThemedText type="label-md" style={[styles.rewardText, { color: c.primary }]}>
+                    <View
+                      style={[
+                        styles.rewardBadge,
+                        { backgroundColor: "rgba(0, 75, 228, 0.08)" },
+                      ]}
+                    >
+                      <ThemedText
+                        type="label-md"
+                        style={[styles.rewardText, { color: c.primary }]}
+                      >
                         +${lesson.reward}
                       </ThemedText>
                     </View>
@@ -384,169 +441,161 @@ function UnitSection({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const createStyles = (c: typeof Colors.light) => StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  scrollContent: { padding: Spacing.lg },
-  header: { marginBottom: Spacing.lg },
-  title: { marginBottom: Spacing.md },
+const createStyles = (c: typeof Colors.light) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    scrollView: { flex: 1 },
+    scrollContent: { padding: 16 },
 
-  // Learning dollars balance — gradient applied via LinearGradient
-  balanceCard: {
-    borderRadius: Radii.xl,
-    padding: Spacing.lg,
-    marginBottom: 4,
-  },
-  balanceLabel: {
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 4,
-  },
-  balanceAmount: {
-    color: '#FFFFFF',
-    fontSize: 40,
-    fontFamily: Typography['display-md'].fontFamily,
-    lineHeight: 48,
-    paddingTop: Platform.OS !== 'web' ? 4 : 0,
-    marginBottom: 4,
-  },
-  balanceHint: {
-    color: 'rgba(255,255,255,0.6)',
-  },
+    // Info card — dismissable, no border, tonal bg
+    infoCard: {
+      borderRadius: Radii.md,
+      padding: Spacing.md,
+      ...SubtleShadow,
+    },
+    infoHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: Spacing.sm,
+    },
+    infoTitle: {},
+    infoText: {
+      color: c.onSurfaceVariant,
+      lineHeight: 20,
+    },
 
-  // Info card — no border, tonal bg
-  infoCard: {
-    borderRadius: Radii.md,
-    padding: Spacing.md,
-    marginTop: Spacing.md,
-    ...SubtleShadow,
-  },
-  infoTitle: {
-    marginBottom: Spacing.sm,
-  },
-  infoText: {
-    color: c.onSurfaceVariant,
-    lineHeight: 20,
-  },
+    // Course selector
+    sectionLabel: {
+      marginBottom: 12,
+      marginTop: 0,
+    },
+    courseScroll: { marginHorizontal: -Spacing.lg },
+    courseRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingBottom: 4 },
+    courseCard: {
+      width: 140,
+      borderRadius: Radii.md,
+      padding: 14,
+      gap: 6,
+      // No borderWidth
+    },
+    courseCardIcon: { fontSize: 28, marginBottom: 2 },
+    courseCardTitle: { lineHeight: 18 },
+    courseCardMeta: {},
 
-  // Course selector
-  sectionLabel: {
-    marginBottom: 12,
-    marginTop: Spacing.sm,
-  },
-  courseScroll: { marginHorizontal: -Spacing.lg },
-  courseRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingBottom: 4 },
-  courseCard: {
-    width: 140,
-    borderRadius: Radii.md,
-    padding: 14,
-    gap: 6,
-    // No borderWidth
-  },
-  courseCardIcon: { fontSize: 28, marginBottom: 2 },
-  courseCardTitle: { lineHeight: 18 },
-  courseCardMeta: {},
+    // Coming soon
+    comingSoonCard: {
+      marginTop: Spacing.md,
+      borderRadius: Radii.md,
+      padding: Spacing.xl,
+      alignItems: "center",
+      gap: 12,
+      ...SubtleShadow,
+    },
+    comingSoonIcon: { fontSize: 56 },
+    comingSoonTitle: { textAlign: "center" },
+    comingSoonDescription: {
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+      lineHeight: 22,
+    },
+    comingSoonBadge: {
+      marginTop: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radii.full,
+    },
+    comingSoonBadgeText: {},
 
-  // Coming soon
-  comingSoonCard: {
-    marginTop: Spacing.md,
-    borderRadius: Radii.md,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    gap: 12,
-    ...SubtleShadow,
-  },
-  comingSoonIcon: { fontSize: 56 },
-  comingSoonTitle: { textAlign: 'center' },
-  comingSoonDescription: {
-    color: c.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  comingSoonBadge: {
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radii.full,
-  },
-  comingSoonBadgeText: {},
+    // Course progress strip — no border
+    courseProgress: {
+      borderRadius: Radii.md,
+      padding: Spacing.md,
+      marginTop: Spacing.md,
+      marginBottom: 12,
+      gap: Spacing.sm,
+      ...SubtleShadow,
+    },
+    courseProgressTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    courseProgressTitle: {},
+    courseProgressCount: { color: c.onSurfaceVariant },
+    courseProgressBarBg: {
+      height: 6,
+      backgroundColor: c.surfaceContainerHighest,
+      borderRadius: Radii.full,
+      overflow: "hidden",
+    },
+    courseProgressBarFill: { height: "100%", borderRadius: Radii.full },
+    courseAttribution: { color: c.onSurfaceVariant, opacity: 0.6 },
 
-  // Course progress strip — no border
-  courseProgress: {
-    borderRadius: Radii.md,
-    padding: Spacing.md,
-    marginTop: Spacing.md,
-    marginBottom: 12,
-    gap: Spacing.sm,
-    ...SubtleShadow,
-  },
-  courseProgressTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  courseProgressTitle: {},
-  courseProgressCount: { color: c.onSurfaceVariant },
-  courseProgressBarBg: {
-    height: 6,
-    backgroundColor: c.surfaceContainerHighest,
-    borderRadius: Radii.full,
-    overflow: 'hidden',
-  },
-  courseProgressBarFill: { height: '100%', borderRadius: Radii.full },
-  courseAttribution: { color: c.onSurfaceVariant, opacity: 0.6 },
+    // Units — no border
+    unitSection: {
+      borderRadius: Radii.md,
+      marginBottom: 12,
+      overflow: "hidden",
+      ...SubtleShadow,
+    },
+    unitHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: Spacing.md,
+      gap: 12,
+    },
+    unitIcon: { fontSize: 28 },
+    unitHeaderText: { flex: 1 },
+    unitTitle: { marginBottom: 2 },
+    unitMeta: { color: c.onSurfaceVariant },
+    unitSectionLocked: { opacity: 0.55 },
+    lockedOpacity: { opacity: 0.45 },
 
-  // Units — no border
-  unitSection: {
-    borderRadius: Radii.md,
-    marginBottom: 12,
-    overflow: 'hidden',
-    ...SubtleShadow,
-  },
-  unitHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: 12,
-  },
-  unitIcon: { fontSize: 28 },
-  unitHeaderText: { flex: 1 },
-  unitTitle: { marginBottom: 2 },
-  unitMeta: { color: c.onSurfaceVariant },
-  unitSectionLocked: { opacity: 0.55 },
-  lockedOpacity: { opacity: 0.45 },
-
-  // Lesson rows — floating dividers instead of borderBottom
-  lessonRow: {
-    paddingHorizontal: Spacing.md,
-  },
-  lessonRowInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    gap: 14,
-  },
-  floatingDivider: {
-    height: 1,
-    backgroundColor: c.surfaceContainerHigh,
-    marginHorizontal: '10%',
-  },
-  lessonStatusDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // No borderWidth
-  },
-  lessonCheckmark: { color: '#FFFFFF', fontSize: 14, fontFamily: Typography['label-lg'].fontFamily },
-  lessonLockIcon: { fontSize: 10 },
-  lessonRowLocked: { opacity: 0.5 },
-  lessonInfo: { flex: 1 },
-  lessonTitle: { marginBottom: 2 },
-  lessonMeta: { color: c.onSurfaceVariant },
-  lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  rewardBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: Radii.full },
-  rewardText: {},
-  chevron: { fontSize: 20, color: c.onSurfaceVariant },
-  bottomPadding: { height: 40 },
-});
+    // Lesson rows — floating dividers instead of borderBottom
+    lessonRow: {
+      paddingHorizontal: Spacing.md,
+    },
+    lessonRowInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 14,
+      gap: 14,
+    },
+    floatingDivider: {
+      height: 1,
+      backgroundColor: c.surfaceContainerHigh,
+      marginHorizontal: "10%",
+    },
+    lessonStatusDot: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      // No borderWidth
+    },
+    lessonCheckmark: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontFamily: Typography["label-lg"].fontFamily,
+    },
+    lessonLockIcon: { fontSize: 10 },
+    lessonRowLocked: { opacity: 0.5 },
+    lessonInfo: { flex: 1 },
+    lessonTitle: { marginBottom: 2 },
+    lessonMeta: { color: c.onSurfaceVariant },
+    lessonRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+    },
+    rewardBadge: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 3,
+      borderRadius: Radii.full,
+    },
+    rewardText: {},
+    chevron: { fontSize: 20, color: c.onSurfaceVariant },
+    bottomPadding: { height: 40 },
+  });
