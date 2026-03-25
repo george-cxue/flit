@@ -233,7 +233,7 @@ export default function PortfolioScreen() {
           <AssetAllocationManager
             allocation={currentPortfolio.allocation}
             cashBalance={currentPortfolio.liquidFunds}
-            onAllocate={allocateFunds.bind(null, selectedLeagueId)}
+            onAllocate={handleAllocate}
           />
         </View>
       </ThemedView>
