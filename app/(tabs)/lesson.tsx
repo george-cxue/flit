@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+import { TopBar } from '@/components/top-bar';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import type { LessonCourse, LessonUnit, Lesson } from '@/src/types/lesson';
@@ -13,7 +13,6 @@ import { useAuthContext } from '@/contexts/auth-context';
 import { useThemeMode } from '@/contexts/theme-context';
 
 export default function LessonsScreen() {
-  const insets = useSafeAreaInsets();
   const { user } = useAuthContext();
   const { themeMode } = useThemeMode();
   const c = themeMode === 'dark' ? Colors.dark : Colors.light;
@@ -38,9 +37,10 @@ export default function LessonsScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <TopBar />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}

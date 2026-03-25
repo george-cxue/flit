@@ -57,9 +57,9 @@ export function ProfileButton({ style }: ProfileButtonProps) {
         disabled={isSigningOut}
       >
         {isSigningOut ? (
-          <ActivityIndicator color={c.onPrimary} size="small" />
+          <ActivityIndicator color={c.primary} size="small" />
         ) : (
-          <MaterialIcons name="person" size={24} color={c.onPrimary} />
+          <MaterialIcons name="person" size={26} color={c.primary} />
         )}
       </TouchableOpacity>
 
@@ -112,12 +112,8 @@ export function ProfileButton({ style }: ProfileButtonProps) {
 
 const styles = StyleSheet.create({
   button: {
-    width: 40,
-    height: 40,
-    borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: c.primary,
   },
   overlay: {
     flex: 1,

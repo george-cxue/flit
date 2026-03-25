@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,10 +9,9 @@ import {
   Linking,
   RefreshControl,
   Pressable,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+} from 'react-native';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import {
   Colors,
   Typography,
@@ -20,12 +19,13 @@ import {
   Spacing,
   AmbientShadow,
   SubtleShadow,
-} from "@/constants/theme";
-import { WatchlistService } from "@/src/services/watchlistService";
-import { ExploreService, TrendingStock } from "@/src/services/exploreService";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useFocusEffect } from "@react-navigation/native";
-import { useAuthContext } from "@/contexts/auth-context";
+} from '@/constants/theme';
+import { WatchlistService } from '@/src/services/watchlistService';
+import { ExploreService, TrendingStock } from '@/src/services/exploreService';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TopBar } from '@/components/top-bar';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuthContext } from '@/contexts/auth-context';
 
 interface WatchlistItem {
   id: string;
@@ -60,7 +60,6 @@ const SECTOR_MAP: { key: string; label: string; icon: string }[] = [
 ];
 
 export default function ExploreScreen() {
-  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn, userId } = useAuthContext();
   const c = Colors.light;
 
@@ -251,10 +250,9 @@ export default function ExploreScreen() {
     );
   }
 
-  const searchBarTop = insets.top + Spacing.md;
-
   return (
     <ThemedView style={styles.container}>
+      <TopBar />
       <ScrollView
         style={styles.scrollView}
         keyboardShouldPersistTaps="handled"
@@ -267,7 +265,7 @@ export default function ExploreScreen() {
         }
       >
         {/* Search Bar */}
-        <View style={[styles.searchSection, { paddingTop: searchBarTop }]}>
+        <View style={styles.searchSection}>
           <View style={styles.searchBarWrapper}>
             <View style={styles.searchIconWrapper}>
               <IconSymbol
@@ -314,7 +312,7 @@ export default function ExploreScreen() {
               style={[
                 styles.searchOverlay,
                 {
-                  top: searchBarTop + 48 + Spacing.sm,
+                  top: Spacing.md + 48 + Spacing.sm,
                   backgroundColor: c.surfaceContainerLowest,
                 },
               ]}
@@ -690,6 +688,7 @@ const styles = StyleSheet.create({
   // Search
   searchSection: {
     paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     marginBottom: Spacing.lg,
   },
   searchBarWrapper: {

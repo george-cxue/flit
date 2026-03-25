@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,12 +10,11 @@ import { usePortfolio } from '@/contexts/portfolio-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useThemeMode } from '@/contexts/theme-context';
-import { ProfileButton } from '@/components/profile-button';
+import { TopBar } from '@/components/top-bar';
 import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn } = useAuth();
   const { user, syncUser } = useAuthContext();
   const { themeMode } = useThemeMode();
@@ -68,21 +66,12 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <TopBar />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.brandRow}>
-              <Image source={require('@/assets/images/flit-logo.png')} style={styles.brandLogo} resizeMode="contain" />
-              <ThemedText style={styles.brandText}>flit</ThemedText>
-            </View>
-            <ProfileButton />
-          </View>
-        </View>
 
         {/* Financial IQ Score Card — Hero gradient */}
         <LinearGradient
@@ -234,25 +223,6 @@ const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { padding: Spacing.lg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
-  header: { marginBottom: Spacing.lg },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  brandLogo: {
-    width: 42,
-    height: 42,
-    marginRight: 12,
-  },
-  brandText: {
-    fontSize: 34,
-    fontFamily: Typography['display-md'].fontFamily,
-    textTransform: 'lowercase',
-    color: c.onSurface,
-  },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
   // Hero IQ card with gradient
   iqCard: {
