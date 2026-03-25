@@ -91,8 +91,8 @@ export default function PortfolioScreen() {
     );
   }
 
-  const handleAllocate = (asset: keyof AssetAllocation, amount: number) => {
-    allocateFunds(selectedLeagueId, asset, amount);
+  const handleAllocate = async (asset: keyof AssetAllocation, amount: number) => {
+    await allocateFunds(selectedLeagueId, asset, amount);
   };
 
   const handleBuyStock = async (stock: Stock, shares: number) => {
@@ -214,15 +214,6 @@ export default function PortfolioScreen() {
           ))}
         </ScrollView>
 
-        {/* Other Assets */}
-        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
-          <AssetAllocationManager
-            allocation={currentPortfolio.allocation}
-            cashBalance={currentPortfolio.liquidFunds}
-            onAllocate={allocateFunds.bind(null, selectedLeagueId)}
-          />
-        </View>
-
         {/* Stock Search */}
         <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <StockSearch
@@ -233,8 +224,17 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Holdings List */}
-        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest, paddingHorizontal: 16 }]}>
           <HoldingsList holdings={currentPortfolio.holdings} onSellStock={handleSellStock} />
+        </View>
+
+        {/* Other Assets */}
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest, paddingHorizontal: 16 }]}>
+          <AssetAllocationManager
+            allocation={currentPortfolio.allocation}
+            cashBalance={currentPortfolio.liquidFunds}
+            onAllocate={allocateFunds.bind(null, selectedLeagueId)}
+          />
         </View>
       </ThemedView>
     </ScrollView>
