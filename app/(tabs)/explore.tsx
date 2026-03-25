@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -9,9 +9,9 @@ import {
   Linking,
   RefreshControl,
   Pressable,
-} from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+} from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import {
   Colors,
   Typography,
@@ -19,13 +19,13 @@ import {
   Spacing,
   AmbientShadow,
   SubtleShadow,
-} from '@/constants/theme';
-import { WatchlistService } from '@/src/services/watchlistService';
-import { ExploreService, TrendingStock } from '@/src/services/exploreService';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { TopBar } from '@/components/top-bar';
-import { useFocusEffect } from '@react-navigation/native';
-import { useAuthContext } from '@/contexts/auth-context';
+} from "@/constants/theme";
+import { WatchlistService } from "@/src/services/watchlistService";
+import { ExploreService, TrendingStock } from "@/src/services/exploreService";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { TopBar } from "@/components/top-bar";
+import { useFocusEffect } from "@react-navigation/native";
+import { useAuthContext } from "@/contexts/auth-context";
 
 interface WatchlistItem {
   id: string;
@@ -687,9 +687,9 @@ const styles = StyleSheet.create({
 
   // Search
   searchSection: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   searchBarWrapper: {
     flexDirection: "row",
@@ -729,8 +729,8 @@ const styles = StyleSheet.create({
   },
   searchOverlay: {
     position: "absolute",
-    left: Spacing.lg,
-    right: Spacing.lg,
+    left: Spacing.md,
+    right: Spacing.md,
     borderRadius: Radii.md,
     maxHeight: 280,
     zIndex: 10,
@@ -758,13 +758,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     marginBottom: 12,
   },
 
   // Popular stocks
   popularScrollContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     gap: 12,
   },
   popularCard: {
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   sectorGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     gap: 12,
   },
   sectorCard: {
