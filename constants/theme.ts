@@ -49,6 +49,9 @@ const lightPalette = {
     border: 'rgba(44, 52, 55, 0.15)',
 };
 
+/** Use when surfaces must stay on the light palette regardless of app theme (e.g. embedded charts). */
+export const fixedLightPalette = lightPalette;
+
 const darkPalette = {
     primary: '#6B9BFF',
     primaryContainer: '#4a7aff',

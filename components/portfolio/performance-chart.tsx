@@ -4,11 +4,10 @@ import { LineChart } from 'react-native-chart-kit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useThemeMode } from '@/contexts/theme-context';
 import { PortfolioSnapshot, TimeFrame } from '@/types/portfolio';
-import { Colors, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
+import { fixedLightPalette, Typography, Radii, Spacing, SubtleShadow } from '@/constants/theme';
 
-const c = Colors.light;
+const c = fixedLightPalette;
 
 interface PerformanceChartProps {
   portfolioHistory: PortfolioSnapshot[];
@@ -96,8 +95,8 @@ const sampleData = (data: PortfolioSnapshot[], maxPoints: number = 10): Portfoli
 
 export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: PerformanceChartProps) {
   const primaryColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
-  const { themeMode } = useThemeMode();
+  const chartLabelColor = c.text;
+  const chartBg = c.surfaceContainerLowest;
   const styles = createStyles();
 
   const chartData = useMemo(() => {
@@ -138,7 +137,7 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
         },
       ],
     };
-  }, [portfolioHistory, sp500History, timeFrame, primaryColor, themeMode]);
+  }, [portfolioHistory, sp500History, timeFrame, primaryColor]);
 
   const performanceChange = useMemo(() => {
     const filteredPortfolio = filterDataByTimeFrame(portfolioHistory, timeFrame);
@@ -201,12 +200,12 @@ export function PerformanceChart({ portfolioHistory, sp500History, timeFrame }: 
           width={screenWidth}
           height={220}
           chartConfig={{
-            backgroundColor: 'transparent',
-            backgroundGradientFrom: 'transparent',
-            backgroundGradientTo: 'transparent',
+            backgroundColor: chartBg,
+            backgroundGradientFrom: chartBg,
+            backgroundGradientTo: chartBg,
             decimalPlaces: 1,
-            color: () => textColor,
-            labelColor: () => textColor,
+            color: () => chartLabelColor,
+            labelColor: () => chartLabelColor,
             style: {
               borderRadius: Radii.md,
             },

@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, TouchableOpacity, Platform } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
+import { Colors, fixedLightPalette, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { AssetAllocationManager } from '@/components/portfolio/asset-allocation-manager';
@@ -91,8 +91,8 @@ export default function PortfolioScreen() {
     );
   }
 
-  const handleAllocate = (asset: keyof AssetAllocation, amount: number) => {
-    allocateFunds(selectedLeagueId, asset, amount);
+  const handleAllocate = async (asset: keyof AssetAllocation, amount: number) => {
+    await allocateFunds(selectedLeagueId, asset, amount);
   };
 
   const handleBuyStock = async (stock: Stock, shares: number) => {
@@ -176,7 +176,7 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Performance Chart */}
-        <View style={[styles.chartCard, { backgroundColor: c.surfaceContainerLowest }]}>
+        <View style={[styles.chartCard, { backgroundColor: fixedLightPalette.surfaceContainerLowest }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
             sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}
@@ -214,15 +214,6 @@ export default function PortfolioScreen() {
           ))}
         </ScrollView>
 
-        {/* Other Assets */}
-        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
-          <AssetAllocationManager
-            allocation={currentPortfolio.allocation}
-            cashBalance={currentPortfolio.liquidFunds}
-            onAllocate={allocateFunds.bind(null, selectedLeagueId)}
-          />
-        </View>
-
         {/* Stock Search */}
         <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
           <StockSearch
@@ -233,8 +224,17 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Holdings List */}
-        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest }]}>
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest, paddingHorizontal: 16 }]}>
           <HoldingsList holdings={currentPortfolio.holdings} onSellStock={handleSellStock} />
+        </View>
+
+        {/* Other Assets */}
+        <View style={[styles.section, { backgroundColor: c.surfaceContainerLowest, paddingHorizontal: 16 }]}>
+          <AssetAllocationManager
+            allocation={currentPortfolio.allocation}
+            cashBalance={currentPortfolio.liquidFunds}
+            onAllocate={handleAllocate}
+          />
         </View>
       </ThemedView>
     </ScrollView>
