@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, TouchableOpacity, Platform } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
+import { Colors, fixedLightPalette, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { PerformanceChart } from '@/components/portfolio/performance-chart';
 import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { AssetAllocationManager } from '@/components/portfolio/asset-allocation-manager';
@@ -176,7 +176,7 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Performance Chart */}
-        <View style={[styles.chartCard, { backgroundColor: c.surfaceContainerLowest }]}>
+        <View style={[styles.chartCard, { backgroundColor: fixedLightPalette.surfaceContainerLowest }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
             sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}

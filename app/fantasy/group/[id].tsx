@@ -6,10 +6,20 @@ import { Group } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiClient } from '@/src/services/api';
 import { useAuthContext } from '@/contexts/auth-context';
 
 const c = Colors.light;
+
+/** Splits names like "April 2026 Tournament" so the date and "Tournament" sit on two lines. */
+function getTwoLineTournamentTitle(name: string): [string, string] | null {
+    const m = name.match(/^(.+?\s+\d{4})\s+(Tournament)$/i);
+    if (m) return [m[1], m[2]];
+    const idx = name.indexOf(' Tournament');
+    if (idx > 0) return [name.slice(0, idx), 'Tournament'];
+    return null;
+}
 
 interface MemberWithPortfolio {
     id: string;
@@ -25,6 +35,7 @@ interface MemberWithPortfolio {
 export default function GroupDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { user } = useAuthContext();
     const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
@@ -305,11 +316,31 @@ export default function GroupDetailScreen() {
         competitionStarted
     });
 
+    const titleLines = getTwoLineTournamentTitle(group.name);
+
     return (
         <ThemedView style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+            >
                 <View style={styles.header}>
-                    <ThemedText type="title">{group.name}</ThemedText>
+                    <View style={styles.titleColumn}>
+                        {titleLines ? (
+                            <>
+                                <ThemedText type="title" style={styles.titleLine}>
+                                    {titleLines[0]}
+                                </ThemedText>
+                                <ThemedText type="title" style={styles.titleLine}>
+                                    {titleLines[1]}
+                                </ThemedText>
+                            </>
+                        ) : (
+                            <ThemedText type="title" style={styles.titleSingle}>
+                                {group.name}
+                            </ThemedText>
+                        )}
+                    </View>
                     <View style={[
                         styles.statusBadge,
                         { backgroundColor: competitionEnded ? c.onSurfaceVariant : competitionStarted ? c.success : c.warning }
@@ -539,14 +570,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: Spacing.lg,
+        paddingHorizontal: Spacing.lg,
         paddingBottom: 40,
     },
     header: {
         marginBottom: Spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: Spacing.sm,
+    },
+    titleColumn: {
+        flex: 1,
+        minWidth: 0,
+    },
+    titleLine: {
+        lineHeight: 34,
+    },
+    titleSingle: {
+        flexShrink: 1,
     },
     statusBadge: {
         paddingHorizontal: Spacing.sm,
