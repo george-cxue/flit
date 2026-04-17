@@ -60,8 +60,12 @@ const filterDataByTimeFrame = (data: PortfolioSnapshot[], timeFrame: TimeFrame):
 
 const normalizeData = (data: PortfolioSnapshot[]): PortfolioSnapshot[] => {
   if (data.length === 0) return [];
-  const baseValue = Number(data[0].value);
-  if (!Number.isFinite(baseValue) || baseValue === 0) return data.map((p) => ({ ...p, value: 0 }));
+  const firstPositivePoint = data.find((point) => {
+    const v = Number(point.value);
+    return Number.isFinite(v) && v > 0;
+  });
+  const baseValue = Number(firstPositivePoint?.value);
+  if (!Number.isFinite(baseValue) || baseValue <= 0) return data.map((p) => ({ ...p, value: 0 }));
   return data.map((point) => {
     const v = Number(point.value);
     const normalized = Number.isFinite(v) ? ((v - baseValue) / baseValue) * 100 : 0;
@@ -146,12 +150,43 @@ const getLatestKnownValue = (data: PortfolioSnapshot[], fallback = 0): number =>
   return fallback;
 };
 
-const getFirstKnownValue = (data: PortfolioSnapshot[], fallback = 0): number => {
-  for (let i = 0; i < data.length; i += 1) {
-    const v = Number(data[i].value);
-    if (Number.isFinite(v) && v > 0) return v;
+const getWindowChange = (
+  data: PortfolioSnapshot[],
+  fallbackCurrent = 0
+): { changePercent: number; current: number } => {
+  const sorted = sortByTimestamp(data);
+  if (sorted.length === 0) {
+    return { changePercent: 0, current: fallbackCurrent };
   }
-  return fallback;
+
+  const firstValidIndex = sorted.findIndex((point) => {
+    const v = Number(point.value);
+    return Number.isFinite(v) && v > 0;
+  });
+  const lastValidIndex = (() => {
+    for (let i = sorted.length - 1; i >= 0; i -= 1) {
+      const v = Number(sorted[i].value);
+      if (Number.isFinite(v) && v > 0) return i;
+    }
+    return -1;
+  })();
+
+  if (firstValidIndex < 0 || lastValidIndex < 0 || firstValidIndex === lastValidIndex) {
+    const latest = getLatestKnownValue(sorted, fallbackCurrent);
+    return { changePercent: 0, current: latest };
+  }
+
+  const start = Number(sorted[firstValidIndex].value);
+  const end = Number(sorted[lastValidIndex].value);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start <= 0) {
+    const latest = getLatestKnownValue(sorted, fallbackCurrent);
+    return { changePercent: 0, current: latest };
+  }
+
+  return {
+    changePercent: ((end - start) / start) * 100,
+    current: end,
+  };
 };
 
 const applyCurrentValueToSeries = (
@@ -237,8 +272,16 @@ export function PerformanceChart({
     );
 
     const safeNum = (v: number) => (Number.isFinite(v) ? v : 0);
+    const absoluteMax = Math.max(
+      ...normalizedPortfolio.map((p) => Math.abs(p.value)),
+      ...normalizedSP500.map((p) => Math.abs(p.value)),
+      0
+    );
+    const decimalPlaces = absoluteMax < 0.1 ? 3 : absoluteMax < 1 ? 2 : 1;
+
     return {
       labels: compactLabels,
+      decimalPlaces,
       datasets: [
         {
           data: normalizedPortfolio.length > 0 ? normalizedPortfolio.map(p => safeNum(p.value)) : [0],
@@ -261,30 +304,19 @@ export function PerformanceChart({
     );
     const filteredSP500 = sanitizeSeries(filterDataByTimeFrame(sp500History, timeFrame));
 
-    const p0 = getFirstKnownValue(filteredPortfolio, currentPortfolioValue);
-    const pLast = getLatestKnownValue(filteredPortfolio, currentPortfolioValue);
-    const s0 = getFirstKnownValue(filteredSP500, 0);
-    const sLast = getLatestKnownValue(filteredSP500, 0);
-
-    const portfolioChange =
-      filteredPortfolio.length >= 2 && Number.isFinite(p0) && p0 !== 0 && Number.isFinite(pLast)
-        ? ((pLast - p0) / p0) * 100
-        : 0;
-    const sp500Change =
-      filteredSP500.length >= 2 && Number.isFinite(s0) && s0 !== 0 && Number.isFinite(sLast)
-        ? ((sLast - s0) / s0) * 100
-        : 0;
+    const portfolioWindowStats = getWindowChange(filteredPortfolio, currentPortfolioValue);
+    const sp500WindowStats = getWindowChange(filteredSP500, 0);
 
     return {
-      portfolioChange: Number.isFinite(portfolioChange) ? portfolioChange : 0,
-      sp500Change: Number.isFinite(sp500Change) ? sp500Change : 0,
+      portfolioChange: Number.isFinite(portfolioWindowStats.changePercent) ? portfolioWindowStats.changePercent : 0,
+      sp500Change: Number.isFinite(sp500WindowStats.changePercent) ? sp500WindowStats.changePercent : 0,
       portfolioCurrent:
         Number.isFinite(currentPortfolioValue) && currentPortfolioValue > 0
           ? currentPortfolioValue
-          : Number.isFinite(pLast)
-            ? pLast
+          : Number.isFinite(portfolioWindowStats.current)
+            ? portfolioWindowStats.current
             : 0,
-      sp500Current: Number.isFinite(sLast) ? sLast : 0,
+      sp500Current: Number.isFinite(sp500WindowStats.current) ? sp500WindowStats.current : 0,
     };
   }, [portfolioHistory, sp500History, timeFrame, currentPortfolioValue]);
 
@@ -336,7 +368,7 @@ export function PerformanceChart({
             backgroundColor: chartBg,
             backgroundGradientFrom: chartBg,
             backgroundGradientTo: chartBg,
-            decimalPlaces: 1,
+            decimalPlaces: chartData.decimalPlaces,
             color: () => chartLabelColor,
             labelColor: () => chartLabelColor,
             style: {

@@ -12,6 +12,7 @@ interface AssetAllocationManagerProps {
   allocation: AssetAllocation;
   cashBalance: number;
   bondsLockedUntil?: string | null;
+  enabledAssets?: Partial<Record<keyof AssetAllocation, boolean>>;
   onAllocate: (assetType: keyof AssetAllocation, amount: number) => Promise<void>;
 }
 
@@ -19,6 +20,7 @@ export function AssetAllocationManager({
   allocation,
   cashBalance,
   bondsLockedUntil,
+  enabledAssets,
   onAllocate,
 }: AssetAllocationManagerProps) {
   const primaryColor = useThemeColor({}, 'tint');
@@ -111,6 +113,14 @@ export function AssetAllocationManager({
     }
   };
 
+  const visibleAssets = (Object.keys(assetInfo) as (keyof AssetAllocation)[]).filter(
+    (assetType) => enabledAssets?.[assetType] !== false
+  );
+
+  if (visibleAssets.length === 0) {
+    return null;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={styles.title}>Other Assets</ThemedText>
@@ -118,7 +128,7 @@ export function AssetAllocationManager({
         Allocate your cash to low-risk investment options
       </ThemedText>
 
-      {(Object.keys(assetInfo) as (keyof AssetAllocation)[]).map((assetType) => {
+      {visibleAssets.map((assetType) => {
         const info = assetInfo[assetType];
         const balance = allocation[assetType];
 

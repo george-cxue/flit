@@ -2,40 +2,41 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Radii, Spacing, Typography, SubtleShadow } from '@/constants/theme';
 import { GroupService } from '@/src/services/fantasy/groupService';
-import { AssetType, GroupSettings } from '@/src/types/fantasy';
+import { GroupSettings, PortfolioAssetClass } from '@/src/types/fantasy';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useLessons } from '@/hooks/use-lessons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const c = Colors.light;
 
 export default function CreateGroupScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { userId } = useAuthContext();
     const { portfolioBalance } = useLessons(userId);
 
     // Required Settings
     const [groupName, setGroupName] = useState('');
     const [groupSize, setGroupSize] = useState(12);
-    const [startingBalance, setStartingBalance] = useState(10000);
+    const [startingBalanceInput, setStartingBalanceInput] = useState('1000');
     const [competitionPeriod, setCompetitionPeriod] = useState<'1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year'>('1_month');
-    const [startDate] = useState(new Date(Date.now() + 86400000).toISOString()); // Default tomorrow
+    const [startDateValue, setStartDateValue] = useState(() => new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
-    // Advanced Settings Toggle
-    const [showAdvanced, setShowAdvanced] = useState(false);
-
-    // Advanced Settings (Defaults)
-    const [scoringMethod, setScoringMethod] = useState<'Total Return %' | 'Absolute Gain $'>('Total Return %');
-    const [enabledAssetClasses, setEnabledAssetClasses] = useState<AssetType[]>(['Stock']);
-    const [minAssetPrice, setMinAssetPrice] = useState('1.00');
-    const [allowShortSelling, setAllowShortSelling] = useState(false);
-    const [tradingEnabled, setTradingEnabled] = useState(true);
+    const [enabledAssetClasses, setEnabledAssetClasses] = useState<PortfolioAssetClass[]>([
+        'Stock',
+        'Savings Account',
+        'Bonds',
+        'Index Funds',
+    ]);
 
     const [loading, setLoading] = useState(false);
 
-    const toggleAssetClass = (type: AssetType) => {
+    const toggleAssetClass = (type: PortfolioAssetClass) => {
         if (enabledAssetClasses.includes(type)) {
             setEnabledAssetClasses(enabledAssetClasses.filter(t => t !== type));
         } else {
@@ -43,16 +44,36 @@ export default function CreateGroupScreen() {
         }
     };
 
+    const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        if (event.type === 'dismissed' || !selectedDate) {
+            return;
+        }
+        setStartDateValue(selectedDate);
+    };
+
     const handleCreate = async () => {
+        const parsedStartingBalance = parseInt(startingBalanceInput.replace(/[^\d]/g, ''), 10);
+        if (!Number.isFinite(parsedStartingBalance) || parsedStartingBalance < 1000 || parsedStartingBalance > 1000000) {
+            Alert.alert('Error', 'Starting balance must be between $1,000 and $1,000,000');
+            return;
+        }
+
         if (!groupName.trim()) {
             Alert.alert('Error', 'Please enter a group name');
             return;
         }
-        if (startingBalance > portfolioBalance) {
+        if (parsedStartingBalance > portfolioBalance) {
             Alert.alert(
                 'Insufficient Learning Dollars',
                 `Starting balance cannot exceed your learning dollars ($${portfolioBalance.toLocaleString()}).`
             );
+            return;
+        }
+        if (enabledAssetClasses.length === 0) {
+            Alert.alert('Error', 'Please enable at least one asset class');
             return;
         }
 
@@ -60,14 +81,18 @@ export default function CreateGroupScreen() {
         try {
             const settings: GroupSettings = {
                 groupSize,
-                startingBalance,
+                startingBalance: parsedStartingBalance,
                 competitionPeriod,
-                startDate,
-                scoringMethod,
+                startDate: new Date(
+                    startDateValue.getFullYear(),
+                    startDateValue.getMonth(),
+                    startDateValue.getDate()
+                ).toISOString(),
+                scoringMethod: 'Total Return %',
                 enabledAssetClasses,
-                minAssetPrice: parseFloat(minAssetPrice) || 0,
-                allowShortSelling,
-                tradingEnabled,
+                minAssetPrice: 1,
+                allowShortSelling: false,
+                tradingEnabled: true,
             };
 
             const newGroup = await GroupService.createGroup(groupName, settings, portfolioBalance);
@@ -104,15 +129,16 @@ export default function CreateGroupScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+            >
                 <View style={styles.header}>
                     <ThemedText type="title">Create Group</ThemedText>
                 </View>
 
                 {/* REQUIRED SETTINGS */}
                 <View style={styles.section}>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>Required Settings</ThemedText>
-
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Group Name</ThemedText>
                         <TextInput
@@ -138,13 +164,34 @@ export default function CreateGroupScreen() {
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Starting Balance</ThemedText>
                         <View style={styles.row}>
-                            <ThemedText>${startingBalance.toLocaleString()}</ThemedText>
+                            <TextInput
+                                style={styles.balanceInput}
+                                value={startingBalanceInput}
+                                onChangeText={(text) => setStartingBalanceInput(text.replace(/[^\d]/g, ''))}
+                                keyboardType="numeric"
+                                placeholder="10000"
+                                placeholderTextColor={c.onSurfaceVariant}
+                            />
                             <View style={styles.stepper}>
-                                <TouchableOpacity onPress={() => setStartingBalance(Math.max(1000, startingBalance - 1000))}><ThemedText style={styles.stepperBtn}>-</ThemedText></TouchableOpacity>
-                                <TouchableOpacity onPress={() => setStartingBalance(Math.min(1000000, startingBalance + 1000))}><ThemedText style={styles.stepperBtn}>+</ThemedText></TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        const parsed = parseInt(startingBalanceInput || '0', 10) || 0;
+                                        setStartingBalanceInput(String(Math.max(1000, parsed - 1000)));
+                                    }}
+                                >
+                                    <ThemedText style={styles.stepperBtn}>-</ThemedText>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        const parsed = parseInt(startingBalanceInput || '0', 10) || 0;
+                                        setStartingBalanceInput(String(Math.min(1000000, Math.max(1000, parsed + 1000))));
+                                    }}
+                                >
+                                    <ThemedText style={styles.stepperBtn}>+</ThemedText>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <ThemedText style={styles.helperText}>Amount each player starts with</ThemedText>
+                        <ThemedText style={styles.helperText}>Enter any amount between $1,000 and $1,000,000</ThemedText>
                     </View>
 
                     <View style={styles.formGroup}>
@@ -175,28 +222,15 @@ export default function CreateGroupScreen() {
 
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Start Date</ThemedText>
-                        <View style={styles.dateDisplay}>
-                            <ThemedText>{new Date(startDate).toLocaleString()}</ThemedText>
-                        </View>
-                        <ThemedText style={styles.helperText}>Competition begins tomorrow (Mock)</ThemedText>
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <ThemedText style={styles.label}>Scoring Method</ThemedText>
-                        <View style={styles.optionsRow}>
-                            <View style={{ flex: 1 }}>
-                                {renderOptionButton('Total Return %', scoringMethod === 'Total Return %', () => setScoringMethod('Total Return %'))}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                {renderOptionButton('Absolute Gain $', scoringMethod === 'Absolute Gain $', () => setScoringMethod('Absolute Gain $'))}
-                            </View>
-                        </View>
+                        <TouchableOpacity style={styles.dateDisplay} onPress={() => setShowDatePicker(true)}>
+                            <ThemedText>{startDateValue.toLocaleDateString()}</ThemedText>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.formGroup}>
                         <ThemedText style={styles.label}>Asset Classes</ThemedText>
                         <View style={styles.card}>
-                            {(['Stock', 'ETF', 'Commodity', 'REIT'] as AssetType[]).map((type, index) => (
+                            {(['Stock', 'Savings Account', 'Bonds', 'Index Funds'] as PortfolioAssetClass[]).map((type, index) => (
                                 <React.Fragment key={type}>
                                     <View style={styles.switchRow}>
                                         <ThemedText>{type}</ThemedText>
@@ -215,59 +249,6 @@ export default function CreateGroupScreen() {
                     </View>
                 </View>
 
-                {/* ADVANCED SETTINGS TOGGLE */}
-                <View style={styles.advancedToggleWrapper}>
-                    <View style={styles.floatingDivider} />
-                    <TouchableOpacity
-                        style={styles.advancedToggle}
-                        onPress={() => setShowAdvanced(!showAdvanced)}
-                    >
-                        <ThemedText type="defaultSemiBold">Advanced Settings</ThemedText>
-                        <ThemedText>{showAdvanced ? '▲' : '▼'}</ThemedText>
-                    </TouchableOpacity>
-                    <View style={styles.floatingDivider} />
-                </View>
-
-                {/* ADVANCED SETTINGS SECTION */}
-                {showAdvanced && (
-                    <View style={styles.section}>
-                        <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Min Asset Price ($)</ThemedText>
-                            <TextInput
-                                style={styles.input}
-                                value={minAssetPrice}
-                                onChangeText={setMinAssetPrice}
-                                keyboardType="numeric"
-                            />
-                            <ThemedText style={styles.helperText}>Minimum stock price to be available</ThemedText>
-                        </View>
-
-                        <View style={[styles.switchRow, { paddingHorizontal: 0 }]}>
-                            <View>
-                                <ThemedText style={styles.label}>Trading Enabled</ThemedText>
-                                <ThemedText style={[styles.helperText, { marginTop: 2 }]}>Allow buying/selling after start</ThemedText>
-                            </View>
-                            <Switch
-                                value={tradingEnabled}
-                                onValueChange={setTradingEnabled}
-                                trackColor={{ false: c.surfaceContainerHigh, true: c.primary }}
-                            />
-                        </View>
-
-                        <View style={[styles.switchRow, { paddingHorizontal: 0 }]}>
-                            <View>
-                                <ThemedText style={styles.label}>Allow Short Selling</ThemedText>
-                                <ThemedText style={[styles.helperText, { marginTop: 2 }]}>Enable short positions (Advanced)</ThemedText>
-                            </View>
-                            <Switch
-                                value={allowShortSelling}
-                                onValueChange={setAllowShortSelling}
-                                trackColor={{ false: c.surfaceContainerHigh, true: c.primary }}
-                            />
-                        </View>
-                    </View>
-                )}
-
                 <TouchableOpacity
                     style={[styles.createButton, { opacity: loading ? 0.7 : 1 }]}
                     onPress={handleCreate}
@@ -279,6 +260,34 @@ export default function CreateGroupScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
+
+            <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowDatePicker(false)}
+            >
+                <Pressable style={styles.datePickerOverlay} onPress={() => setShowDatePicker(false)}>
+                    <Pressable style={styles.datePickerCard} onPress={(e) => e.stopPropagation()}>
+                        <DateTimePicker
+                            value={startDateValue}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            minimumDate={new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())}
+                            textColor={Platform.OS === 'ios' ? c.onSurface : undefined}
+                            themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+                            onChange={handleDateChange}
+                        />
+                        {Platform.OS === 'ios' && (
+                            <View style={styles.datePickerActions}>
+                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                    <ThemedText type="label-lg" style={{ color: c.primary }}>Done</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </ThemedView>
     );
 }
@@ -356,15 +365,6 @@ const styles = StyleSheet.create({
         color: c.onSurfaceVariant,
         marginTop: Spacing.xs,
     },
-    advancedToggleWrapper: {
-        marginBottom: Spacing.lg,
-    },
-    advancedToggle: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: Spacing.md,
-    },
     createButton: {
         backgroundColor: c.primary,
         paddingVertical: Spacing.md,
@@ -386,12 +386,40 @@ const styles = StyleSheet.create({
         borderRadius: Radii.md,
         paddingHorizontal: Spacing.md,
     },
+    balanceInput: {
+        flex: 1,
+        height: 40,
+        borderRadius: Radii.md,
+        backgroundColor: c.surfaceContainerLowest,
+        paddingHorizontal: Spacing.sm,
+        color: c.onSurface,
+        fontSize: 16,
+        marginRight: Spacing.sm,
+    },
     dateDisplay: {
         height: 48,
         backgroundColor: c.surfaceContainerHigh,
         borderRadius: Radii.md,
         paddingHorizontal: Spacing.md,
         justifyContent: 'center',
+    },
+    datePickerOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    datePickerCard: {
+        backgroundColor: c.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingHorizontal: Spacing.md,
+        paddingTop: Spacing.sm,
+        paddingBottom: Spacing.lg,
+    },
+    datePickerActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: Spacing.sm,
     },
     stepper: {
         flexDirection: 'row',

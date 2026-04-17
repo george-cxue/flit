@@ -32,12 +32,18 @@ export function ThemedText({
   ...rest
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'onSurface');
+  const flattenedStyle = StyleSheet.flatten(style);
+  const dynamicLineHeight =
+    typeof flattenedStyle?.fontSize === 'number' && flattenedStyle?.lineHeight == null
+      ? Math.round(flattenedStyle.fontSize * 1.25)
+      : undefined;
 
   return (
     <Text
       style={[
         { color },
         styles[type] ?? styles.default,
+        dynamicLineHeight != null ? { lineHeight: dynamicLineHeight } : null,
         style,
       ]}
       {...rest}

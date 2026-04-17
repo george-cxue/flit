@@ -1,5 +1,6 @@
 export type AssetTier = 'Tier 1' | 'Tier 2' | 'Tier 3';
 export type AssetType = 'Stock' | 'ETF' | 'Commodity' | 'REIT';
+export type PortfolioAssetClass = 'Stock' | 'Savings Account' | 'Bonds' | 'Index Funds';
 
 export interface Asset {
   id: string;
@@ -30,7 +31,7 @@ export interface GroupSettings {
   competitionPeriod: '1_week' | '2_weeks' | '1_month' | '3_months' | '6_months' | '1_year';
   startDate: string; // ISO date string
   scoringMethod: 'Total Return %' | 'Absolute Gain $';
-  enabledAssetClasses: AssetType[];
+  enabledAssetClasses: PortfolioAssetClass[];
   minAssetPrice: number;
   allowShortSelling: boolean;
   tradingEnabled: boolean;

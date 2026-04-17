@@ -7,11 +7,13 @@ import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useLessons } from '@/hooks/use-lessons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const c = Colors.light;
 
 export default function JoinGroupScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { userId } = useAuthContext();
     const { portfolioBalance } = useLessons(userId);
 
@@ -52,7 +54,10 @@ export default function JoinGroupScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg + insets.top }]}
+            >
                 <View style={styles.header}>
                     <ThemedText type="title">Join Group</ThemedText>
                     <ThemedText style={styles.subtitle}>
