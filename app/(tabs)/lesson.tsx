@@ -124,11 +124,13 @@ export default function LessonsScreen() {
                     backgroundColor: isSelected
                       ? c.primary
                       : c.surfaceContainerLowest,
+                    opacity: course.isComingSoon ? 0.6 : 1,
                   },
                   !isSelected && SubtleShadow,
                 ]}
-                onPress={() => setSelectedCourseId(course.id)}
-                activeOpacity={0.75}
+                onPress={course.isComingSoon ? undefined : () => setSelectedCourseId(course.id)}
+                activeOpacity={course.isComingSoon ? 1 : 0.75}
+                disabled={course.isComingSoon}
               >
                 <ThemedText style={styles.courseCardIcon}>
                   {course.icon}
@@ -144,19 +146,11 @@ export default function LessonsScreen() {
                   {course.title}
                 </ThemedText>
                 {course.isComingSoon ? (
-                  <ThemedText
-                    type="label-md"
-                    style={[
-                      styles.courseCardMeta,
-                      {
-                        color: isSelected
-                          ? "rgba(255,255,255,0.7)"
-                          : c.onSurfaceVariant,
-                      },
-                    ]}
-                  >
-                    Coming Soon
-                  </ThemedText>
+                  <MaterialIcons
+                    name="lock"
+                    size={16}
+                    color={isSelected ? "rgba(255,255,255,0.7)" : c.onSurfaceVariant}
+                  />
                 ) : (
                   <ThemedText
                     type="label-md"
@@ -220,12 +214,7 @@ function ComingSoonPlaceholder({ course }: { course: LessonCourse }) {
       <View
         style={[styles.comingSoonBadge, { backgroundColor: c.surfaceTint }]}
       >
-        <ThemedText
-          type="label-lg"
-          style={[styles.comingSoonBadgeText, { color: c.primary }]}
-        >
-          Coming Soon
-        </ThemedText>
+        <MaterialIcons name="lock" size={18} color={c.primary} />
       </View>
     </View>
   );
@@ -451,6 +440,7 @@ const createStyles = (c: typeof Colors.light) =>
     infoCard: {
       borderRadius: Radii.md,
       padding: Spacing.md,
+      margin: 16,
       ...SubtleShadow,
     },
     infoHeader: {
@@ -471,7 +461,7 @@ const createStyles = (c: typeof Colors.light) =>
       marginTop: 0,
     },
     courseScroll: { marginHorizontal: -Spacing.lg },
-    courseRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingBottom: 4 },
+    courseRow: { paddingHorizontal: Spacing.lg, gap: 12, paddingTop: 4, paddingBottom: 4 },
     courseCard: {
       width: 140,
       borderRadius: Radii.md,
