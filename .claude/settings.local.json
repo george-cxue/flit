@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/nickc/GitHub Repositories/flit\" && git merge origin/main --no-commit --no-ff 2>&1)",
+      "Bash(cd:*)",
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(cd \"/c/Users/nickc/GitHub Repositories/flit-backend\" && git merge origin/main --no-commit --no-ff 2>&1)",
+      "Bash(cd \"/c/Users/nickc/GitHub Repositories/flit-backend\" && git commit -m \"$\\(cat <<'EOF'\nMerge main into fantasy-finance backend branch\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\nEOF\n\\)\" && git checkout -b fantasy-finance-flit-features 2>&1)",
+      "Bash(cd \"/c/Users/nickc/GitHub Repositories/flit-backend\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"/c/Users/nickc/GitHub Repositories/flit-backend\" && npx prisma generate 2>&1)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\nickc\\GitHub Repositories\\flit-backend\\"
+    ]
+  }
+}
