@@ -109,6 +109,7 @@ export default function GroupDetailScreen() {
     const now = new Date();
     const startDate = new Date(group.settings.startDate);
     const competitionStarted = now >= startDate;
+    const canStartCompetitionNow = now >= startDate;
 
     // Calculate end date based on competition period or use manually set endDate
     const getEndDate = () => {
@@ -156,6 +157,16 @@ export default function GroupDetailScreen() {
 
     const handleStartCompetition = async () => {
         console.log('Start competition button pressed');
+
+        if (!canStartCompetitionNow) {
+            const message = `Competition can only be started on or after ${startDate.toLocaleDateString()}.`;
+            if (Platform.OS === 'web') {
+                window.alert(message);
+            } else {
+                Alert.alert('Too Early', message);
+            }
+            return;
+        }
 
         try {
             console.log('Starting competition for group:', group.id);
@@ -356,7 +367,7 @@ export default function GroupDetailScreen() {
                     {!competitionStarted ? (
                         <View style={styles.notStartedContainer}>
                             <ThemedText style={styles.notStartedText}>
-                                Competition starts on {startDate.toLocaleString()}
+                                Competition starts on {startDate.toLocaleDateString()}
                             </ThemedText>
                             <ThemedText style={[styles.notStartedText, { marginTop: Spacing.sm }]}>
                                 Players can start trading once the competition begins.
@@ -364,10 +375,13 @@ export default function GroupDetailScreen() {
 
                             {isAdmin && (
                                 <TouchableOpacity
-                                    style={[styles.primaryButton, { marginTop: Spacing.md }]}
+                                    style={[styles.primaryButton, { marginTop: Spacing.md, opacity: canStartCompetitionNow ? 1 : 0.55 }]}
                                     onPress={handleStartCompetition}
+                                    disabled={!canStartCompetitionNow}
                                 >
-                                    <ThemedText style={styles.primaryButtonText}>Start Competition Now</ThemedText>
+                                    <ThemedText style={styles.primaryButtonText}>
+                                        {canStartCompetitionNow ? 'Start Competition Now' : `Starts ${startDate.toLocaleDateString()}`}
+                                    </ThemedText>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -478,12 +492,21 @@ export default function GroupDetailScreen() {
                         <ThemedText type="subtitle" style={styles.sectionTitle}>Members</ThemedText>
                         {group.members.map((member, index) => (
                             <React.Fragment key={member.id}>
+                                {(() => {
+                                    const displayName = member.firstName && member.lastName
+                                        ? `${member.firstName} ${member.lastName}`
+                                        : member.name || member.username || 'Member';
+                                    const displayUsername = member.username?.startsWith('@')
+                                        ? member.username
+                                        : `@${member.username || 'member'}`;
+                                    const displayAvatar = member.avatar || '👤';
+                                    return (
                                 <View style={styles.memberRow}>
                                     <View style={styles.memberInfo}>
-                                        <ThemedText style={styles.memberAvatar}>{member.avatar}</ThemedText>
+                                        <ThemedText style={styles.memberAvatar}>{displayAvatar}</ThemedText>
                                         <View>
-                                            <ThemedText style={styles.memberName}>{member.name}</ThemedText>
-                                            <ThemedText style={styles.memberUsername}>{member.username}</ThemedText>
+                                            <ThemedText style={styles.memberName}>{displayName}</ThemedText>
+                                            <ThemedText style={styles.memberUsername}>{displayUsername}</ThemedText>
                                         </View>
                                     </View>
                                     {member.id === group.adminUserId && (
@@ -492,6 +515,8 @@ export default function GroupDetailScreen() {
                                         </View>
                                     )}
                                 </View>
+                                    );
+                                })()}
                                 {index < group.members.length - 1 && (
                                     <View style={styles.floatingDivider} />
                                 )}

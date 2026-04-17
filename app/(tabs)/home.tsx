@@ -71,10 +71,27 @@ export default function HomeScreen() {
   }
 
   // Portfolio data for selected group
-  const portfolio = portfolios[selectedLeagueId] || Object.values(portfolios)[0];
   const portfolioLeagueIds = Object.keys(portfolios);
   const groupsById = new Map(groups.map((group) => [group.id, group] as const));
-  const selectorGroupIds = Array.from(new Set([...portfolioLeagueIds, ...groups.map((g) => g.id)]));
+  const isGroupActive = (group?: Group) => {
+    if (!group?.settings?.startDate) {
+      return true;
+    }
+    const parsed = new Date(group.settings.startDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return true;
+    }
+    return new Date() >= parsed;
+  };
+  const activeGroupIds = groups.filter((group) => isGroupActive(group)).map((group) => group.id);
+  const activeSelectorGroupIds = Array.from(
+    new Set([...activeGroupIds, ...portfolioLeagueIds.filter((groupId) => isGroupActive(groupsById.get(groupId)))])
+  );
+  const effectiveLeagueId =
+    activeSelectorGroupIds.includes(selectedLeagueId)
+      ? selectedLeagueId
+      : activeSelectorGroupIds.find((groupId) => !!portfolios[groupId]) || activeSelectorGroupIds[0];
+  const portfolio = effectiveLeagueId ? portfolios[effectiveLeagueId] : undefined;
   const liquidFunds = portfolio?.liquidFunds || 0;
   const holdingsValue = portfolio?.holdings.reduce((sum, h) => sum + h.totalValue, 0) || 0;
   const otherAssetsValue = portfolio
@@ -85,8 +102,8 @@ export default function HomeScreen() {
   const liquidPercent = computedTotalValue > 0 ? Math.round((liquidFunds / computedTotalValue) * 100) : 0;
 
   // Find user's rank in the selected group
-  const selectedGroup = groups.find((g) => g.id === (portfolio?.leagueId || selectedLeagueId));
-  const selectedGroupId = portfolio?.leagueId || selectedLeagueId;
+  const selectedGroup = groups.find((g) => g.id === (portfolio?.leagueId || effectiveLeagueId));
+  const selectedGroupId = portfolio?.leagueId || effectiveLeagueId;
   const selectedGroupFallbackName = selectedGroupId
     ? groupsById.get(selectedGroupId)?.name || `Portfolio ${selectedGroupId.slice(0, 6)}`
     : null;
@@ -135,16 +152,16 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Group Selector */}
-        {selectorGroupIds.length > 0 && (
+        {activeSelectorGroupIds.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.groupRow}
             style={styles.groupScroll}
           >
-            {selectorGroupIds.map((groupId) => {
+            {activeSelectorGroupIds.map((groupId) => {
               const group = groupsById.get(groupId);
-              const isSelected = (portfolio?.leagueId || selectedLeagueId) === groupId;
+              const isSelected = (portfolio?.leagueId || effectiveLeagueId) === groupId;
               const rank = group ? getUserRank(group) : null;
               const groupName = group?.name || `Portfolio ${groupId.slice(0, 6)}`;
               return (
@@ -207,9 +224,15 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <ThemedText style={styles.portfolioBalance}>
-            ${computedTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </ThemedText>
+          {portfolio ? (
+            <ThemedText style={styles.portfolioBalance}>
+              ${computedTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </ThemedText>
+          ) : (
+            <ThemedText type="body-lg" style={{ color: c.onSurfaceVariant }}>
+              No active portfolio yet
+            </ThemedText>
+          )}
 
           {/* Return % and P&L */}
           {startingBalance > 0 && (
@@ -234,7 +257,7 @@ export default function HomeScreen() {
             </ThemedText>
           </View>
 
-          <View style={styles.portfolioBreakdown}>
+          {portfolio ? <View style={styles.portfolioBreakdown}>
             <View style={styles.breakdownItem}>
               <View style={[styles.dot, { backgroundColor: c.primary }]} />
               <ThemedText type="body-md" style={styles.breakdownLabel}>Holdings</ThemedText>
@@ -245,10 +268,10 @@ export default function HomeScreen() {
               <ThemedText type="body-md" style={styles.breakdownLabel}>Liquid Funds</ThemedText>
               <ThemedText type="label-lg" style={styles.breakdownValue}>{liquidPercent}%</ThemedText>
             </View>
-          </View>
+          </View> : null}
 
           {/* Portfolio details */}
-          <View style={styles.portfolioDetails}>
+          {portfolio ? <View style={styles.portfolioDetails}>
             <View style={styles.detailRow}>
               <ThemedText type="body-md" style={styles.detailLabel}>Cash Available</ThemedText>
               <ThemedText type="label-lg" style={styles.detailValue}>
@@ -277,7 +300,7 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
             )}
-          </View>
+          </View> : null}
 
           {/* Top Mover */}
           {topMover && (

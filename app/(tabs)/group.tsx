@@ -83,6 +83,17 @@ export default function FantasyHubScreen() {
     router.push(`/fantasy/group/${groupId}`);
   };
 
+  const isGroupActive = (group: Group) => {
+    if (!group.settings?.startDate) {
+      return group.status !== "pending";
+    }
+    const parsed = new Date(group.settings.startDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return group.status !== "pending";
+    }
+    return new Date() >= parsed;
+  };
+
   const handleJoinTournament = async () => {
     if (!tournament || joiningTournament) return;
     const requiredBalance = tournament.settings?.startingBalance || 10000;
@@ -318,6 +329,7 @@ export default function FantasyHubScreen() {
           ) : (
             groups.map((group) => {
               const portfolio = getPortfolioByLeague(group.id);
+              const groupActive = isGroupActive(group);
               const startingBalance = group.settings?.startingBalance || 10000;
               const currentValue = portfolio?.totalValue || startingBalance;
               const dollarChange = currentValue - startingBalance;
@@ -380,7 +392,7 @@ export default function FantasyHubScreen() {
                   </TouchableOpacity>
 
                   {/* Portfolio Section — floating divider instead of borderTop */}
-                  {portfolio && (
+                  {portfolio && groupActive && (
                     <TouchableOpacity
                       onPress={() => {
                         setSelectedLeagueId(group.id);

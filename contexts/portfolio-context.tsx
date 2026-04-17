@@ -3,7 +3,6 @@ import { Portfolio, AssetAllocation, Stock, TimeFrame } from '@/types/portfolio'
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { PortfolioService } from '@/src/services/fantasy/portfolioService';
 import { apiClient } from '@/src/services/api';
-import { generatePortfolioHistory, calculateVolatilityFactor } from '@/utils/portfolio-history';
 import { useAuthContext } from '@/contexts/auth-context';
 
 /** Coerce API values (string/number/Decimal) to safe numbers; avoids NaN/Invalid from Prisma Decimal or bad data */
@@ -49,6 +48,21 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
   const [loading, setLoading] = useState(true);
   const isMountedRef = useRef(true);
   const hasSetInitialLeague = useRef(false);
+
+  const buildFlatHistory = useCallback((startDate: Date, currentValue: number) => {
+    const now = Date.now();
+    const startTs = Math.min(startDate.getTime(), now);
+    if (!Number.isFinite(currentValue) || currentValue <= 0) {
+      return [{ timestamp: now, value: 0 }];
+    }
+    if (now - startTs < 60_000) {
+      return [{ timestamp: now, value: currentValue }];
+    }
+    return [
+      { timestamp: startTs, value: currentValue },
+      { timestamp: now, value: currentValue },
+    ];
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -148,61 +162,27 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
                 })),
               };
               
-              // If we have limited data points (< 2), add a synthetic starting point
-              // This allows charts to display percent changes properly
-              if (history.length === 1) {
-                const startTimestamp = leagueStartDate.getTime();
-                const firstSnapshot = history[0];
-                
-                // Only add starting point if it's before the first snapshot
-                if (startTimestamp < firstSnapshot.timestamp) {
-                  history.unshift({
-                    timestamp: startTimestamp,
-                    value: startingBalance,
-                  });
-                  
-                  // Add corresponding baseline starting points
-                  if (baselines?.sp500 && baselines.sp500.length > 0) {
-                    baselines.sp500.unshift({
-                      timestamp: startTimestamp,
-                      value: startingBalance,
-                    });
-                  }
-                  if (baselines?.nasdaq && baselines.nasdaq.length > 0) {
-                    baselines.nasdaq.unshift({
-                      timestamp: startTimestamp,
-                      value: startingBalance,
-                    });
-                  }
-                  if (baselines?.dow && baselines.dow.length > 0) {
-                    baselines.dow.unshift({
-                      timestamp: startTimestamp,
-                      value: startingBalance,
-                    });
-                  }
-                }
+              const hasPositiveHistoryPoint = history.some((p: any) => toNum(p.value) > 0);
+              if (!hasPositiveHistoryPoint) {
+                history = buildFlatHistory(leagueStartDate, totalValue);
               }
             } else {
-              // Fallback to generated data if no history exists yet
-              console.log(`[PortfolioContext] No history data for group ${group.id}, using fallback`);
-              const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-              history = generatePortfolioHistory(
-                totalValue,
-                startingBalance,
-                leagueStartDate,
-                volatilityFactor
-              );
+              // If there are no snapshots yet, keep the chart flat until real data is collected.
+              history = buildFlatHistory(leagueStartDate, totalValue);
+              baselines = {
+                sp500: history.map((point: any) => ({ ...point })),
+                nasdaq: history.map((point: any) => ({ ...point })),
+                dow: history.map((point: any) => ({ ...point })),
+              };
             }
           } catch (historyError) {
             console.error(`Error fetching history for group ${group.id}:`, historyError);
-            // Fallback to generated data
-            const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-            history = generatePortfolioHistory(
-              totalValue,
-              startingBalance,
-              leagueStartDate,
-              volatilityFactor
-            );
+            history = buildFlatHistory(leagueStartDate, totalValue);
+            baselines = {
+              sp500: history.map((point: any) => ({ ...point })),
+              nasdaq: history.map((point: any) => ({ ...point })),
+              dow: history.map((point: any) => ({ ...point })),
+            };
           }
 
           const portfolio: Portfolio = {
@@ -246,8 +226,6 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           // Return default portfolio if fetch fails
           const startingBalance = group.settings.startingBalance || 10000;
           const leagueStartDate = new Date(group.settings.startDate || Date.now());
-          const volatilityFactor = calculateVolatilityFactor(group.id, startingBalance);
-
           return {
             leagueId: group.id,
             portfolio: {
@@ -258,12 +236,12 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               lessonRewards: 0,
               allocation: { savings: 0, bonds: 0, indexFunds: 0 },
               holdings: [],
-              history: generatePortfolioHistory(
-                startingBalance,
-                startingBalance,
-                leagueStartDate,
-                volatilityFactor
-              ),
+              history: buildFlatHistory(leagueStartDate, startingBalance),
+              baselines: {
+                sp500: buildFlatHistory(leagueStartDate, startingBalance),
+                nasdaq: buildFlatHistory(leagueStartDate, startingBalance),
+                dow: buildFlatHistory(leagueStartDate, startingBalance),
+              },
             },
           };
         }
@@ -286,7 +264,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
         setLoading(false);
       }
     }
-  }, [userId]);
+  }, [userId, buildFlatHistory]);
 
   // Initial fetch when user ID is available
   useEffect(() => {
