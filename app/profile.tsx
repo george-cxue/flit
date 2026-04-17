@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
@@ -18,6 +20,8 @@ import { apiClient } from '@/src/services/api';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeMode } from '@/contexts/theme-context';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 interface ProfileUser {
   id: string;
@@ -59,6 +63,10 @@ export default function ProfileScreen() {
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState(new Date(2000, 0, 1));
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
+  const [usernameMessage, setUsernameMessage] = useState('');
   const lastLoadedUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -95,6 +103,81 @@ export default function ProfileScreen() {
     fetchProfile();
   }, [authUser?.id, router, getToken]);
 
+  const formatDateForStorage = (value: string) => new Date(value + 'T00:00:00.000Z').toISOString();
+  const formatDateForPicker = (value: string) => {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(parsed.getTime()) ? new Date(2000, 0, 1) : parsed;
+  };
+  const formatDateFromPicker = (value: Date) => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    setDatePickerValue(selectedDate);
+    setDateOfBirth(formatDateFromPicker(selectedDate));
+  };
+
+  useEffect(() => {
+    if (!isEditing || !profile) {
+      setUsernameStatus('idle');
+      setUsernameMessage('');
+      return;
+    }
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setUsernameStatus('invalid');
+      setUsernameMessage('Username is required');
+      return;
+    }
+
+    if (trimmedUsername.length < 3) {
+      setUsernameStatus('invalid');
+      setUsernameMessage('Username must be at least 3 characters');
+      return;
+    }
+
+    if (trimmedUsername.toLowerCase() === profile.username.toLowerCase()) {
+      setUsernameStatus('available');
+      setUsernameMessage('Current username');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    setUsernameMessage('Checking username...');
+
+    const timeout = setTimeout(async () => {
+      try {
+        const { data } = await apiClient.get<{ available: boolean; message: string }>('/users/check-username', {
+          params: { username: trimmedUsername, excludeUserId: profile.id },
+        });
+        if (data.available) {
+          setUsernameStatus('available');
+          setUsernameMessage('Username is available');
+        } else {
+          setUsernameStatus('taken');
+          setUsernameMessage('Username is already taken');
+        }
+      } catch {
+        setUsernameStatus('error');
+        setUsernameMessage('Unable to check username right now');
+      }
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [isEditing, profile, username]);
+
   const handleSave = async () => {
     if (!profile?.id) return;
 
@@ -105,6 +188,14 @@ export default function ProfileScreen() {
 
     if (!trimmedUsername || trimmedUsername.length < 3) {
       setSaveError('Username must be at least 3 characters');
+      return;
+    }
+    if (usernameStatus === 'checking') {
+      setSaveError('Checking username availability, please wait a moment.');
+      return;
+    }
+    if (usernameStatus === 'taken') {
+      setSaveError('That username is already in use. Please choose another.');
       return;
     }
     if (trimmedDate && !/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
@@ -131,7 +222,7 @@ export default function ProfileScreen() {
         username: trimmedUsername,
       };
       if (trimmedDate) {
-        payload.dateOfBirth = new Date(trimmedDate + 'T00:00:00.000Z').toISOString();
+        payload.dateOfBirth = formatDateForStorage(trimmedDate);
       }
 
       const { data } = await apiClient.put<{ user: ProfileUser }>(
@@ -164,14 +255,12 @@ export default function ProfileScreen() {
     }
     setIsEditing(false);
     setSaveError(null);
+    setUsernameStatus('idle');
+    setUsernameMessage('');
   };
 
   if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: c.surface }]}>
-        <ActivityIndicator size="large" color={c.primary} />
-      </View>
-    );
+    return <AppLoadingScreen />;
   }
 
   if (error || !profile) {
@@ -297,14 +386,33 @@ export default function ProfileScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Username</Text>
             {isEditing ? (
-              <TextInput
-                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Username"
-                placeholderTextColor={c.onSurfaceVariant}
-                autoCapitalize="none"
-              />
+              <>
+                <TextInput
+                  style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
+                  value={username}
+                  onChangeText={(value) => {
+                    setUsername(value);
+                    if (saveError) setSaveError(null);
+                  }}
+                  placeholder="Username"
+                  placeholderTextColor={c.onSurfaceVariant}
+                  autoCapitalize="none"
+                />
+                {usernameMessage ? (
+                  <Text
+                    style={[
+                      styles.usernameStatus,
+                      usernameStatus === 'available'
+                        ? { color: c.success }
+                        : usernameStatus === 'checking'
+                          ? { color: c.onSurfaceVariant }
+                          : { color: c.danger },
+                    ]}
+                  >
+                    {usernameMessage}
+                  </Text>
+                ) : null}
+              </>
             ) : (
               <Text style={[styles.value, { color: c.onSurface }]}>
                 {profile.username}
@@ -318,13 +426,18 @@ export default function ProfileScreen() {
           <View style={styles.field}>
             <Text style={[styles.label, { color: c.onSurfaceVariant }]}>Date of Birth</Text>
             {isEditing ? (
-              <TextInput
-                style={[styles.input, { color: c.onSurface, backgroundColor: c.surfaceContainerHigh }]}
-                value={dateOfBirth}
-                onChangeText={setDateOfBirth}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={c.onSurfaceVariant}
-              />
+              <TouchableOpacity
+                style={[styles.input, { justifyContent: 'center', backgroundColor: c.surfaceContainerHigh }]}
+                onPress={() => {
+                  setDatePickerValue(formatDateForPicker(dateOfBirth));
+                  setShowDatePicker(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.value, { color: dateOfBirth ? c.onSurface : c.onSurfaceVariant }]}>
+                  {dateOfBirth || 'Select date of birth'}
+                </Text>
+              </TouchableOpacity>
             ) : (
               <Text style={[styles.value, { color: c.onSurface }]}>
                 {profile.dateOfBirth
@@ -378,6 +491,37 @@ export default function ProfileScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable style={styles.datePickerOverlay} onPress={() => setShowDatePicker(false)}>
+          <Pressable style={[styles.datePickerCard, { backgroundColor: c.surfaceContainerLowest }]} onPress={(e) => e.stopPropagation()}>
+            <DateTimePicker
+              value={datePickerValue}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              maximumDate={new Date()}
+              textColor={Platform.OS === 'ios' ? c.onSurface : undefined}
+              themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+              onChange={handleDateChange}
+            />
+            {Platform.OS === 'ios' && (
+              <View style={styles.datePickerActions}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={[styles.datePickerActionText, { color: c.onSurfaceVariant }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={[styles.datePickerActionText, { color: c.primary }]}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -495,6 +639,12 @@ const createStyles = (c: typeof Colors.light) => StyleSheet.create({
     borderRadius: Radii.sm,
     padding: Spacing.sm + 4,
   },
+  usernameStatus: {
+    marginTop: 6,
+    fontFamily: Typography['label-md'].fontFamily,
+    fontSize: Typography['label-md'].fontSize,
+    lineHeight: Typography['label-md'].lineHeight,
+  },
   hint: {
     fontFamily: Typography['label-md'].fontFamily,
     fontSize: Typography['label-md'].fontSize,
@@ -530,5 +680,27 @@ const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   },
   bottomPadding: {
     height: 40,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  datePickerCard: {
+    borderTopLeftRadius: Radii.lg,
+    borderTopRightRadius: Radii.lg,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.lg,
+  },
+  datePickerActions: {
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.sm,
+  },
+  datePickerActionText: {
+    fontFamily: Typography['label-lg'].fontFamily,
+    fontSize: Typography['label-lg'].fontSize,
+    lineHeight: Typography['label-lg'].lineHeight,
   },
 });

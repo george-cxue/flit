@@ -12,20 +12,20 @@ import { Group } from "@/src/types/fantasy";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { usePortfolio } from "@/contexts/portfolio-context";
 import { useAuthContext } from "@/contexts/auth-context";
+import { TopBar } from "@/components/top-bar";
+import { useLessons } from "@/hooks/use-lessons";
+import { AppLoadingScreen } from "@/components/app-loading-screen";
 
 export default function FantasyHubScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [tournament, setTournament] = useState<Group | null>(null);
@@ -37,6 +37,7 @@ export default function FantasyHubScreen() {
   const { getPortfolioByLeague, setSelectedLeagueId, refreshPortfolios } =
     usePortfolio();
   const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
+  const { portfolioBalance } = useLessons(userId);
 
   const fetchGroups = async () => {
     if (!authLoaded || !isSignedIn || !userId) {
@@ -84,9 +85,16 @@ export default function FantasyHubScreen() {
 
   const handleJoinTournament = async () => {
     if (!tournament || joiningTournament) return;
+    const requiredBalance = tournament.settings?.startingBalance || 10000;
+    if (portfolioBalance < requiredBalance) {
+      alert(
+        `You need at least $${requiredBalance.toLocaleString()} in learning dollars to join this tournament. You currently have $${portfolioBalance.toLocaleString()}.`
+      );
+      return;
+    }
     setJoiningTournament(true);
     try {
-      await GroupService.joinTournament(tournament.id);
+      await GroupService.joinTournament(tournament.id, portfolioBalance);
       await fetchGroups();
     } catch (error: any) {
       console.error("Failed to join tournament:", error);
@@ -97,21 +105,15 @@ export default function FantasyHubScreen() {
   };
 
   if (loading) {
-    return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={c.primary} />
-      </ThemedView>
-    );
+    return <AppLoadingScreen />;
   }
 
   return (
     <ThemedView style={styles.container}>
+      <TopBar />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: Spacing.lg + insets.top },
-        ]}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -120,22 +122,9 @@ export default function FantasyHubScreen() {
           />
         }
       >
-        <View style={styles.header}>
-          <ThemedText type="headline-lg" style={styles.title}>
-            Social
-          </ThemedText>
-          <ThemedText type="body-md" style={styles.subtitle}>
-            Compete with friends, risk-free.
-          </ThemedText>
-        </View>
-
         {/* Monthly Tournament */}
         {tournament && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <ThemedText type="title-lg">Monthly Tournament</ThemedText>
-            </View>
-
             <View
               style={[
                 styles.tournamentCard,

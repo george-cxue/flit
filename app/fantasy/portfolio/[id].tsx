@@ -5,7 +5,8 @@ import { PortfolioService } from '@/src/services/fantasy/portfolioService';
 import { Portfolio, PortfolioSlot } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 const c = Colors.light;
 
@@ -69,11 +70,7 @@ export default function PortfolioScreen() {
     };
 
     if (loading) {
-        return (
-            <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={c.primary} />
-            </ThemedView>
-        );
+        return <AppLoadingScreen />;
     }
 
     if (!portfolio) {

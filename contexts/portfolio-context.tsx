@@ -23,7 +23,7 @@ interface PortfolioContextType {
   // Actions
   setSelectedLeagueId: (id: string) => void;
   setTimeFrame: (timeFrame: TimeFrame) => void;
-  allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => void;
+  allocateFunds: (leagueId: string, asset: keyof AssetAllocation, amount: number) => Promise<void>;
   buyStock: (leagueId: string, stock: Stock, shares: number) => Promise<void>;
   sellStock: (leagueId: string, symbol: string, shares: number) => Promise<void>;
   ensurePortfolioExists: (leagueId: string, leagueName: string) => void;
@@ -75,8 +75,16 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
       }
 
       console.log('[PortfolioContext] Fetching groups...');
-      // Fetch all groups for the user
-      const leagues = await GroupService.getGroups();
+      // Fetch regular groups + active tournament (if user joined).
+      const [regularGroups, activeTournament] = await Promise.all([
+        GroupService.getGroups(),
+        GroupService.getActiveTournament(),
+      ]);
+      const leagues = activeTournament?.isUserMember
+        ? [...regularGroups, activeTournament].filter(
+            (group, index, self) => self.findIndex((g) => g.id === group.id) === index
+          )
+        : regularGroups;
       console.log('[PortfolioContext] Fetched', leagues.length, 'groups');
 
       if (leagues.length === 0) {
@@ -100,7 +108,16 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const backendPortfolio = response.data;
 
           // Transform backend portfolio to frontend Portfolio type (coerce numbers; API may return Decimal strings)
-          const totalValue = toNum(backendPortfolio.totalValue, toNum(backendPortfolio.cashBalance));
+          // Some older portfolios have totalValue persisted as 0 while cash/holdings are valid.
+          const cashBalance = toNum(backendPortfolio.cashBalance);
+          const computedHoldingsValue = (backendPortfolio.slots ?? []).reduce((sum: number, slot: any) => {
+            const shares = toNum(slot.shares);
+            const currentPrice = toNum(slot.asset?.currentPrice ?? slot.currentPrice);
+            return sum + shares * currentPrice;
+          }, 0);
+          const rawTotalValue = toNum(backendPortfolio.totalValue);
+          const fallbackTotalValue = cashBalance + computedHoldingsValue;
+          const totalValue = rawTotalValue > 0 ? rawTotalValue : fallbackTotalValue;
           const startingBalance = toNum(group.settings?.startingBalance, 10000);
           const leagueStartDate = new Date(group.settings.startDate || Date.now());
 
@@ -191,12 +208,16 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
           const portfolio: Portfolio = {
             leagueId: group.id,
             totalValue,
-            liquidFunds: toNum(backendPortfolio.cashBalance),
+            liquidFunds: cashBalance,
+            bondsLockedUntil:
+              backendPortfolio.bondsLockedUntil != null
+                ? String(backendPortfolio.bondsLockedUntil)
+                : null,
             lessonRewards: 0, // Not tracked in backend yet
             allocation: {
-              savings: 0,
-              bonds: 0,
-              indexFunds: 0,
+              savings: toNum(backendPortfolio.savingsAccount),
+              bonds: toNum(backendPortfolio.bonds),
+              indexFunds: toNum(backendPortfolio.indexFunds),
             },
             holdings: (backendPortfolio.slots ?? []).map((slot: any) => {
               const shares = toNum(slot.shares);
@@ -233,6 +254,7 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
               leagueId: group.id,
               totalValue: startingBalance,
               liquidFunds: startingBalance,
+              bondsLockedUntil: null,
               lessonRewards: 0,
               allocation: { savings: 0, bonds: 0, indexFunds: 0 },
               holdings: [],
@@ -280,24 +302,9 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
     }
   }, [userId, authLoaded, fetchPortfolios]);
 
-  const allocateFunds = (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
-    setPortfolios((prev) => {
-      const portfolio = prev[leagueId];
-      if (!portfolio) return prev;
-
-      return {
-        ...prev,
-        [leagueId]: {
-          ...portfolio,
-          liquidFunds: portfolio.liquidFunds - amount,
-          allocation: {
-            ...portfolio.allocation,
-            [asset]: portfolio.allocation[asset] + amount,
-          },
-          // totalValue stays the same - just converting cash to assets
-        },
-      };
-    });
+  const allocateFunds = async (leagueId: string, asset: keyof AssetAllocation, amount: number) => {
+    await PortfolioService.allocateAsset(leagueId, asset, amount);
+    await fetchPortfolios();
   };
 
   const buyStock = async (leagueId: string, stock: Stock, shares: number) => {
@@ -342,7 +349,11 @@ export function PortfolioProvider({ children }: PortfolioProviderProps) {
   };
 
   const getCurrentPortfolio = (): Portfolio | null => {
-    return portfolios[selectedLeagueId] || null;
+    if (portfolios[selectedLeagueId]) {
+      return portfolios[selectedLeagueId];
+    }
+    const firstAvailable = Object.values(portfolios)[0];
+    return firstAvailable || null;
   };
 
   const getPortfolioByLeague = (leagueId: string): Portfolio | undefined => {

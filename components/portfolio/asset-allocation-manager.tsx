@@ -11,10 +11,16 @@ const c = Colors.light;
 interface AssetAllocationManagerProps {
   allocation: AssetAllocation;
   cashBalance: number;
+  bondsLockedUntil?: string | null;
   onAllocate: (assetType: keyof AssetAllocation, amount: number) => Promise<void>;
 }
 
-export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: AssetAllocationManagerProps) {
+export function AssetAllocationManager({
+  allocation,
+  cashBalance,
+  bondsLockedUntil,
+  onAllocate,
+}: AssetAllocationManagerProps) {
   const primaryColor = useThemeColor({}, 'tint');
   const styles = createStyles();
   const [modalVisible, setModalVisible] = useState(false);
@@ -23,21 +29,30 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
   const [isBuying, setIsBuying] = useState(true);
   const [processing, setProcessing] = useState(false);
 
-  const assetInfo: Record<keyof AssetAllocation, { name: string; description: string; emoji: string }> = {
+  const assetInfo: Record<
+    keyof AssetAllocation,
+    { name: string; description: string; emoji: string; returnLabel: string; returnDescription: string }
+  > = {
     savings: {
       name: 'Savings Account',
-      description: 'Safe, liquid funds with low interest',
+      description: 'Safe, liquid funds with low risk',
       emoji: '🏦',
+      returnLabel: '~4.3% APY',
+      returnDescription: 'Accrues continuously at a savings-account-style annual yield.',
     },
     bonds: {
       name: 'Bonds',
       description: 'Fixed income securities, moderate risk',
       emoji: '📜',
+      returnLabel: '~5.1% APY',
+      returnDescription: 'Accrues continuously at a bond-style fixed annual yield. Bond purchases are locked for 30 days.',
     },
     indexFunds: {
       name: 'Index Funds',
       description: 'Diversified market exposure, moderate risk',
       emoji: '📈',
+      returnLabel: 'Tracks S&P 500',
+      returnDescription: 'Value moves with the S&P 500 (via SPY market index updates).',
     },
   };
 
@@ -47,6 +62,12 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
     setAmount('');
     setModalVisible(true);
   };
+
+  const parsedBondLockDate =
+    bondsLockedUntil && Number.isFinite(new Date(bondsLockedUntil).getTime())
+      ? new Date(bondsLockedUntil)
+      : null;
+  const isBondLocked = !!parsedBondLockDate && parsedBondLockDate.getTime() > Date.now();
 
   const handleConfirm = async () => {
     if (!selectedAsset) return;
@@ -70,6 +91,11 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
       return;
     }
 
+    if (!isBuying && selectedAsset === 'bonds' && isBondLocked && parsedBondLockDate) {
+      alert(`Bonds are locked until ${parsedBondLockDate.toLocaleDateString()}.`);
+      return;
+    }
+
     try {
       setProcessing(true);
       await onAllocate(selectedAsset, finalAmount);
@@ -78,7 +104,8 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
       setAmount('');
     } catch (error) {
       console.error('Error allocating funds:', error);
-      alert('Failed to process transaction. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to process transaction. Please try again.';
+      alert(message);
     } finally {
       setProcessing(false);
     }
@@ -91,7 +118,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
         Allocate your cash to low-risk investment options
       </ThemedText>
 
-      {(Object.keys(assetInfo) as Array<keyof AssetAllocation>).map((assetType) => {
+      {(Object.keys(assetInfo) as (keyof AssetAllocation)[]).map((assetType) => {
         const info = assetInfo[assetType];
         const balance = allocation[assetType];
 
@@ -118,10 +145,15 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
               <TouchableOpacity
                 style={[styles.button, styles.sellButton]}
                 onPress={() => handleOpenModal(assetType, false)}
-                disabled={balance <= 0}
+                disabled={balance <= 0 || (assetType === 'bonds' && isBondLocked)}
               >
-                <ThemedText style={[styles.buttonText, balance <= 0 && styles.disabledText]}>
-                  Sell
+                <ThemedText
+                  style={[
+                    styles.buttonText,
+                    (balance <= 0 || (assetType === 'bonds' && isBondLocked)) && styles.disabledText,
+                  ]}
+                >
+                  {assetType === 'bonds' && isBondLocked ? 'Locked' : 'Sell'}
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -147,6 +179,23 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
                     ? `Available cash: $${cashBalance.toFixed(2)}`
                     : `Current balance: $${allocation[selectedAsset].toFixed(2)}`}
                 </ThemedText>
+                {isBuying ? (
+                  <View style={styles.returnInfo}>
+                    <ThemedText style={styles.returnLabel}>
+                      Expected return: {assetInfo[selectedAsset].returnLabel}
+                    </ThemedText>
+                    <ThemedText style={styles.returnDescription}>
+                      {assetInfo[selectedAsset].returnDescription}
+                    </ThemedText>
+                  </View>
+                ) : null}
+                {!isBuying && selectedAsset === 'bonds' && isBondLocked && parsedBondLockDate ? (
+                  <View style={styles.lockInfo}>
+                    <ThemedText style={styles.lockLabel}>
+                      Bond lock active until {parsedBondLockDate.toLocaleDateString()}.
+                    </ThemedText>
+                  </View>
+                ) : null}
                 <TextInput
                   style={styles.input}
                   placeholder="Amount ($)"
@@ -167,7 +216,7 @@ export function AssetAllocationManager({ allocation, cashBalance, onAllocate }: 
                   <TouchableOpacity
                     style={[styles.modalButton, styles.confirmButton, { backgroundColor: primaryColor }]}
                     onPress={handleConfirm}
-                    disabled={processing}
+                    disabled={processing || (!isBuying && selectedAsset === 'bonds' && isBondLocked)}
                   >
                     {processing ? (
                       <ActivityIndicator color={c.onPrimary} />
@@ -290,6 +339,31 @@ const createStyles = () => StyleSheet.create({
     ...Typography['body-md'],
     color: c.onSurfaceVariant,
     marginBottom: Spacing.md,
+  },
+  returnInfo: {
+    marginBottom: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerHigh,
+  },
+  returnLabel: {
+    ...Typography['label-md'],
+    color: c.onSurface,
+    marginBottom: 2,
+  },
+  returnDescription: {
+    ...Typography['label-md'],
+    color: c.onSurfaceVariant,
+  },
+  lockInfo: {
+    marginBottom: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: Radii.md,
+    backgroundColor: c.surfaceContainerHigh,
+  },
+  lockLabel: {
+    ...Typography['label-md'],
+    color: c.warning,
   },
   input: {
     backgroundColor: c.surfaceContainerHigh,

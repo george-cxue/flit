@@ -1,11 +1,9 @@
 import React, { useEffect, useCallback } from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, fixedLightPalette, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
+import { Colors, Typography, Radii, Spacing, AmbientShadow, SubtleShadow } from '@/constants/theme';
 import { PerformanceChart } from '@/components/portfolio/performance-chart';
-import { AssetAllocationComponent } from '@/components/portfolio/asset-allocation';
 import { AssetAllocationManager } from '@/components/portfolio/asset-allocation-manager';
 import { StockSearch } from '@/components/portfolio/stock-search';
 import { HoldingsList } from '@/components/portfolio/holdings-list';
@@ -18,9 +16,10 @@ import { Group } from '@/src/types/fantasy';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useThemeMode } from '@/contexts/theme-context';
+import { TopBar } from '@/components/top-bar';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 export default function PortfolioScreen() {
-  const insets = useSafeAreaInsets();
   const { leagueId: paramLeagueId } = useLocalSearchParams();
   const [groups, setGroups] = React.useState<Group[]>([]);
   const { isLoaded: authLoaded, isSignedIn, userId } = useAuthContext();
@@ -35,7 +34,6 @@ export default function PortfolioScreen() {
     buyStock,
     sellStock,
     getCurrentPortfolio,
-    portfolios,
     loading,
     refreshPortfolios,
   } = usePortfolio();
@@ -66,19 +64,17 @@ export default function PortfolioScreen() {
   useEffect(() => {
     if (paramLeagueId && typeof paramLeagueId === 'string') {
       setSelectedLeagueId(paramLeagueId);
+      // Ensure we pull the freshest portfolio when entering from "Manage Portfolio".
+      refreshPortfolios();
     }
-  }, [paramLeagueId]);
+  }, [paramLeagueId, setSelectedLeagueId, refreshPortfolios]);
 
   const c = themeMode === 'dark' ? Colors.dark : Colors.light;
   const styles = createStyles(c);
   const currentPortfolio = getCurrentPortfolio();
 
   if (loading) {
-    return (
-      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ThemedText type="body-lg">Loading portfolios...</ThemedText>
-      </ThemedView>
-    );
+    return <AppLoadingScreen message="Loading portfolios..." />;
   }
 
   if (!currentPortfolio) {
@@ -90,6 +86,13 @@ export default function PortfolioScreen() {
       </ThemedView>
     );
   }
+
+  const holdingsValue = currentPortfolio.holdings.reduce((sum, holding) => sum + holding.totalValue, 0);
+  const otherAssetsValue =
+    currentPortfolio.allocation.savings +
+    currentPortfolio.allocation.bonds +
+    currentPortfolio.allocation.indexFunds;
+  const computedTotalValue = currentPortfolio.liquidFunds + holdingsValue + otherAssetsValue;
 
   const handleAllocate = async (asset: keyof AssetAllocation, amount: number) => {
     await allocateFunds(selectedLeagueId, asset, amount);
@@ -104,8 +107,10 @@ export default function PortfolioScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
-      <ThemedView style={styles.content}>
+    <ThemedView style={styles.container}>
+      <TopBar />
+      <ScrollView style={styles.scrollView}>
+        <ThemedView style={styles.content}>
         {/* Group Selector */}
         <View style={[styles.leagueSelector, { backgroundColor: c.surfaceContainerLowest }]}>
           <ThemedText type="label-lg" style={styles.sectionLabel}>Group</ThemedText>
@@ -148,7 +153,7 @@ export default function PortfolioScreen() {
         <View style={[styles.valueCard, { backgroundColor: c.surfaceContainerLowest, ...AmbientShadow }]}>
           <ThemedText type="label-lg" style={styles.valueLabel}>Total Portfolio Value</ThemedText>
           <ThemedText style={styles.valueAmount}>
-            ${currentPortfolio.totalValue.toFixed(2)}
+            ${computedTotalValue.toFixed(2)}
           </ThemedText>
           <View style={styles.balanceRow}>
             <View style={styles.balanceItem}>
@@ -160,13 +165,13 @@ export default function PortfolioScreen() {
             <View style={styles.balanceItem}>
               <ThemedText type="label-md" style={styles.balanceLabel}>Stocks</ThemedText>
               <ThemedText type="title-md" style={styles.balanceValue}>
-                ${(currentPortfolio.totalValue - currentPortfolio.liquidFunds - currentPortfolio.allocation.savings - currentPortfolio.allocation.bonds - currentPortfolio.allocation.indexFunds).toFixed(2)}
+                ${holdingsValue.toFixed(2)}
               </ThemedText>
             </View>
             <View style={styles.balanceItem}>
               <ThemedText type="label-md" style={styles.balanceLabel}>Other</ThemedText>
               <ThemedText type="title-md" style={styles.balanceValue}>
-                ${(currentPortfolio.allocation.savings + currentPortfolio.allocation.bonds + currentPortfolio.allocation.indexFunds).toFixed(2)}
+                ${otherAssetsValue.toFixed(2)}
               </ThemedText>
             </View>
           </View>
@@ -176,11 +181,12 @@ export default function PortfolioScreen() {
         </View>
 
         {/* Performance Chart */}
-        <View style={[styles.chartCard, { backgroundColor: fixedLightPalette.surfaceContainerLowest }]}>
+        <View style={[styles.chartCard, { backgroundColor: c.surfaceContainerLowest }]}>
           <PerformanceChart
             portfolioHistory={currentPortfolio.history}
             sp500History={currentPortfolio.baselines?.sp500 || MOCK_SP500.history}
             timeFrame={timeFrame}
+            currentPortfolioValue={computedTotalValue}
           />
         </View>
 
@@ -233,16 +239,19 @@ export default function PortfolioScreen() {
           <AssetAllocationManager
             allocation={currentPortfolio.allocation}
             cashBalance={currentPortfolio.liquidFunds}
+            bondsLockedUntil={currentPortfolio.bondsLockedUntil}
             onAllocate={handleAllocate}
           />
         </View>
-      </ThemedView>
-    </ScrollView>
+        </ThemedView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const createStyles = (c: typeof Colors.light) => StyleSheet.create({
   container: { flex: 1 },
+  scrollView: { flex: 1 },
   content: { padding: Spacing.md },
 
   leagueSelector: {

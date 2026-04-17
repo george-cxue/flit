@@ -6,7 +6,8 @@ import { DraftService } from '@/src/services/fantasy/draftService';
 import { Asset, DraftState } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 const c = Colors.light;
 
@@ -96,11 +97,7 @@ export default function DraftScreen() {
     };
 
     if (loading || !draftState) {
-        return (
-            <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={c.primary} />
-            </ThemedView>
-        );
+        return <AppLoadingScreen />;
     }
 
     const isMyTurn = draftState.currentUserId === 'user_1';

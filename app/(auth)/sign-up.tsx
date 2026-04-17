@@ -9,12 +9,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  Pressable,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Radii, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { PENDING_SIGNUP_KEY } from '@/src/constants/auth';
+import { apiClient } from '@/src/services/api';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 const c = Colors.light;
 
@@ -32,6 +36,76 @@ export default function SignUpScreen() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState(new Date(2000, 0, 1));
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
+  const [usernameMessage, setUsernameMessage] = useState('');
+
+  const formatDateForInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseInputDate = (value: string) => {
+    if (!value) return new Date(2000, 0, 1);
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(parsed.getTime()) ? new Date(2000, 0, 1) : parsed;
+  };
+
+  useEffect(() => {
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
+      setUsernameStatus('idle');
+      setUsernameMessage('');
+      return;
+    }
+
+    if (trimmedUsername.length < 3) {
+      setUsernameStatus('invalid');
+      setUsernameMessage('Username must be at least 3 characters');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    setUsernameMessage('Checking username...');
+
+    const timeout = setTimeout(async () => {
+      try {
+        const { data } = await apiClient.get<{ available: boolean; message: string }>('/users/check-username', {
+          params: { username: trimmedUsername },
+        });
+
+        if (data.available) {
+          setUsernameStatus('available');
+          setUsernameMessage('Username is available');
+        } else {
+          setUsernameStatus('taken');
+          setUsernameMessage('Username is already taken');
+        }
+      } catch {
+        setUsernameStatus('error');
+        setUsernameMessage('Unable to check username right now');
+      }
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [username]);
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    setDatePickerValue(selectedDate);
+    setDateOfBirth(formatDateForInput(selectedDate));
+  };
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
@@ -55,6 +129,14 @@ export default function SignUpScreen() {
     }
     if (trimmedUsername.length < 3) {
       setError('Username must be at least 3 characters');
+      return;
+    }
+    if (usernameStatus === 'checking') {
+      setError('Checking username availability, please wait a moment.');
+      return;
+    }
+    if (usernameStatus === 'taken') {
+      setError('That username is already in use. Please choose another.');
       return;
     }
     if (!trimmedDate) {
@@ -229,19 +311,42 @@ export default function SignUpScreen() {
               value={username}
               placeholder="Username"
               placeholderTextColor={c.onSurfaceVariant}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text);
+                if (error) setError('');
+              }}
             />
+            {usernameMessage ? (
+              <ThemedText
+                type="label-md"
+                style={[
+                  styles.statusText,
+                  usernameStatus === 'available'
+                    ? { color: c.success }
+                    : usernameStatus === 'checking'
+                      ? { color: c.onSurfaceVariant }
+                      : { color: c.danger },
+                ]}
+              >
+                {usernameMessage}
+              </ThemedText>
+            ) : null}
           </View>
 
           <View style={styles.inputContainer}>
             <ThemedText type="label-lg" style={styles.label}>Date of Birth</ThemedText>
-            <TextInput
+            <TouchableOpacity
               style={styles.input}
-              value={dateOfBirth}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={c.onSurfaceVariant}
-              onChangeText={setDateOfBirth}
-            />
+              onPress={() => {
+                setDatePickerValue(parseInputDate(dateOfBirth));
+                setShowDatePicker(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <ThemedText style={[styles.dateInputText, !dateOfBirth && { color: c.onSurfaceVariant }]}>
+                {dateOfBirth || 'Select date of birth'}
+              </ThemedText>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.inputContainer}>
@@ -293,6 +398,37 @@ export default function SignUpScreen() {
           </Link>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable style={styles.datePickerOverlay} onPress={() => setShowDatePicker(false)}>
+          <Pressable style={styles.datePickerCard} onPress={(e) => e.stopPropagation()}>
+            <DateTimePicker
+              value={datePickerValue}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              maximumDate={new Date()}
+              textColor={Platform.OS === 'ios' ? c.onSurface : undefined}
+              themeVariant={Platform.OS === 'ios' ? 'light' : undefined}
+              onChange={handleDateChange}
+            />
+            {Platform.OS === 'ios' && (
+              <View style={styles.datePickerActions}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <ThemedText type="label-lg" style={{ color: c.onSurfaceVariant }}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <ThemedText type="label-lg" style={{ color: c.primary }}>Done</ThemedText>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -340,6 +476,32 @@ const styles = StyleSheet.create({
     fontFamily: Typography['body-lg'].fontFamily,
     fontSize: Typography['body-lg'].fontSize,
     color: c.onSurface,
+  },
+  dateInputText: {
+    fontFamily: Typography['body-lg'].fontFamily,
+    fontSize: Typography['body-lg'].fontSize,
+    color: c.onSurface,
+  },
+  statusText: {
+    marginTop: 4,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  datePickerCard: {
+    backgroundColor: c.surfaceContainerLowest,
+    borderTopLeftRadius: Radii.lg,
+    borderTopRightRadius: Radii.lg,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.lg,
+  },
+  datePickerActions: {
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.sm,
   },
   button: {
     borderRadius: Radii.lg,

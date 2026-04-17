@@ -5,11 +5,15 @@ import { GroupService } from '@/src/services/fantasy/groupService';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useLessons } from '@/hooks/use-lessons';
 
 const c = Colors.light;
 
 export default function JoinGroupScreen() {
     const router = useRouter();
+    const { userId } = useAuthContext();
+    const { portfolioBalance } = useLessons(userId);
 
     const [joinCode, setJoinCode] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,7 +31,7 @@ export default function JoinGroupScreen() {
 
         setLoading(true);
         try {
-            const result = await GroupService.joinByCode(joinCode.trim());
+            const result = await GroupService.joinByCode(joinCode.trim(), portfolioBalance);
 
             // Navigate directly to the group detail page
             router.push(`/fantasy/group/${result.group.id}`);
