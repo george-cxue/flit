@@ -75,14 +75,14 @@ export default function HomeScreen() {
   const portfolioLeagueIds = Object.keys(portfolios);
   const groupsById = new Map(groups.map((group) => [group.id, group] as const));
   const selectorGroupIds = Array.from(new Set([...portfolioLeagueIds, ...groups.map((g) => g.id)]));
-  const totalValue = portfolio?.totalValue || 0;
   const liquidFunds = portfolio?.liquidFunds || 0;
   const holdingsValue = portfolio?.holdings.reduce((sum, h) => sum + h.totalValue, 0) || 0;
   const otherAssetsValue = portfolio
     ? portfolio.allocation.savings + portfolio.allocation.bonds + portfolio.allocation.indexFunds
     : 0;
-  const holdingsPercent = totalValue > 0 ? Math.round((holdingsValue / totalValue) * 100) : 0;
-  const liquidPercent = totalValue > 0 ? Math.round((liquidFunds / totalValue) * 100) : 0;
+  const computedTotalValue = liquidFunds + holdingsValue + otherAssetsValue;
+  const holdingsPercent = computedTotalValue > 0 ? Math.round((holdingsValue / computedTotalValue) * 100) : 0;
+  const liquidPercent = computedTotalValue > 0 ? Math.round((liquidFunds / computedTotalValue) * 100) : 0;
 
   // Find user's rank in the selected group
   const selectedGroup = groups.find((g) => g.id === (portfolio?.leagueId || selectedLeagueId));
@@ -99,8 +99,8 @@ export default function HomeScreen() {
 
   // Overall return calculation
   const startingBalance = selectedGroup?.settings?.startingBalance || 0;
-  const totalReturn = startingBalance > 0 ? totalValue - startingBalance : 0;
-  const totalReturnPct = startingBalance > 0 ? ((totalValue - startingBalance) / startingBalance) * 100 : 0;
+  const totalReturn = startingBalance > 0 ? computedTotalValue - startingBalance : 0;
+  const totalReturnPct = startingBalance > 0 ? ((computedTotalValue - startingBalance) / startingBalance) * 100 : 0;
 
   // Top mover (best performing holding)
   const topMover = portfolio?.holdings.length
@@ -208,7 +208,7 @@ export default function HomeScreen() {
           </View>
 
           <ThemedText style={styles.portfolioBalance}>
-            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${computedTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </ThemedText>
 
           {/* Return % and P&L */}
