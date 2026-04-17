@@ -2,7 +2,6 @@ import { Tabs, Redirect } from "expo-router";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
-import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Typography } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -47,11 +46,13 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="home"
+      backBehavior="initialRoute"
+      detachInactiveScreens
       screenOptions={() => ({
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
         headerShown: false,
-        tabBarButton: HapticTab,
         tabBarStyle: {
           backgroundColor: colors.surfaceContainerLowest,
           borderTopWidth: 0,

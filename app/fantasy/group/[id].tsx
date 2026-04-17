@@ -5,10 +5,11 @@ import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View, Share, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiClient } from '@/src/services/api';
 import { useAuthContext } from '@/contexts/auth-context';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 const c = Colors.light;
 
@@ -93,11 +94,7 @@ export default function GroupDetailScreen() {
     }, [id]);
 
     if (loading) {
-        return (
-            <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={c.primary} />
-            </ThemedView>
-        );
+        return <AppLoadingScreen />;
     }
 
     if (!group) {
@@ -170,12 +167,6 @@ export default function GroupDetailScreen() {
             console.log('Updated group:', updatedGroup);
             if (updatedGroup) {
                 setGroup(updatedGroup);
-            }
-
-            if (Platform.OS === 'web') {
-                window.alert('Competition started! Status should now be ACTIVE.');
-            } else {
-                Alert.alert('Success', 'Competition started! Status should now be ACTIVE.');
             }
         } catch (error) {
             console.error('Start competition error:', error);
@@ -308,6 +299,7 @@ export default function GroupDetailScreen() {
     };
 
     const isAdmin = group.adminUserId === user?.id;
+    const isTournament = group.type === 'tournament';
 
     console.log('Group admin check:', {
         adminUserId: group.adminUserId,
@@ -520,7 +512,7 @@ export default function GroupDetailScreen() {
                 </View>
 
                 {/* Admin: End Group */}
-                {isAdmin && !competitionEnded && (
+                {isAdmin && !competitionEnded && !isTournament && (
                     <View style={styles.section}>
                         <TouchableOpacity
                             style={styles.dangerButton}

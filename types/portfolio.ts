@@ -31,6 +31,7 @@ export interface Portfolio {
   leagueId: string;
   totalValue: number;
   liquidFunds: number;
+  bondsLockedUntil?: string | null;
   lessonRewards: number;
   allocation: AssetAllocation;
   holdings: StockHolding[];

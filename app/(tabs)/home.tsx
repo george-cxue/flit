@@ -4,7 +4,6 @@ import {
   ScrollView,
   View,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,6 +18,7 @@ import { useLessons } from '@/hooks/use-lessons';
 import { lessonService } from '@/src/services/lessonService';
 import { GroupService } from '@/src/services/fantasy/groupService';
 import { Group } from '@/src/types/fantasy';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 export default function HomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -36,36 +36,34 @@ export default function HomeScreen() {
   const { isLessonCompleted, reload } = useLessons(user?.id || null);
   const [groups, setGroups] = useState<Group[]>([]);
 
+  const fetchGroups = useCallback(async () => {
+    if (!isLoaded || !isSignedIn || !userId) {
+      setGroups([]);
+      return;
+    }
+    try {
+      const data = await GroupService.getGroups();
+      setGroups(data);
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
+    }
+  }, [isLoaded, isSignedIn, userId]);
+
   useFocusEffect(
     useCallback(() => {
       reload();
       refreshPortfolios();
       syncUser();
-    }, [reload, refreshPortfolios, syncUser])
+      fetchGroups();
+    }, [reload, refreshPortfolios, syncUser, fetchGroups])
   );
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      if (!isLoaded || !isSignedIn || !userId) {
-        setGroups([]);
-        return;
-      }
-      try {
-        const data = await GroupService.getGroups();
-        setGroups(data);
-      } catch (error) {
-        console.error('Failed to fetch groups:', error);
-      }
-    };
     fetchGroups();
-  }, [isLoaded, isSignedIn, userId]);
+  }, [fetchGroups]);
 
   if (!isLoaded) {
-    return (
-      <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={c.primary} />
-      </ThemedView>
-    );
+    return <AppLoadingScreen />;
   }
 
   if (!isSignedIn) {
@@ -74,6 +72,9 @@ export default function HomeScreen() {
 
   // Portfolio data for selected group
   const portfolio = portfolios[selectedLeagueId] || Object.values(portfolios)[0];
+  const portfolioLeagueIds = Object.keys(portfolios);
+  const groupsById = new Map(groups.map((group) => [group.id, group] as const));
+  const selectorGroupIds = Array.from(new Set([...portfolioLeagueIds, ...groups.map((g) => g.id)]));
   const totalValue = portfolio?.totalValue || 0;
   const liquidFunds = portfolio?.liquidFunds || 0;
   const holdingsValue = portfolio?.holdings.reduce((sum, h) => sum + h.totalValue, 0) || 0;
@@ -85,6 +86,16 @@ export default function HomeScreen() {
 
   // Find user's rank in the selected group
   const selectedGroup = groups.find((g) => g.id === (portfolio?.leagueId || selectedLeagueId));
+  const selectedGroupId = portfolio?.leagueId || selectedLeagueId;
+  const selectedGroupFallbackName = selectedGroupId
+    ? groupsById.get(selectedGroupId)?.name || `Portfolio ${selectedGroupId.slice(0, 6)}`
+    : null;
+  const displayedGroupName =
+    selectedGroup?.name ||
+    groups.find((g) => g.id === selectedLeagueId)?.name ||
+    groups.find((g) => g.id === portfolio?.leagueId)?.name ||
+    selectedGroupFallbackName ||
+    'No Group Selected';
 
   // Overall return calculation
   const startingBalance = selectedGroup?.settings?.startingBalance || 0;
@@ -124,19 +135,21 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Group Selector */}
-        {groups.length > 0 && (
+        {selectorGroupIds.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.groupRow}
             style={styles.groupScroll}
           >
-            {groups.map((group) => {
-              const isSelected = (portfolio?.leagueId || selectedLeagueId) === group.id;
-              const rank = getUserRank(group);
+            {selectorGroupIds.map((groupId) => {
+              const group = groupsById.get(groupId);
+              const isSelected = (portfolio?.leagueId || selectedLeagueId) === groupId;
+              const rank = group ? getUserRank(group) : null;
+              const groupName = group?.name || `Portfolio ${groupId.slice(0, 6)}`;
               return (
                 <TouchableOpacity
-                  key={group.id}
+                  key={groupId}
                   style={[
                     styles.groupTab,
                     {
@@ -144,7 +157,7 @@ export default function HomeScreen() {
                     },
                     !isSelected && SubtleShadow,
                   ]}
-                  onPress={() => setSelectedLeagueId(group.id)}
+                  onPress={() => setSelectedLeagueId(groupId)}
                   activeOpacity={0.75}
                 >
                   <ThemedText
@@ -155,7 +168,7 @@ export default function HomeScreen() {
                     ]}
                     numberOfLines={1}
                   >
-                    {group.name}
+                    {groupName}
                   </ThemedText>
                   <ThemedText
                     type="label-md"
@@ -164,7 +177,11 @@ export default function HomeScreen() {
                       { color: isSelected ? 'rgba(255,255,255,0.7)' : c.onSurfaceVariant },
                     ]}
                   >
-                    {rank ? `${rank}${getRankSuffix(rank)} Place` : `${group.members?.length || 0} members`}
+                    {rank
+                      ? `${rank}${getRankSuffix(rank)} Place`
+                      : group
+                        ? `${group.members?.length || 0} members`
+                        : 'Portfolio'}
                   </ThemedText>
                 </TouchableOpacity>
               );
@@ -175,9 +192,14 @@ export default function HomeScreen() {
         {/* Portfolio Balance */}
         <View style={[styles.card, { backgroundColor: c.surfaceContainerLowest }]}>
           <View style={styles.cardHeader}>
-            <ThemedText type="title-md" style={styles.cardTitle}>
-              Portfolio Balance
-            </ThemedText>
+            <View>
+              <ThemedText type="title-md" style={styles.cardTitle}>
+                Portfolio Balance
+              </ThemedText>
+              <ThemedText type="label-md" style={styles.cardSubtitle}>
+                {displayedGroupName}
+              </ThemedText>
+            </View>
             <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}>
               <ThemedText type="label-lg" style={[styles.viewAll, { color: c.primary }]}>
                 View All
@@ -364,10 +386,14 @@ const createStyles = (c: typeof Colors.light) =>
     cardHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       marginBottom: Spacing.md,
     },
     cardTitle: {},
+    cardSubtitle: {
+      marginTop: 2,
+      color: c.onSurfaceVariant,
+    },
     viewAll: {},
     portfolioBalance: {
       fontSize: 32,

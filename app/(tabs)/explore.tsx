@@ -26,6 +26,8 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { TopBar } from "@/components/top-bar";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuthContext } from "@/contexts/auth-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { AppLoadingScreen } from "@/components/app-loading-screen";
 
 interface WatchlistItem {
   id: string;
@@ -61,6 +63,7 @@ const SECTOR_MAP: { key: string; label: string; icon: string }[] = [
 
 export default function ExploreScreen() {
   const { isLoaded, isSignedIn, userId } = useAuthContext();
+  const tabBarHeight = useBottomTabBarHeight();
   const c = Colors.light;
 
   // Unified search
@@ -226,16 +229,7 @@ export default function ExploreScreen() {
 
   // Auth guards
   if (!isLoaded || (isSignedIn && !userId)) {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={c.primary} />
-          <ThemedText type="body-md" style={{ marginTop: 12 }}>
-            Loading...
-          </ThemedText>
-        </View>
-      </ThemedView>
-    );
+    return <AppLoadingScreen message="Loading..." />;
   }
 
   if (!isSignedIn) {
@@ -307,7 +301,10 @@ export default function ExploreScreen() {
         {/* Search Results Overlay + Backdrop */}
         {(searchResults.length > 0 || searchingStocks) && (
           <>
-            <Pressable style={styles.overlayBackdrop} onPress={dismissSearch} />
+            <Pressable
+              style={[styles.overlayBackdrop, { bottom: tabBarHeight }]}
+              onPress={dismissSearch}
+            />
             <View
               style={[
                 styles.searchOverlay,

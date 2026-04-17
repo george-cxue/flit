@@ -5,7 +5,8 @@ import { MatchupService } from '@/src/services/fantasy/matchupService';
 import { Matchup } from '@/src/types/fantasy';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { AppLoadingScreen } from '@/components/app-loading-screen';
 
 const c = Colors.light;
 
@@ -31,11 +32,7 @@ export default function MatchupScreen() {
     }, [id]);
 
     if (loading) {
-        return (
-            <ThemedView style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={c.primary} />
-            </ThemedView>
-        );
+        return <AppLoadingScreen />;
     }
 
     if (!matchup) {

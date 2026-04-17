@@ -75,17 +75,17 @@ function AppShell() {
           <ThemeProvider value={themeMode === "dark" ? DarkTheme : DefaultTheme}>
             <AuthProvider>
               <PortfolioProvider>
-                <Stack>
+                <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen
                     name="modal"
-                    options={{ presentation: "modal", title: "Modal" }}
+                    options={{ presentation: "modal" }}
                   />
-                  <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                  <Stack.Screen name="profile" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen name="fantasy" options={{ headerShown: false }} />
-                  <Stack.Screen name="lesson" options={{ headerShown: false }} />
+                  <Stack.Screen name="onboarding" />
+                  <Stack.Screen name="profile" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="fantasy" />
+                  <Stack.Screen name="lesson/[id]" />
                 </Stack>
                 <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
               </PortfolioProvider>

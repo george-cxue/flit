@@ -34,7 +34,7 @@ export const GroupService = {
         }
     },
 
-    createGroup: async (name: string, settings: GroupSettings): Promise<Group> => {
+    createGroup: async (name: string, settings: GroupSettings, learningDollars?: number): Promise<Group> => {
         try {
             const userId = getAuthenticatedUserId();
             if (!userId) {
@@ -43,7 +43,8 @@ export const GroupService = {
             const response = await apiClient.post('/fantasy-groups', {
                 name,
                 adminUserId: userId,
-                settings
+                settings,
+                learningDollars,
             });
             return response.data;
         } catch (error) {
@@ -63,7 +64,7 @@ export const GroupService = {
         }
     },
 
-    joinByCode: async (joinCode: string): Promise<{ group: Group; membership: any }> => {
+    joinByCode: async (joinCode: string, learningDollars?: number): Promise<{ group: Group; membership: any }> => {
         try {
             const userId = getAuthenticatedUserId();
             if (!userId) {
@@ -72,6 +73,7 @@ export const GroupService = {
             const response = await apiClient.post('/fantasy-groups/join-by-code', {
                 joinCode: joinCode.toUpperCase(),
                 userId,
+                learningDollars,
             });
             return response.data;
         } catch (error) {
@@ -121,13 +123,13 @@ export const GroupService = {
         }
     },
 
-    joinTournament: async (tournamentId: string): Promise<void> => {
+    joinTournament: async (tournamentId: string, learningDollars?: number): Promise<void> => {
         try {
             const userId = getAuthenticatedUserId();
             if (!userId) {
                 throw new Error('User not authenticated');
             }
-            await apiClient.post(`/fantasy-groups/tournaments/${tournamentId}/join`, { userId });
+            await apiClient.post(`/fantasy-groups/tournaments/${tournamentId}/join`, { userId, learningDollars });
         } catch (error) {
             throw handleApiError(error);
         }

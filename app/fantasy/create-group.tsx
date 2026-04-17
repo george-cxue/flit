@@ -6,11 +6,15 @@ import { AssetType, GroupSettings } from '@/src/types/fantasy';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useLessons } from '@/hooks/use-lessons';
 
 const c = Colors.light;
 
 export default function CreateGroupScreen() {
     const router = useRouter();
+    const { userId } = useAuthContext();
+    const { portfolioBalance } = useLessons(userId);
 
     // Required Settings
     const [groupName, setGroupName] = useState('');
@@ -44,6 +48,13 @@ export default function CreateGroupScreen() {
             Alert.alert('Error', 'Please enter a group name');
             return;
         }
+        if (startingBalance > portfolioBalance) {
+            Alert.alert(
+                'Insufficient Learning Dollars',
+                `Starting balance cannot exceed your learning dollars ($${portfolioBalance.toLocaleString()}).`
+            );
+            return;
+        }
 
         setLoading(true);
         try {
@@ -59,15 +70,10 @@ export default function CreateGroupScreen() {
                 tradingEnabled,
             };
 
-            const newGroup = await GroupService.createGroup(groupName, settings);
+            const newGroup = await GroupService.createGroup(groupName, settings, portfolioBalance);
 
             // Navigate directly to the new group's detail page
             router.push(`/fantasy/group/${newGroup.id}`);
-
-            // Show success message after navigation
-            setTimeout(() => {
-                Alert.alert('Success', `Group "${groupName}" created!`);
-            }, 500);
         } catch (error) {
             console.error('Failed to create group:', error);
             Alert.alert('Error', error instanceof Error && error.message ? error.message : 'Failed to create group');

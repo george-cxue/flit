@@ -95,6 +95,11 @@ export function useLessons(userId: string | null = null) {
    */
   const completeLesson = useCallback(
     async (courseId: string, lessonId: string, score: number, totalQuestions: number) => {
+      // Prevent duplicate rewards for lessons already completed.
+      if (state[courseId]?.[lessonId]?.completed) {
+        return null;
+      }
+
       const reward = lessonService.getLessonById(lessonId)?.reward ?? 0;
 
       const progress: LessonProgress = {

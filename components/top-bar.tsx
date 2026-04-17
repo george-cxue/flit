@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, Pressable, Modal, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Typography, Spacing, Radii, AmbientShadow } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ProfileButton } from '@/components/profile-button';
@@ -29,7 +30,7 @@ const TOOLTIPS: Record<Exclude<TooltipKey, null>, { title: string; description: 
 export function TopBar() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthContext();
-  const { portfolioBalance } = useLessons(user?.id || null);
+  const { portfolioBalance, reload } = useLessons(user?.id || null);
   const { themeMode } = useThemeMode();
   const c = themeMode === 'dark' ? Colors.dark : Colors.light;
   const styles = createStyles(c);
@@ -44,6 +45,9 @@ export function TopBar() {
   const streak = user?.learningStreak || 0;
 
   const tooltip = activeTooltip ? TOOLTIPS[activeTooltip] : null;
+  const hasLargeTopInset = insets.top >= 44;
+  // Keep icons clear of the status area while avoiding oversized spacing on all devices.
+  const topPadding = insets.top + (hasLargeTopInset ? 8 : 10);
 
   const MARGIN = 12;
 
@@ -63,9 +67,15 @@ export function TopBar() {
     });
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
+
   return (
     <>
-      <View style={[styles.container, { paddingTop: insets.top + 48 }]}>
+      <View style={[styles.container, { paddingTop: topPadding }]}>
         <View style={styles.row}>
           {/* Financial IQ */}
           <TouchableOpacity ref={iqRef} style={styles.stat} onPress={() => showTooltip('iq', iqRef)} activeOpacity={0.6}>

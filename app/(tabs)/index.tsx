@@ -1,8 +1,8 @@
-import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 
 import { useOnboarding } from "@/hooks/use-onboarding";
+import { AppLoadingScreen } from "@/components/app-loading-screen";
 
 export default function Index() {
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
@@ -10,11 +10,7 @@ export default function Index() {
 
   // Show loading while auth or onboarding state is being determined
   if (!authLoaded || onboardingLoading || hasCompletedOnboarding === null) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <AppLoadingScreen />;
   }
 
   // If not signed in, redirect to sign-in page

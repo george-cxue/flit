@@ -140,4 +140,21 @@ export const PortfolioService = {
             throw handleApiError(error);
         }
     },
+
+    allocateAsset: async (
+        groupId: string,
+        assetType: 'savings' | 'bonds' | 'indexFunds',
+        amount: number
+    ): Promise<any> => {
+        try {
+            const response = await apiClient.post('/fantasy-portfolio/allocate', {
+                groupId,
+                assetType,
+                amount,
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 };

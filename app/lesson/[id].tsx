@@ -43,6 +43,7 @@ export default function LessonPlayerScreen() {
     financialIQScore: number;
     learningStreak: number;
   } | null>(null);
+  const [rewardGrantedThisRun, setRewardGrantedThisRun] = useState(true);
 
   const lesson = lessonService.getLessonById(id ?? '');
   const course = lesson ? lessonService.getCourseById(lesson.courseId) : undefined;
@@ -91,6 +92,8 @@ export default function LessonPlayerScreen() {
     if (phase === 'content') {
       if (questions.length === 0) {
         // No questions — auto-pass
+        const alreadyCompleted = isLessonCompleted(lesson!.courseId, lesson!.id);
+        setRewardGrantedThisRun(!alreadyCompleted);
         const stats = await completeLesson(lesson!.courseId, lesson!.id, 0, 0);
         if (stats) setEarnedStats(stats);
         // Refresh user data to get updated Financial IQ and streak
@@ -123,6 +126,8 @@ export default function LessonPlayerScreen() {
         setQuizResult({ score: finalScore, total });
 
         if (passed) {
+          const alreadyCompleted = isLessonCompleted(lesson!.courseId, lesson!.id);
+          setRewardGrantedThisRun(!alreadyCompleted);
           const stats = await completeLesson(lesson!.courseId, lesson!.id, finalScore, total);
           if (stats) setEarnedStats(stats);
           // Refresh user data to get updated Financial IQ and streak
@@ -133,7 +138,7 @@ export default function LessonPlayerScreen() {
         }
       }
     }
-  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, syncUser]);
+  }, [phase, questionIndex, questions.length, lesson, completeLesson, correctCount, syncUser, isLessonCompleted]);
 
   const handleRetry = useCallback(() => {
     setPhase('question');
@@ -142,6 +147,7 @@ export default function LessonPlayerScreen() {
     setIsCorrect(null);
     setCorrectCount(0);
     setQuizResult(null);
+    setRewardGrantedThisRun(true);
   }, []);
 
   const handleClose = () => router.back();
@@ -293,13 +299,13 @@ export default function LessonPlayerScreen() {
             )}
             <View style={styles.resultRow}>
               <ThemedText type="body-md" style={[styles.resultLabel, { color: c.onSurfaceVariant }]}>
-                Added to portfolio
+                Learning Dollars earned
               </ThemedText>
               <ThemedText
                 type="title-md"
                 style={[styles.resultValue, { color: c.success }]}
               >
-                +${lesson.reward.toLocaleString()}
+                {rewardGrantedThisRun ? `+$${lesson.reward.toLocaleString()}` : '$0 Already Claimed'}
               </ThemedText>
             </View>
             {earnedStats && earnedStats.financialIQEarned > 0 && (
@@ -421,7 +427,7 @@ export default function LessonPlayerScreen() {
             ))}
             <View style={[styles.rewardCard, { backgroundColor: c.surfaceContainerLowest }]}>
               <ThemedText type="body-md" style={[styles.rewardLabel, { color: c.onSurfaceVariant }]}>
-                Pass this lesson to add to portfolio
+                Pass this lesson to earn learning dollars
               </ThemedText>
               <ThemedText
                 type="title-md"
@@ -752,7 +758,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {},
   // Result screens (pass & fail)
   resultContent: { padding: Spacing.xl, alignItems: 'center', flexGrow: 1 },
-  resultEmoji: { fontSize: 72, marginTop: 60, marginBottom: Spacing.md },
+  resultEmoji: { fontSize: 72, lineHeight: 86, marginTop: 60, marginBottom: Spacing.md },
   resultTitle: { marginBottom: Spacing.sm, textAlign: 'center' },
   resultSubtitle: { textAlign: 'center', marginBottom: Spacing.xl },
   resultCard: {
